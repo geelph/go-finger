@@ -10,7 +10,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/projectdiscovery/goflags"
-	"hy/utils/logger"
+	"gxx/utils/logger"
 )
 
 type CmdOptions struct {

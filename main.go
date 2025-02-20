@@ -7,7 +7,7 @@
 */
 package main
 
-import "hy/cmd"
+import "gxx/cmd"
 
 func main() {
 	cmd.Run()

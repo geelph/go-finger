@@ -10,7 +10,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/fatih/color"
-	"hy/utils/logger"
+	"gxx/utils/logger"
 	"os"
 	"time"
 )
