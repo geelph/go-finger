@@ -22,6 +22,7 @@ import (
 	"math/rand"
 	"net"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -145,6 +146,15 @@ func GetRootDomain(input string) (string, error) {
 		return hostParts[len(hostParts)-2] + "." + hostParts[len(hostParts)-1], nil
 	}
 	return input, fmt.Errorf("输入既不是有效的 URL，也不是有效的 IP 地址")
+}
+
+// Exists 判断文件是否存在
+func Exists(path string) bool {
+	_, err := os.Stat(path) //os.Stat获取文件信息
+	if err != nil {
+		return os.IsExist(err)
+	}
+	return true
 }
 
 // GetDomain 提取URL中的域名
