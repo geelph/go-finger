@@ -12,18 +12,17 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/chainreactors/proxyclient"
+	"github.com/projectdiscovery/retryablehttp-go"
+	"golang.org/x/net/context"
 	"gxx/utils/common"
 	"gxx/utils/logger"
 	"gxx/utils/pkg/proto"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/projectdiscovery/retryablehttp-go"
-	"golang.org/x/net/context"
 )
 
 // 全局客户端配置
@@ -91,18 +90,20 @@ func SendRequestHttp(Method string, UrlStr string, Body string, options OptionsR
 	if options.Proxy != "" {
 		logger.Debug("使用代理 ", options.Proxy)
 	}
-
+	fmt.Println(1)
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
 	defer cancel()
-
+	fmt.Println(2)
 	req, err := retryablehttp.NewRequestWithContext(ctx, Method, UrlStr, Body)
 	if err != nil {
 		return nil, err
 	}
 	configureHeaders(req, options)
-
+	fmt.Println(3)
 	client := configureClient(options)
+	fmt.Println(4)
 	resp, err := client.Do(req)
+	fmt.Println(5)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +144,14 @@ func configureClient(options OptionsRequest) *retryablehttp.Client {
 		}
 		return nil
 	}
-
+	parsedURL, err := url.Parse(options.Proxy)
+	if err != nil {
+		logger.Error("代理地址解析失败:", err)
+		return nil
+	}
+	dialer, _ := proxyclient.NewClient(parsedURL)
 	client.HTTPClient.Transport = &http.Transport{
-		Proxy: getProxyFunc(options.Proxy),
+		DialContext: dialer.DialContext,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: options.InsecureSkipVerify,
 		},
@@ -176,6 +182,19 @@ func simpleRetryHttpGet(target string) ([]byte, int, error) {
 
 	req.Header.Set("User-Agent", common.RandomUA())
 
+	// 备份原有的 CheckRedirect 设置
+	originalCheckRedirect := RetryClient.HTTPClient.CheckRedirect
+
+	// 临时禁用重定向
+	RetryClient.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	// 确保在函数结束时恢复原有设置
+	defer func() {
+		RetryClient.HTTPClient.CheckRedirect = originalCheckRedirect
+	}()
+
 	resp, err := RetryClient.Do(req)
 	if err != nil {
 		if resp != nil {
@@ -185,6 +204,7 @@ func simpleRetryHttpGet(target string) ([]byte, int, error) {
 		}
 		return nil, 0, err
 	}
+
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(resp.Body)
@@ -198,89 +218,44 @@ func simpleRetryHttpGet(target string) ([]byte, int, error) {
 	return respBody, resp.StatusCode, nil
 }
 
-// getProxyFunc 获取代理配置函数
-func getProxyFunc(proxyURL string) func(*http.Request) (*url.URL, error) {
-	if proxyURL == "" {
-		return nil
-	}
-	parsedURL, err := url.Parse(proxyURL)
-	if err != nil {
-		logger.Error("代理地址解析失败:", err)
-		return nil
-	}
-	return http.ProxyURL(parsedURL)
-}
-
 // CheckProtocol 检查网络通信协议
 func CheckProtocol(host string) (string, error) {
-	var (
-		err       error
-		result    string
-		parsePort string
-	)
-
 	if len(strings.TrimSpace(host)) == 0 {
-		return result, fmt.Errorf("host %q is empty", host)
+		return "", fmt.Errorf("host %q is empty", host)
 	}
 
-	if strings.HasPrefix(host, HttpsPrefix) {
-		_, _, err := simpleRetryHttpGet(host)
-		if err != nil {
-			return result, err
-		}
-
-		return host, nil
-	}
-
-	if strings.HasPrefix(host, HttpPrefix) {
-		_, _, err := simpleRetryHttpGet(host)
-		if err != nil {
-			return result, err
-		}
-
-		return host, nil
+	if strings.HasPrefix(host, HttpPrefix) || strings.HasPrefix(host, HttpsPrefix) {
+		return checkAndReturnProtocol(host)
 	}
 
 	u, err := url.Parse(HttpPrefix + host)
 	if err != nil {
-		return result, err
+		return "", err
 	}
-	parsePort = u.Port()
 
-	switch {
-	case parsePort == "80":
-		_, _, err := simpleRetryHttpGet(HttpPrefix + host)
-		if err != nil {
-			return result, err
-		}
-
-		return HttpPrefix + host, nil
-
-	case parsePort == "443":
-		_, _, err := simpleRetryHttpGet(HttpsPrefix + host)
-		if err != nil {
-			return result, err
-		}
-
-		return HttpsPrefix + host, nil
-
+	switch u.Port() {
+	case "80":
+		return checkAndReturnProtocol(HttpPrefix + host)
+	case "443":
+		return checkAndReturnProtocol(HttpsPrefix + host)
 	default:
-		_, _, err := simpleRetryHttpGet(HttpsPrefix + host)
-		if err == nil {
-			return HttpsPrefix + host, err
+		if result, err := checkAndReturnProtocol(HttpsPrefix + host); err == nil {
+			return result, nil
 		}
-
-		body, _, err := simpleRetryHttpGet(HttpPrefix + host)
-		if err == nil {
-			if strings.Contains(string(body), "<title>400 The plain HTTP request was sent to HTTPS port</title>") {
-				return HttpsPrefix + host, nil
-			}
-			return HttpPrefix + host, nil
-		}
-
+		return checkAndReturnProtocol(HttpPrefix + host)
+	}
+}
+func checkAndReturnProtocol(url string) (string, error) {
+	body, _, err := simpleRetryHttpGet(url)
+	if err != nil {
+		return "", err
 	}
 
-	return "", fmt.Errorf("host %q is empty", host)
+	if strings.Contains(string(body), "<title>400 The plain HTTP request was sent to HTTPS port</title>") && strings.HasPrefix(url, HttpPrefix) {
+		return HttpsPrefix + url[len(HttpPrefix):], nil
+	}
+
+	return url, nil
 }
 
 // Url2ProtoUrl 参数定义
@@ -307,14 +282,14 @@ func ParseRequest(oReq *http.Request) (*proto.Request, error) {
 	}
 	req.Headers = header
 	req.ContentType = oReq.Header.Get("Content-Type")
-	if oReq.Body == nil || oReq.Body == http.NoBody {
-	} else {
-		data, err := ioutil.ReadAll(oReq.Body)
+	if oReq.Body != nil && oReq.Body != http.NoBody {
+		data, err := io.ReadAll(oReq.Body)
 		if err != nil {
 			return nil, err
 		}
 		req.Body = data
-		oReq.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+		oReq.Body = io.NopCloser(bytes.NewBuffer(data))
 	}
+
 	return req, nil
 }

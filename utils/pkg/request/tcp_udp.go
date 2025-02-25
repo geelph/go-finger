@@ -11,11 +11,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
-	"net/url"
+	"golang.org/x/net/proxy"
 	"time"
 
-	"golang.org/x/net/proxy"
+	"net"
+	"net/url"
 )
 
 const (
@@ -82,6 +82,7 @@ func NewClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid proxy URL: %w", err)
 		}
+		//dialer, err = proxyclient.NewClient(proxyURL)
 		dialer, err = proxy.FromURL(proxyURL, proxy.Direct)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create proxy dialer: %w", err)

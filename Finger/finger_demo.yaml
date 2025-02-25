@@ -17,12 +17,12 @@ rules:
       type: http # 请求类型，可以不写默认就是http
       method: GET # 请求方式，默认GET
       path: / # 请求路径，默认/
-      follow_redirects: true # 是否跟随重定向
-    expression: response.status == 200 && response.body.bcontains(b'123') # 匹配规则
+#      follow_redirects: true # 是否禁用自动重定向跟随
+    expression: response.status == 302 || response.body.bcontains(b'123') # 匹配规则
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.bcontains(b'123')
+    expression: response.body.bcontains(b'123') || response.icon_hash == "1236214049"
 
 expression: r0() && r1()

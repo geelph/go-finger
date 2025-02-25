@@ -86,9 +86,9 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			if errs != nil {
 				fmt.Println("tcp send error:", errs.Error())
 			}
-			res, errr := nc.RecvTcp()
-			if errr != nil {
-				fmt.Println("tcp receive error:", errr.Error())
+			res, err := nc.RecvTcp()
+			if err != nil {
+				fmt.Println("tcp receive error:", err.Error())
 			}
 			nc.Close()
 			err = request.RawParse(nc, []byte(data), res, variableMap)
@@ -98,7 +98,46 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			return variableMap, nil
 		case common.UDP_Type:
 			fmt.Println("执行udp请求，当前模块未完成")
-			return nil, err
+			rule.Request.Host = SetVariableMap(rule.Request.Host, variableMap)
+			info, err := common.ParseAddress(rule.Request.Host)
+			if err != nil {
+				return nil, fmt.Errorf("Error parsing address: %v\n", err)
+			}
+			nc, err := request.NewUdpClient(rule.Request.Host, request.TcpOrUdpConfig{
+				Network:     rule.Request.Type,
+				ReadTimeout: time.Duration(rule.Request.ReadTimeout),
+				ReadSize:    rule.Request.ReadSize,
+				MaxRetries:  1,
+				ProxyURL:    options.Proxy,
+				IsLts:       info.IsLts,
+				ServerName:  info.Host,
+			})
+			if err != nil {
+				fmt.Println("udp error:", err.Error())
+				return nil, err
+			}
+			data := rule.Request.Data
+
+			if len(rule.Request.DataType) > 0 {
+				dataType := strings.ToLower(rule.Request.DataType)
+				if dataType == "hex" {
+					data = common.FromHex(data)
+				}
+			}
+			errs := nc.Send([]byte(data))
+			if errs != nil {
+				fmt.Println("udp send error:", errs.Error())
+			}
+			res, err := nc.RecvTcp()
+			if err != nil {
+				fmt.Println("udp receive error:", err.Error())
+			}
+			nc.Close()
+			err = request.RawParse(nc, []byte(data), res, variableMap)
+			if err != nil {
+				fmt.Println("udp or udp parse error:", err.Error())
+			}
+			return variableMap, nil
 		case common.GO_Type:
 			fmt.Println("执行go模块调用发送请求，当前模块未完成")
 			return nil, err
@@ -116,7 +155,11 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	NewUrlStr, err := request.CheckProtocol(urlStr)
 	if err != nil {
 		fmt.Println("检查http通信协议出错，错误信息：", err)
+		if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
+			NewUrlStr = "http://" + target
+		}
 	}
+
 	fmt.Println("请求URL：", NewUrlStr)
 
 	// 发送请求
