@@ -102,16 +102,121 @@ gxx/
 
 ## 编译
 
-```shell
-go mod tidy
+### 使用 Makefile (推荐)
 
-CGO_ENABLED=0 GOARCH=arm64 GOOS=darwin go build -ldflags "-w -s" -o gxx main.go
-chmod u+x ./StartsScan
-./gxx -h
+```bash
+# 构建项目（不嵌入指纹库）
+make build
+
+# 构建项目（嵌入指纹库）
+make build-embed
+
+# 构建发布包（不嵌入指纹库）
+make release
+
+# 构建发布包（嵌入指纹库）
+make release-embed
+
+# 查看所有可用命令
+make help
+```
+
+### 手动编译
+
+```bash
+# 基本编译（不嵌入指纹库）
+go build -o gxx main.go
+
+# 使用构建脚本（不嵌入指纹库）
+chmod +x build.sh
+./build.sh
+
+# 使用构建脚本（嵌入指纹库）
+chmod +x build.sh
+./build.sh --embed
 ```
 
 ## 使用
 
-```shell
-./gxx -h
+```bash
+# 基本用法
+./gxx --target https://example.com
+
+# 使用代理
+./gxx --target https://example.com --proxy http://127.0.0.1:8080
+
+# 使用目标文件
+./gxx --targets-file targets.txt
+
+# 指定POC文件目录
+./gxx --target https://example.com --poc-file /path/to/finger
+
+# 指定单个POC YAML文件
+./gxx --target https://example.com --poc-yaml /path/to/specific.yaml
 ```
+
+## 命令行选项
+
+- `--target`: 指定目标URL
+- `--targets-file`: 指定包含多个目标的文件
+- `--poc-file`: 指定POC文件目录
+- `--poc-yaml`: 指定单个POC YAML文件
+- `--proxy`: 指定代理地址
+- `--timeout`: 设置请求超时时间（秒）
+- `--retries`: 设置重试次数
+- `--output`: 指定输出文件
+- `--debug`: 启用调试模式
+
+## 打包说明
+
+在打包二进制文件时，需要确保 `finger` 目录被正确包含。有以下几种方式：
+
+### 方法1: 将 finger 目录放在二进制文件同级目录
+
+```
+/your/deploy/directory/
+├── gxx (二进制文件)
+└── finger/ (指纹库目录)
+    ├── cms/
+    ├── framework/
+    └── ...
+```
+
+### 方法2: 使用 go-bindata 或 embed 将指纹库嵌入二进制
+
+1. 使用 Go 1.16+ 的 embed 功能:
+
+```go
+package finger
+
+import (
+    "embed"
+)
+
+//go:embed finger/*
+var fingerFS embed.FS
+
+// 然后修改 GetFingerPath 和相关函数以使用嵌入的文件系统
+```
+
+2. 或者使用 go-bindata:
+
+```bash
+# 安装 go-bindata
+go get -u github.com/go-bindata/go-bindata/...
+
+# 生成嵌入数据
+go-bindata -o utils/finger/bindata.go -pkg finger finger/...
+
+# 然后修改代码以使用生成的 bindata.go
+```
+
+## 开发说明
+
+1. 指纹库结构应遵循特定格式
+2. 可以通过添加新的 YAML 文件扩展指纹库
+3. 支持 CEL 表达式进行复杂匹配
+
+## 许可证
+
+[许可证信息]

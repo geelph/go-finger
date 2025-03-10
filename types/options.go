@@ -16,8 +16,10 @@ type CmdOptions struct {
 	Target      goflags.StringSlice // 测试目标
 	TargetsFile string              // 测试目标文件
 	PocFile     string              // POC文件路径
+	PocYaml     string              // 单个POC yaml文件
 	Timeout     int                 // 超时时间
 	Retries     int                 // 重试次数，默认3次
 	Output      string              //输出位置
 	Proxy       string              // 代理地址
+	Debug       bool                //设置debug模式
 }

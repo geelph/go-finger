@@ -26,6 +26,9 @@ func Run() {
 		os.Exit(0)
 	}
 	fmt.Println("cmd: ", options)
+	if options.Debug {
+		logger.InitLogger("debug", 5, 1)
+	}
 	utils.NewFingerRunner(options)
 	time.Sleep(time.Second * 2)
 }

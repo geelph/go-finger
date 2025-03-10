@@ -8,13 +8,15 @@
 package finger
 
 import (
+	"embed"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"gxx/utils/common"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 // FingerFile 配置poc文件目录
@@ -110,21 +112,18 @@ type ruleAlias struct {
 	BeforeSleep    int           `yaml:"before_sleep"`
 }
 
-// GetFingerPath 获取poc文件目录
-func GetFingerPath() string {
-	homeDir, err := os.Getwd()
-	if err != nil {
-		return "1"
-	}
-	configFile := filepath.Join(homeDir, FingerFile)
-	if !common.Exists(configFile) {
-		return ""
-	}
-	return configFile
-}
-
 // Select 获取指定名字的yaml文件位置
 func Select(pocPath string, pocName string) (string, error) {
+	// 检查路径是否存在
+	if pocPath == "" {
+		return "", fmt.Errorf("指纹库路径为空")
+	}
+
+	// 检查路径是否存在
+	if !common.Exists(pocPath) {
+		return "", fmt.Errorf("指纹库路径 '%s' 不存在", pocPath)
+	}
+
 	var result string
 	// 遍历目录中的所有文件和子目录
 	err := filepath.WalkDir(pocPath, func(path string, d fs.DirEntry, err error) error {
@@ -143,34 +142,51 @@ func Select(pocPath string, pocName string) (string, error) {
 	})
 
 	if err != nil {
-		return "", err // 如果遍历过程中出错，返回错误
+		return "", err
 	}
 
-	if len(result) == 0 {
-		return result, fmt.Errorf("未找到匹配的结果")
+	if result == "" {
+		return "", fmt.Errorf("未找到名为 '%s' 的指纹文件", pocName)
 	}
 
-	return result, err
+	return result, nil
+}
+
+// Load 加载yaml文件
+func Load(fileName string, Fingers embed.FS) (*Finger, error) {
+	p := &Finger{}
+	yamlFile, err := Fingers.ReadFile("finger/" + fileName)
+
+	if err != nil {
+		fmt.Printf("[-] load poc %s error1: %v\n", fileName, err)
+		return nil, err
+	}
+	err = yaml.Unmarshal(yamlFile, p)
+	if err != nil {
+		fmt.Printf("[-] load poc %s error2: %v\n", fileName, err)
+		return nil, err
+	}
+	return p, err
 }
 
 // Read 获取yaml文件内容
-func Read(FingerYaml string) (Finger, error) {
-	var poc = Finger{}
+func Read(fileName string) (*Finger, error) {
+	p := &Finger{}
 
-	file, err := os.Open(FingerYaml)
+	file, err := os.Open(fileName)
 	if err != nil {
-		return poc, err
+		return p, err
 	}
 	defer file.Close()
 
-	if err := yaml.NewDecoder(file).Decode(&poc); err != nil {
-		return poc, err
+	if err := yaml.NewDecoder(file).Decode(&p); err != nil {
+		return p, err
 	}
-	return poc, nil
+	return p, nil
 }
 
-// GetAll 获取特定目录下面所有yaml文件
-func GetAll(root string) ([]string, error) {
+// ReadDir 获取特定目录下面所有yaml文件
+func ReadDir(root string) ([]string, error) {
 	var allPocs []string
 
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
