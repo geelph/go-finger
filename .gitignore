@@ -7,3 +7,4 @@ test/
 ./main
 gxx
 build/
+.DS_Store
