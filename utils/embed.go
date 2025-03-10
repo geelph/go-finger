@@ -30,11 +30,6 @@ func init() {
 		}
 	} else {
 		hasEmbeddedFingers = true
-		fmt.Println("成功嵌入指纹库")
-
-		for _, file := range files {
-			fmt.Println("嵌入的文件:", file.Name())
-		}
 	}
 }
 

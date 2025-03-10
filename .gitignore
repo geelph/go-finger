@@ -5,5 +5,5 @@ __pycache__
 .venv
 test/
 ./main
-./gxx
+gxx
 build/
