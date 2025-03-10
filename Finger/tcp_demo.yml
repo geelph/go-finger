@@ -28,5 +28,4 @@ rules:
       host: "{{host}}:22"
       data: "\n"
     expression: response.raw.bcontains(b'SSH-')
-expression: r0() || r1()
-
+expression: r0() || r1() 

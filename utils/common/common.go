@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"github.com/axgle/mahonia"
 	"github.com/spaolacci/murmur3"
-	"gxx/utils/pkg/proto"
+	"gxx/utils/proto"
 	"log"
 	"math/big"
 	"math/rand"

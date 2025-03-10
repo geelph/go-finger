@@ -2,7 +2,7 @@
   - Package finger
     @Author: zhizhuo
     @IDE：GoLand
-    @File: yaml_finger.go
+    @File: yaml.go
     @Date: 2025/2/21 下午2:36*
 */
 package finger
@@ -18,7 +18,7 @@ import (
 )
 
 // FingerFile 配置poc文件目录
-const FingerFile = "Finger"
+const FingerFile = "finger"
 const (
 	HttpType = "http"
 	TcpType  = "tcp"

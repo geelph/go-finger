@@ -9,22 +9,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/projectdiscovery/goflags"
+	"gxx/types"
 	"gxx/utils/logger"
+
+	"github.com/projectdiscovery/goflags"
 )
 
-type CmdOptions struct {
-	Target      goflags.StringSlice // 测试目标
-	TargetsFile string              // 测试目标文件
-	PocFile     string              // POC文件路径
-	Timeout     int                 // 超时时间
-	Retries     int                 // 重试次数，默认3次
-	Output      string              //输出位置
-	Proxy       string              // 代理地址
-}
-
-func NewCmdOptions() (*CmdOptions, error) {
-	options := &CmdOptions{}
+// NewCmdOptions 创建并解析命令行选项
+func NewCmdOptions() (*types.CmdOptions, error) {
+	options := &types.CmdOptions{}
 	flagSet := goflags.NewFlagSet()
 	flagSet.CreateGroup("input", "Target",
 		flagSet.StringSliceVarP(&options.Target, "target", "t", nil, "target URLs/hosts to scan", goflags.NormalizedStringSliceOptions),
@@ -42,14 +35,15 @@ func NewCmdOptions() (*CmdOptions, error) {
 		logger.Error("Could not parse flags: %s\n", err)
 	}
 	// 验证必参数是否传入
-	if err := options.verifyOptions(); err != nil {
+	if err := verifyOptions(options); err != nil {
 		return options, err
 	}
 
 	return options, nil
-
 }
-func (opt *CmdOptions) verifyOptions() error {
+
+// verifyOptions 验证命令行选项
+func verifyOptions(opt *types.CmdOptions) error {
 	fmt.Println("Cmd Options：", opt)
 	if len(opt.Target) == 0 && len(opt.TargetsFile) == 0 {
 		return fmt.Errorf("either `-target` or `-file` must be set")

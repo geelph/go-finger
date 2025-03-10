@@ -12,17 +12,18 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/chainreactors/proxyclient"
-	"github.com/projectdiscovery/retryablehttp-go"
-	"golang.org/x/net/context"
 	"gxx/utils/common"
 	"gxx/utils/logger"
-	"gxx/utils/pkg/proto"
+	"gxx/utils/proto"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/chainreactors/proxyclient"
+	"github.com/projectdiscovery/retryablehttp-go"
+	"golang.org/x/net/context"
 )
 
 // 全局客户端配置
@@ -90,20 +91,15 @@ func SendRequestHttp(Method string, UrlStr string, Body string, options OptionsR
 	if options.Proxy != "" {
 		logger.Debug("使用代理 ", options.Proxy)
 	}
-	fmt.Println(1)
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
 	defer cancel()
-	fmt.Println(2)
 	req, err := retryablehttp.NewRequestWithContext(ctx, Method, UrlStr, Body)
 	if err != nil {
 		return nil, err
 	}
 	configureHeaders(req, options)
-	fmt.Println(3)
 	client := configureClient(options)
-	fmt.Println(4)
 	resp, err := client.Do(req)
-	fmt.Println(5)
 	if err != nil {
 		return nil, err
 	}
@@ -144,18 +140,36 @@ func configureClient(options OptionsRequest) *retryablehttp.Client {
 		}
 		return nil
 	}
-	parsedURL, err := url.Parse(options.Proxy)
-	if err != nil {
-		logger.Error("代理地址解析失败:", err)
-		return nil
+
+	// 只有当代理地址不为空时才进行代理设置
+	if options.Proxy != "" {
+		parsedURL, err := url.Parse(options.Proxy)
+		if err != nil {
+			logger.Error("代理地址解析失败:", err)
+			// 不返回nil，继续使用默认client
+		} else {
+			dialer, err := proxyclient.NewClient(parsedURL)
+			if err != nil {
+				logger.Error("创建代理客户端失败:", err)
+				// 不返回nil，继续使用默认client
+			} else {
+				client.HTTPClient.Transport = &http.Transport{
+					DialContext: dialer.DialContext,
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: options.InsecureSkipVerify,
+					},
+				}
+			}
+		}
+	} else {
+		// 没有代理时使用默认Transport
+		client.HTTPClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: options.InsecureSkipVerify,
+			},
+		}
 	}
-	dialer, _ := proxyclient.NewClient(parsedURL)
-	client.HTTPClient.Transport = &http.Transport{
-		DialContext: dialer.DialContext,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: options.InsecureSkipVerify,
-		},
-	}
+
 	client.HTTPClient.Timeout = options.Timeout
 	return client
 }
@@ -225,7 +239,7 @@ func CheckProtocol(host string) (string, error) {
 	}
 
 	if strings.HasPrefix(host, HttpPrefix) || strings.HasPrefix(host, HttpsPrefix) {
-		return checkAndReturnProtocol(host)
+		return host, nil
 	}
 
 	u, err := url.Parse(HttpPrefix + host)
@@ -245,6 +259,7 @@ func CheckProtocol(host string) (string, error) {
 		return checkAndReturnProtocol(HttpPrefix + host)
 	}
 }
+
 func checkAndReturnProtocol(url string) (string, error) {
 	body, _, err := simpleRetryHttpGet(url)
 	if err != nil {

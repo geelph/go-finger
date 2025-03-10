@@ -9,10 +9,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/fatih/color"
+	"gxx/utils"
 	"gxx/utils/logger"
 	"os"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 func Run() {
@@ -24,6 +26,6 @@ func Run() {
 		os.Exit(0)
 	}
 	fmt.Println("cmd: ", options)
-
+	utils.NewFingerRunner(options)
 	time.Sleep(time.Second * 2)
 }

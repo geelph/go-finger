@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"github.com/projectdiscovery/rawhttp"
 	"gxx/utils/common"
-	"gxx/utils/pkg/proto"
+	"gxx/utils/proto"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"

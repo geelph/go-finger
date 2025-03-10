@@ -22,7 +22,7 @@ rules:
   r1:
     request:
       method: GET
-      path: /
+      path: /phpinfo.php
     expression: response.body.bcontains(b'123') || response.icon_hash == "1236214049"
 
-expression: r0() && r1()
+expression: r0() && r1() 

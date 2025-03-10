@@ -11,17 +11,17 @@ import (
 	"fmt"
 	"github.com/google/cel-go/checker/decls"
 	"gopkg.in/yaml.v2"
+	cel2 "gxx/utils/cel"
 	"gxx/utils/common"
 	"gxx/utils/config"
-	cels "gxx/utils/pkg/cel"
-	"gxx/utils/pkg/proto"
+	"gxx/utils/proto"
 	"net/url"
 	"strings"
 )
 
 type Checker struct {
 	VariableMap map[string]any
-	CustomLib   *cels.CustomLib
+	CustomLib   *cel2.CustomLib
 }
 
 type ListItem struct {
@@ -31,7 +31,7 @@ type ListItem struct {
 type ListMap []ListItem
 
 // IsFuzzSet 解析Set中的定义变量
-func IsFuzzSet(args yaml.MapSlice, variableMap map[string]any, customLib *cels.CustomLib) {
+func IsFuzzSet(args yaml.MapSlice, variableMap map[string]any, customLib *cel2.CustomLib) {
 	for _, arg := range args {
 		key := arg.Key.(string)
 		value := arg.Value.(string)
@@ -63,7 +63,7 @@ func IsFuzzSet(args yaml.MapSlice, variableMap map[string]any, customLib *cels.C
 			customLib.UpdateCompileOption(key, decls.Int)
 		case map[string]string:
 			variableMap[key] = value
-			customLib.UpdateCompileOption(key, cels.StrStrMapType)
+			customLib.UpdateCompileOption(key, cel2.StrStrMapType)
 		default:
 			variableMap[key] = fmt.Sprintf("%v", out)
 			customLib.UpdateCompileOption(key, decls.String)

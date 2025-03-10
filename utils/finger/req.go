@@ -10,8 +10,8 @@ package finger
 import (
 	"fmt"
 	"gxx/utils/common"
-	"gxx/utils/pkg/proto"
-	"gxx/utils/pkg/request"
+	"gxx/utils/proto"
+	"gxx/utils/request"
 	"net/http"
 	"strings"
 )
@@ -71,7 +71,7 @@ func buildProtoRequest(resp *http.Response, method, body, path string) *proto.Re
 }
 
 // buildProtoResponse 构造proto.Response结构体
-func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64) *proto.Response {
+func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64, proxy string) *proto.Response {
 	headers := make(map[string]string)
 	rawHeaderBuilder := strings.Builder{}
 	for k := range resp.Header {
@@ -83,9 +83,9 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64)
 	}
 	// 获取icon url
 	iconUrl := GetIconURL(resp.Request.URL.String(), utf8RespBody)
-	// 计算icon hash
-	iconHash := NewGetIconHash(iconUrl).Run()
-
+	// 计算icon hash，传入代理参数
+	iconHash := NewGetIconHash(iconUrl, proxy).Run()
+	fmt.Println("icon hash:", iconHash)
 	return &proto.Response{
 		Status:      int32(resp.StatusCode),
 		Url:         request.Url2ProtoUrl(resp.Request.URL),

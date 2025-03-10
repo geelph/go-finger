@@ -8,7 +8,7 @@
 package request
 
 import (
-	"gxx/utils/pkg/proto"
+	"gxx/utils/proto"
 )
 
 func RawParse(nc *Client, data []byte, res []byte, variableMap map[string]any) error {

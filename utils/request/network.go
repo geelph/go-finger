@@ -2,7 +2,7 @@
   - Package request
     @Author: zhizhuo
     @IDE：GoLand
-    @File: tcp_udp.go
+    @File: network.go
     @Date: 2025/1/8 下午2:39*
 */
 package request
@@ -11,8 +11,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"golang.org/x/net/proxy"
 	"time"
+
+	"golang.org/x/net/proxy"
 
 	"net"
 	"net/url"
