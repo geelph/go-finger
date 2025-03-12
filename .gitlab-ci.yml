@@ -11,9 +11,12 @@ cache:
     - go/pkg/mod/
 
 before_script:
-  - sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
-  - sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
-  - apt-get update -qq
+  - echo "重建阿里源配置..."
+  # 删除旧配置
+  - rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*
+  # 写入阿里源（假设是 Debian bookworm）
+  - echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free non-free-firmware contrib" > /etc/apt/sources.list
+  - echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
   - apt-get install -y -qq upx zip
   - go version  # 验证 Go 版本
 
