@@ -47,7 +47,7 @@ build() {
             exit 1
     esac
 
-    OUTPUT_NAME="${APP_NAME}_${VERSION}_${PLATFORM}_${ARCH}"
+    OUTPUT_NAME="${APP_NAME}_${PLATFORM}_${ARCH}_${VERSION}"
 
     echo "正在为 ${PLATFORM}/${ARCH} 构建..."
 
