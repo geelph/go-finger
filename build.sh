@@ -64,13 +64,17 @@ build() {
         exit 1
     fi
 
-    # 使用 UPX 压缩可执行文件（如果安装了 upx），并且不是 Windows ARM64。
+    # 使用 UPX 压缩可执行文件（如果安装了 upx），并且不是 Windows ARM64或macOS。
     if command -v upx &> /dev/null; then
       if [ "$GOOS" != "windows" ] || [ "$GOARCH" != "arm64" ]; then
-          echo "正在使用 UPX 压缩 ${OUTPUT_FILE}..."
-          if ! upx $OUTPUT_FILE; then
-              echo "${PLATFORM}/${ARCH} 的 UPX 压缩失败。"
-              exit 1
+          if [ "$GOOS" != "darwin" ]; then
+              echo "正在使用 UPX 压缩 ${OUTPUT_FILE}..."
+              if ! upx $OUTPUT_FILE; then
+                  echo "${PLATFORM}/${ARCH} 的 UPX 压缩失败。"
+                  exit 1
+              fi
+          else
+              echo "跳过对 macOS 的 UPX 压缩。"
           fi
       else
           echo "跳过对 Windows ARM64 的 UPX 压缩。"
@@ -81,7 +85,7 @@ build() {
 
 fi
 
-# 压缩成 zip 文件，并删除可执行文件，保留 zip 文件
+# 压缩成 zip 文件，并删除可执行文件，保留 zip 文件。
 ZIP_FILE="$BUILD_DIR/$OUTPUT_NAME.zip"
 
 if ! zip -j "$ZIP_FILE" "$OUTPUT_FILE"; then
@@ -94,17 +98,17 @@ rm "$OUTPUT_FILE"
 echo "${PLATFORM}/${ARCH} 的构建和打包完成：${ZIP_FILE}"
 }
 
-# 构建 Windows 各版本
-build windows amd64 # x64 架构
-build windows 386   # x86 架构（即 amd32）
-build windows arm64 # ARM64 架构
+# 构建 Windows 各版本。
+build windows amd64 # x64 架构。
+build windows 386   # x86 架构（即 amd32）。
+build windows arm64 # ARM64 架构。
 
-# 构建 macOS ARM64版本（默认是 arm64，如果需要 amd64，请调整）
+# 构建 macOS ARM64版本（默认是 arm64，如果需要 amd64，请调整）。
 build darwin arm64
 
-# 构建 Linux 各版本
-build linux amd64   # x64 架构
-build linux 386     # x86 架构（即 amd32）
+# 构建 Linux 各版本。
+build linux amd64   # x64 架构。
+build linux 386     # x86 架构（即 amd32）。
 
 echo "所有平台的构建和打包已完成，文件保存在 $BUILD_DIR 目录下。"
 
