@@ -24,6 +24,11 @@ before_script:
   - apt-get install -y -qq upx zip
   - go env -w GOPROXY=https://goproxy.cn,direct
   - go env GOPROXY
+  - curl --silent --location --output /usr/local/bin/release-cli https://gitlab.com/gitlab-org/release-cli/-/releases/v0.11.0/downloads/release-cli-linux-amd64
+  - chmod +x /usr/local/bin/release-cli
+  - release-cli --version
+
+
 
 
 build:
