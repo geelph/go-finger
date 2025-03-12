@@ -1,6 +1,6 @@
 stages:
-  - test
   - build
+  - release
 
 variables:
   GO_VERSION: "1.23"  # 根据你的 Go 版本需求调整
@@ -26,12 +26,6 @@ before_script:
   - go env GOPROXY
 
 
-test:
-  stage: test
-  image: golang:$GO_VERSION
-  script:
-    - echo "test"  # 运行所有测试
-
 build:
   stage: build
   image: golang:$GO_VERSION
@@ -43,4 +37,16 @@ build:
     paths:
       - $BUILD_DIR/
     expire_in: 1 week  # 制品保留时间
+
+release:
+  stage: release
+  image: golang:$GO_VERSION
+  script:
+    - go mod tidy
+    - chmod +x build.sh
+    - ./build.sh
+  release:
+    tag_name: "1.0.0"
+    name: "Release 1.0.0"
+    description: "1.0.0版本release build测试"
 
