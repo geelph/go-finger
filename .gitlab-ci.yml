@@ -3,6 +3,7 @@ stages:
   - release
 
 variables:
+  VERSION_TAG: "1.0.0"
   GO_VERSION: "1.23"  # 根据你的 Go 版本需求调整
   BUILD_DIR: "build"
 
@@ -24,11 +25,6 @@ before_script:
   - apt-get install -y -qq upx zip
   - go env -w GOPROXY=https://goproxy.cn,direct
   - go env GOPROXY
-  - curl --silent --location --output /usr/local/bin/release-cli https://gitlab.com/gitlab-org/release-cli/-/releases/v0.11.0/downloads/release-cli-linux-amd64
-  - chmod +x /usr/local/bin/release-cli
-  - release-cli --version
-
-
 
 
 build:
@@ -45,13 +41,11 @@ build:
 
 release:
   stage: release
-  image: golang:$GO_VERSION
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
-    - go mod tidy
-    - chmod +x build.sh
-    - ./build.sh
+    - echo "Creating release"
   release:
-    tag_name: "1.0.0"
-    name: "Release 1.0.0"
-    description: "1.0.0版本release build测试"
+    tag_name: $VERSION_TAG
+    name: "Release $VERSION_TAG"
+    description: "$VERSION_TAG版本release build测试"
 
