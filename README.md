@@ -91,6 +91,11 @@ chmod +x build.sh
 ./build.sh
 
 ```
+使用goreleaser编译
+
+```shell
+goreleaser build  --snapshot --clean --snapshot
+```
 
 ## 使用
 
