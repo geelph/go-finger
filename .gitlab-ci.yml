@@ -11,7 +11,10 @@ cache:
     - go/pkg/mod/
 
 before_script:
-  - apt-get update -qq && apt-get install -y -qq upx zip  # 安装 UPX 和 zip
+  - sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+  - sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+  - apt-get update -qq
+  - apt-get install -y -qq upx zip
   - go version  # 验证 Go 版本
 
 test:
