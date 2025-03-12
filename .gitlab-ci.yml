@@ -22,7 +22,9 @@ before_script:
   - echo "deb http://mirrors.aliyun.com/debian-security bullseye-security main contrib non-free" >> /etc/apt/sources.list 
   - apt-get update
   - apt-get install -y -qq upx zip
-  - go version  # 验证 Go 版本
+  - go env -w GOPROXY=https://goproxy.cn,direct
+  - go env GOPROXY
+
 
 test:
   stage: test
@@ -34,6 +36,7 @@ build:
   stage: build
   image: golang:$GO_VERSION
   script:
+    - go mod tidy
     - chmod +x build.sh
     - ./build.sh
   artifacts:
