@@ -3,7 +3,7 @@ stages:
   - build
 
 variables:
-  GO_VERSION: "1.21"  # 根据你的 Go 版本需求调整
+  GO_VERSION: "1.23"  # 根据你的 Go 版本需求调整
   BUILD_DIR: "build"
 
 # 缓存 Go 模块以提高构建速度
