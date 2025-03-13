@@ -46,8 +46,10 @@ release:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
     - echo "Creating release"
+  dependencies:
+    - build 
   release:
     tag_name: $VERSION_TAG
     name: "Release $VERSION_TAG"
-    description: "$VERSION_TAG版本release build测试"
+    description: "$VERSION_TAG版本release"
 
