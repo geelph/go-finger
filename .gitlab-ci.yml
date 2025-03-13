@@ -18,7 +18,7 @@ before_script:
 
 build:
   stage: build
-  image: go1.23.0_build:latest
+  image: 622cd93839b7
   script:
     - go mod tidy
     - chmod +x build.sh
