@@ -6,6 +6,8 @@ variables:
   VERSION_TAG: "1.0.0"
   GO_VERSION: "1.23"  # 根据你的 Go 版本需求调整
   BUILD_DIR: "build"
+  CI_SERVER_URL: "http://iks.smile-space.com:8090/"
+
 
 # 缓存 Go 模块以提高构建速度
 cache:
