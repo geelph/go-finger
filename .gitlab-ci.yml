@@ -4,6 +4,7 @@ stages:
 
 variables:
   VERSION_TAG: "1.0.0"
+  GO_VERSION: "1.23"  # 根据你的 Go 版本需求调整
   BUILD_DIR: "build"
 
 # 缓存 Go 模块以提高构建速度
@@ -12,14 +13,24 @@ cache:
     - go/pkg/mod/
 
 before_script:
-  - echo "重建阿里源配置..."
-  
+  - echo "Runner....."
 
 
 build:
   stage: build
-  image: 622cd93839b7
+  image: golang:$GO_VERSION
   script:
+    - echo "重建阿里源配置..."
+    - rm -f /etc/apt/sources.list
+    # 写入阿里源（假设是 Debian bookworm）
+    - echo "deb http://mirrors.aliyun.com/debian/ bullseye main contrib non-free" > /etc/apt/sources.list
+    - echo "deb http://mirrors.aliyun.com/debian/ bullseye-updates main contrib non-free" >> /etc/apt/sources.list
+    - echo "deb http://mirrors.aliyun.com/debian/ bullseye-backports main contrib non-free" >> /etc/apt/sources.list
+    - echo "deb http://mirrors.aliyun.com/debian-security bullseye-security main contrib non-free" >> /etc/apt/sources.list 
+    - apt-get update
+    - apt-get install -y -qq upx zip
+    - go env -w GOPROXY=https://goproxy.cn,direct
+    - go env GOPROXY
     - go mod tidy
     - chmod +x build.sh
     - ./build.sh
