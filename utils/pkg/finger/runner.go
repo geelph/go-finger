@@ -10,6 +10,7 @@ package finger
 import (
 	"fmt"
 	"gxx/utils/common"
+	"gxx/utils/logger"
 	request2 "gxx/utils/request"
 	"io"
 	"net/http/httptrace"
@@ -93,14 +94,13 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			if err != nil {
 				fmt.Println("tcp receive error:", err.Error())
 			}
-			nc.Close()
+			_ = nc.Close()
 			err = request2.RawParse(nc, []byte(data), res, variableMap)
 			if err != nil {
 				fmt.Println("tcp or udp parse error:", err.Error())
 			}
 			return variableMap, nil
 		case common.UDP_Type:
-			fmt.Println("执行udp请求，当前模块未完成")
 			rule.Request.Host = SetVariableMap(rule.Request.Host, variableMap)
 			info, err := common.ParseAddress(rule.Request.Host)
 			if err != nil {
@@ -135,7 +135,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			if err != nil {
 				fmt.Println("udp receive error:", err.Error())
 			}
-			nc.Close()
+			_ = nc.Close()
 			err = request2.RawParse(nc, []byte(data), res, variableMap)
 			if err != nil {
 				fmt.Println("udp or udp parse error:", err.Error())
@@ -166,7 +166,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 		}
 	}
 
-	fmt.Println("请求URL：", NewUrlStr)
+	logger.Debug("请求URL：", NewUrlStr)
 
 	// 发送请求
 	resp, err := request2.SendRequestHttp(req.Method, NewUrlStr, rule.Request.Body, options)
@@ -174,7 +174,9 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 		fmt.Println("发送请求出错，错误信息：", err)
 		return variableMap, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	// 处理请求的raw
 	protoReq := buildProtoRequest(resp, rule.Request.Method, rule.Request.Body, rule.Request.Path)

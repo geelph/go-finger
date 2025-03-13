@@ -1,4 +1,4 @@
-id: CVE-2001-1473
+id: CVE-2001-1473-tcp
 
 info:
   name: Deprecated SSHv1 Protocol Detection
@@ -27,5 +27,5 @@ rules:
       type: tcp
       host: "{{host}}:80"
       data: "\n"
-    expression: response.raw.bcontains(b'SSH-')
+    expression: response.raw.bcontains(b'HTTP')
 expression: r0() || r1() 

@@ -1,4 +1,4 @@
-id: CVE-2001-1473
+id: CVE-2001-1473-udp
 
 info:
   name: Deprecated SSHv1 Protocol Detection
@@ -25,7 +25,7 @@ rules:
   r1:
     request:
       type: udp
-      host: "{{host}}:22"
+      host: "{{host}}:53"
       data: "\n"
     expression: response.raw.bcontains(b'SSH-')
 expression: r0() || r1() 

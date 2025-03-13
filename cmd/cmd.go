@@ -8,7 +8,6 @@
 package cmd
 
 import (
-	"fmt"
 	"gxx/utils"
 	"gxx/utils/logger"
 	"os"
@@ -25,7 +24,6 @@ func Run() {
 		logger.Error(err.Error())
 		os.Exit(0)
 	}
-	fmt.Println("cmd: ", options)
 	if options.Debug {
 		logger.InitLogger("debug", 5, 1)
 	}

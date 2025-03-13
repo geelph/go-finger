@@ -24,7 +24,7 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 		flagSet.StringVarP(&options.TargetsFile, "file", "f", "", "要扫描的目标URL/主机列表（每行一个）"),
 	)
 	flagSet.CreateGroup("output", "输出",
-		flagSet.StringVarP(&options.Output, "output", "o", "", "要使用的http/socks5代理列表（逗号分隔或文件输入）"),
+		flagSet.StringVarP(&options.Output, "output", "o", "", "输出文件类型支持txt/csv"),
 	)
 	flagSet.CreateGroup("debug", "调试",
 		flagSet.StringVar(&options.Proxy, "proxy", "", "要使用的http/socks5代理列表（逗号分隔或文件输入）"),

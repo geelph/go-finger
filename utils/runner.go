@@ -100,20 +100,19 @@ func NewFingerRunner(options *types.CmdOptions) {
 			return
 		}
 		fmt.Println(tempReqData)
+
+		// 发送第一个请求，获取基础响应数据
+		var baseResponseMap map[string]any
+		var firstRequestSent = false
+
+		// 创建规则结果映射
+		ruleResults := make(map[string]bool)
 		SetiableMap["request"] = tempReqData
 
 		// 处理yaml中set
 		if len(fg.Set) > 0 {
 			finger.IsFuzzSet(fg.Set, SetiableMap, customLib)
 		}
-
-		// 发送第一个请求，获取基础响应数据
-		var baseResponseMap map[string]any
-		var firstRequestSent bool = false
-
-		// 创建规则结果映射
-		ruleResults := make(map[string]bool)
-
 		for _, rule := range fg.Rules {
 			// 检查是否需要发送新请求
 			needNewRequest := true
@@ -131,15 +130,16 @@ func NewFingerRunner(options *types.CmdOptions) {
 			// 如果需要发送新请求
 			if needNewRequest {
 				fmt.Printf("规则 %s 发送新请求: %s\n", rule.Key, rule.Value.Request.Path)
-				var err error
-				SetiableMap, err = finger.SendRequest(target, rule.Value.Request, rule.Value, SetiableMap, proxy)
+				SetiableMaps, err := finger.SendRequest(target, rule.Value.Request, rule.Value, SetiableMap, proxy)
 				if err != nil {
 					fmt.Printf("规则 %s 请求出错：%s\n", rule.Key, err.Error())
 					ruleResults[rule.Key] = false
 					customLib.WriteRuleFunctionsROptions(rule.Key, false)
 					continue
 				}
-
+				if len(SetiableMaps) > 0 {
+					SetiableMap = SetiableMaps
+				}
 				// 如果是第一次发送请求，保存响应数据
 				if !firstRequestSent {
 					baseResponseMap = make(map[string]any)
