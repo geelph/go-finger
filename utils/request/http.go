@@ -103,7 +103,14 @@ func SendRequestHttp(Method string, UrlStr string, Body string, options OptionsR
 	if err != nil {
 		return nil, err
 	}
+	reader := io.LimitReader(resp.Body, maxDefaultBody)
+	bodyBytes, err := io.ReadAll(reader)
+	if err != nil {
+		logger.Error("读取响应体出错:", err)
+		return nil, err
+	}
 
+	logger.Debug("响应体内容:", string(bodyBytes))
 	return resp, nil
 }
 
