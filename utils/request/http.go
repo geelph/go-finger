@@ -29,7 +29,7 @@ import (
 // 全局客户端配置
 var (
 	RetryClient    *retryablehttp.Client                    // 可处理重定向的客户端
-	maxDefaultBody int64                 = 10 * 1024 * 1024 // 最大读取响应体限制（10MB）
+	maxDefaultBody int64                 = 5 * 1024 * 1024  // 最大读取响应体限制（5MB）
 	defaultTimeout                       = 10 * time.Second // 默认请求超时时间
 )
 
@@ -86,13 +86,11 @@ func NewRequestHttp(urlStr string, options OptionsRequest) (*http.Response, erro
 }
 
 // SendRequestHttp yaml poc or 指纹 yaml 构建发送http请求
-func SendRequestHttp(Method string, UrlStr string, Body string, options OptionsRequest) (*http.Response, error) {
+func SendRequestHttp(ctx context.Context, Method string, UrlStr string, Body string, options OptionsRequest) (*http.Response, error) {
 	setDefaults(&options)
 	if options.Proxy != "" {
 		logger.Debug("使用代理 ", options.Proxy)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
-	defer cancel()
 	req, err := retryablehttp.NewRequestWithContext(ctx, Method, UrlStr, Body)
 	if err != nil {
 		return nil, err
@@ -103,14 +101,7 @@ func SendRequestHttp(Method string, UrlStr string, Body string, options OptionsR
 	if err != nil {
 		return nil, err
 	}
-	reader := io.LimitReader(resp.Body, maxDefaultBody)
-	bodyBytes, err := io.ReadAll(reader)
-	if err != nil {
-		logger.Error("读取响应体出错:", err)
-		return nil, err
-	}
 
-	logger.Debug("响应体内容:", string(bodyBytes))
 	return resp, nil
 }
 

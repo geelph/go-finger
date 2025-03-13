@@ -9,6 +9,7 @@ package finger
 
 import (
 	"fmt"
+	"golang.org/x/net/context"
 	"gxx/utils/common"
 	"gxx/utils/logger"
 	request2 "gxx/utils/request"
@@ -19,16 +20,24 @@ import (
 	"time"
 )
 
+var (
+	maxDefaultBody int64 = 5 * 1024 * 1024  // 最大读取响应体限制（5MB）
+	defaultTimeout       = 10 * time.Second // 默认请求超时时间
+)
+
 // SendRequest yaml poc发送http请求
 func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[string]any, proxy string) (map[string]any, error) {
+
 	options := request2.OptionsRequest{
-		Proxy:              "",               // 初始化为空，后面设置
-		Timeout:            10 * time.Second, // 增加超时时间到10秒
-		Retries:            2,                // 增加重试次数
+		Proxy:              "",             // 初始化为空，后面设置
+		Timeout:            defaultTimeout, // 增加超时时间到10秒
+		Retries:            2,              // 增加重试次数
 		FollowRedirects:    !rule.Request.FollowRedirects,
 		InsecureSkipVerify: true, // 忽略SSL证书错误
 		CustomHeaders:      map[string]string{},
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+	defer cancel() // 在读取完响应后取消
 
 	// 设置代理地址
 	if proxy != "" {
@@ -169,7 +178,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	logger.Debug("请求URL：", NewUrlStr)
 
 	// 发送请求
-	resp, err := request2.SendRequestHttp(req.Method, NewUrlStr, rule.Request.Body, options)
+	resp, err := request2.SendRequestHttp(ctx, req.Method, NewUrlStr, rule.Request.Body, options)
 	if err != nil {
 		fmt.Println("发送请求出错，错误信息：", err)
 		return variableMap, err
@@ -183,7 +192,8 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	variableMap["request"] = protoReq
 
 	// 读取响应体
-	body, err := io.ReadAll(resp.Body)
+	reader := io.LimitReader(resp.Body, maxDefaultBody)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		fmt.Println("读取响应体出错:", err)
 		// 即使读取响应体出错，也继续处理，使用空响应体
