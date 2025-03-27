@@ -1,14 +1,14 @@
 /*
-  - Package cmd
+  - Package main
     @Author: zhizhuo
     @IDE：GoLand
-    @File: cmd.go
-    @Date: 2025/2/20 下午3:32*
+    @File: main.go
+    @Date: 2025/3/10 下午2:11*
 */
-package cmd
+package main
 
 import (
-	"gxx/utils"
+	"gxx/cmd/cli"
 	"gxx/utils/logger"
 	"os"
 	"time"
@@ -16,10 +16,10 @@ import (
 	"github.com/fatih/color"
 )
 
-func Run() {
-	color.Green(Banner)
+func main() {
+	color.Green(cli.Banner)
 	logger.InitLogger("logs", 5, 1)
-	options, err := NewCmdOptions()
+	options, err := cli.NewCmdOptions()
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(0)
@@ -27,6 +27,6 @@ func Run() {
 	if options.Debug {
 		logger.InitLogger("debug", 5, 1)
 	}
-	utils.NewFingerRunner(options)
+	cli.Run(options)
 	time.Sleep(time.Second * 2)
 }

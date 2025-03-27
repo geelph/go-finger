@@ -4,9 +4,11 @@
 ```
 gxx/
 ├── cmd/                    # 命令行应用程序入口点
-│   ├── cmd.go              # 命令行处理
-│   ├── options.go          # 命令行选项
-│   └── banner.go           # 应用程序横幅
+│   ├── main.go            # 主程序入口点
+│   ├── cli/               # 命令行处理模块
+│   │   ├── cmd.go         # 命令行处理
+│   │   ├── options.go     # 命令行选项
+│   │   └── banner.go      # 应用程序横幅
 ├── utils/                  # 工具和核心功能代码
 │   ├── config/             # 配置管理
 │   │   └── config.go
@@ -36,7 +38,6 @@ gxx/
 ├── logs/                   # 日志输出目录
 ├── go.mod                  # Go模块定义
 ├── go.sum                  # Go模块依赖校验和
-├── main.go                 # 程序入口点
 └── README.md               # 项目说明文档
 ```
 

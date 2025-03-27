@@ -5,7 +5,7 @@
     @File: banner.go
     @Date: 2025/2/20 下午3:39*
 */
-package cmd
+package cli
 
 import "fmt"
 

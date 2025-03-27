@@ -13,11 +13,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/dlclark/regexp2"
-	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/common/types"
-	"github.com/google/cel-go/common/types/ref"
-	"github.com/google/cel-go/interpreter/functions"
 	"gxx/utils/common"
 	"gxx/utils/config"
 	"gxx/utils/proto"
@@ -28,6 +23,12 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/dlclark/regexp2"
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/common/types/ref"
+	"github.com/google/cel-go/interpreter/functions"
 )
 
 var (

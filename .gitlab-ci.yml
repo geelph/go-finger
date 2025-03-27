@@ -41,15 +41,15 @@ build:
       - $BUILD_DIR/
     expire_in: 1 week  # 制品保留时间
 
-release:
-  stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  script:
-    - echo "Creating release"
-  dependencies:
-    - build 
-  release:
-    tag_name: $VERSION_TAG
-    name: "Release $VERSION_TAG"
-    description: "$VERSION_TAG版本release"
+#release:
+#  stage: release
+#  image: registry.gitlab.com/gitlab-org/release-cli:latest
+#  script:
+#    - echo "Creating release"
+#  dependencies:
+#    - build
+#  release:
+#    tag_name: $VERSION_TAG
+#    name: "Release $VERSION_TAG"
+#    description: "$VERSION_TAG版本release"
 

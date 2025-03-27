@@ -8,69 +8,67 @@
 package cel
 
 import (
+	"context"
 	"fmt"
+	"gxx/utils/logger"
+	"strings"
+	"time"
+
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
-	"golang.org/x/net/context"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"gopkg.in/yaml.v2"
-	"gxx/utils/logger"
-	"strings"
-	"time"
 )
 
-// CustomLib 自定义库结构体
+// CustomLib 自定义CEL库结构体
 type CustomLib struct {
 	envOptions     []cel.EnvOption
 	programOptions []cel.ProgramOption
 }
 
+// CompileOptions 返回环境选项
 func (c *CustomLib) CompileOptions() []cel.EnvOption {
 	return c.envOptions
 }
 
+// ProgramOptions 返回程序选项
 func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
 	return c.programOptions
 }
 
-// Evaluate 执行规则判断
-func (c *CustomLib) Evaluate(expression string, variable map[string]any) (ref.Val, error) {
+// Evaluate 执行CEL表达式并返回结果
+func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.Val, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	var (
+	type result struct {
 		val ref.Val
 		err error
-	)
-	resp := make(chan int)
-	go func() {
-		defer close(resp)
+	}
+	resultCh := make(chan result, 1)
 
+	go func() {
 		env, err := c.NewCelEnv()
 		if err != nil {
-			resp <- 9
+			resultCh <- result{nil, fmt.Errorf("创建CEL环境失败: %w", err)}
+			return
 		}
-		val, err = Eval(env, expression, variable)
-		if err != nil {
-			resp <- 9
-		}
-		resp <- 99
+
+		val, err := Eval(env, expression, variables)
+		resultCh <- result{val, err}
 	}()
 
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("eval timed out")
-	case v := <-resp:
-		if v == 99 {
-			return val, err
-		}
-		return nil, fmt.Errorf("eval error")
+		return nil, fmt.Errorf("表达式执行超时")
+	case res := <-resultCh:
+		return res.val, res.err
 	}
 }
 
-// NewCustomLib 创建新的 CustomLib 实例
+// NewCustomLib 创建新的CustomLib实例
 func NewCustomLib() *CustomLib {
 	c := &CustomLib{}
 	reg := types.NewEmptyRegistry()
@@ -79,88 +77,87 @@ func NewCustomLib() *CustomLib {
 	return c
 }
 
-// NewCelEnv 创建新的 CEL 环境
-func (c *CustomLib) NewCelEnv() (env *cel.Env, err error) {
-	env, err = cel.NewEnv(cel.Lib(c))
-	return env, err
+// NewCelEnv 创建新的CEL环境
+func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
+	return cel.NewEnv(cel.Lib(c))
 }
 
-// Eval 执行 CEL 表达式
+// Eval 执行CEL表达式
 func Eval(env *cel.Env, expression string, params map[string]any) (ref.Val, error) {
-	ast, iss := env.Compile(expression)
-	if iss.Err() != nil {
-		logger.Error(fmt.Sprintf("cel env.Compile err, %s", iss.Err().Error()))
-		return nil, iss.Err()
+	ast, issues := env.Compile(expression)
+	if issues.Err() != nil {
+		logger.Error(fmt.Sprintf("CEL编译错误: %s", issues.Err()))
+		return nil, issues.Err()
 	}
+
 	prg, err := env.Program(ast)
 	if err != nil {
-		logger.Error(fmt.Sprintf("cel env.Program err, %s", err.Error()))
+		logger.Error(fmt.Sprintf("CEL程序创建错误: %s", err))
 		return nil, err
 	}
+
 	out, _, err := prg.Eval(params)
 	if err != nil {
-		fmt.Println("cel error --> ", err.Error())
-		logger.Error(fmt.Sprintf("cel prg.Eval err, %s", err.Error()))
+		logger.Error(fmt.Sprintf("CEL执行错误: %s", err))
 		return nil, err
 	}
+
 	return out, nil
 }
 
-// WriteRuleSetOptions 写入规则集选项
+// WriteRuleSetOptions 从YAML配置中添加变量声明
 func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
 	for _, v := range args {
 		key := v.Key.(string)
 		value := v.Value
 
-		var d *exprpb.Decl
-		switch vv := value.(type) {
+		var declaration *exprpb.Decl
+		switch val := value.(type) {
 		case int64:
-			d = decls.NewVar(key, decls.Int)
+			declaration = decls.NewVar(key, decls.Int)
 		case string:
-			if strings.HasPrefix(vv, "newReverse") {
-				d = decls.NewVar(key, decls.NewObjectType("proto.Reverse"))
-			} else if strings.HasPrefix(vv, "randomInt") {
-				d = decls.NewVar(key, decls.Int)
+			if strings.HasPrefix(val, "newReverse") {
+				declaration = decls.NewVar(key, decls.NewObjectType("proto.Reverse"))
+			} else if strings.HasPrefix(val, "randomInt") {
+				declaration = decls.NewVar(key, decls.Int)
 			} else {
-				d = decls.NewVar(key, decls.String)
+				declaration = decls.NewVar(key, decls.String)
 			}
 		case map[string]string:
-			d = decls.NewVar(key, StrStrMapType)
+			declaration = decls.NewVar(key, StrStrMapType)
 		default:
-			d = decls.NewVar(key, decls.String)
+			declaration = decls.NewVar(key, decls.String)
 		}
-		c.envOptions = append(c.envOptions, cel.Declarations(d))
+		c.envOptions = append(c.envOptions, cel.Declarations(declaration))
 	}
 }
 
-// WriteRuleFunctionsROptions 自定函数用于处理r0 || r1规则解析
+// WriteRuleFunctionsROptions 注册用于处理r0 || r1规则解析的函数
 func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool) {
-	// 使用 cel.Function 方法注册函数及其重载
 	c.envOptions = append(c.envOptions, cel.Function(
 		funcName,
 		cel.Overload(
-			funcName+"_bool", // 重载名，通常为函数名加上类型后缀
-			[]*cel.Type{},    // 参数类型列表，这里为空表示函数无参数
-			cel.BoolType,     // 返回类型为布尔类型
+			funcName+"_bool",
+			[]*cel.Type{},
+			cel.BoolType,
 			cel.FunctionBinding(func(values ...ref.Val) ref.Val {
-				// 自定义函数的实现，这里简单地返回传入的布尔值
 				return types.Bool(returnBool)
 			}),
 		),
 	))
 }
 
-// UpdateCompileOption 更新编译选项
-func (c *CustomLib) UpdateCompileOption(k string, t *exprpb.Type) {
-	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(k, t)))
+// UpdateCompileOption 添加变量声明到环境选项
+func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
+	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(varName, varType)))
 }
 
-// Reset 重置 CustomLib 实例
+// Reset 重置CustomLib实例到初始状态
 func (c *CustomLib) Reset() {
 	*c = CustomLib{}
 }
 
-// WriteRuleIsVulOptions 写入漏洞检测选项
+// WriteRuleIsVulOptions 添加漏洞检测函数声明
 func (c *CustomLib) WriteRuleIsVulOptions(key string, isVul bool) {
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(key+"()", decls.Bool)))
 }

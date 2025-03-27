@@ -8,11 +8,12 @@
 package cel
 
 import (
+	"gxx/utils/proto"
+
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types/ref"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
-	"gxx/utils/proto"
 )
 
 // StrStrMapType 定义了一个键和值都为字符串的映射类型

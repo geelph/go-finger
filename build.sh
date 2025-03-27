@@ -59,7 +59,7 @@ build() {
     fi
 
     # 构建可执行文件，使用 -ldflags "-w -s" 参数以减小文件大小，并检查是否成功构建。
-    if ! env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-w -s" -o $OUTPUT_FILE .; then
+    if ! env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-w -s" -o $OUTPUT_FILE ./cmd/main.go; then
         echo "${PLATFORM}/${ARCH} 的构建失败。"
         exit 1
     fi
