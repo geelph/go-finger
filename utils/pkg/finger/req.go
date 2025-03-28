@@ -10,6 +10,7 @@ package finger
 import (
 	"fmt"
 	"gxx/utils/common"
+	"gxx/utils/logger"
 	"gxx/utils/proto"
 	"gxx/utils/request"
 	"net/http"
@@ -85,7 +86,7 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64,
 	iconUrl := GetIconURL(resp.Request.URL.String(), utf8RespBody)
 	// 计算icon hash，传入代理参数
 	iconHash := NewGetIconHash(iconUrl, proxy).Run()
-	fmt.Println("icon hash:", iconHash)
+	logger.Debug("icon hash：", iconHash)
 	return &proto.Response{
 		Status:      int32(resp.StatusCode),
 		Url:         request.Url2ProtoUrl(resp.Request.URL),

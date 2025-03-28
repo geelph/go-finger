@@ -20,11 +20,13 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 	options := &types.CmdOptions{}
 	flagSet := goflags.NewFlagSet()
 	flagSet.CreateGroup("input", "目标",
-		flagSet.StringSliceVarP(&options.Target, "target", "t", nil, "要扫描的目标URL/主机", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.Target, "url", "u", nil, "要扫描的目标URL/主机", goflags.NormalizedStringSliceOptions),
 		flagSet.StringVarP(&options.TargetsFile, "file", "f", "", "要扫描的目标URL/主机列表（每行一个）"),
+		flagSet.IntVarP(&options.Threads, "threads", "t", 10, "并发线程数"),
 	)
 	flagSet.CreateGroup("output", "输出",
-		flagSet.StringVarP(&options.Output, "output", "o", "", "输出文件类型支持txt/csv"),
+		flagSet.StringVarP(&options.Output, "output", "o", "", "输出文件路径（支持txt/csv格式）"),
+		flagSet.StringVarP(&options.OutputFormat, "format", "fmt", "txt", "输出文件格式（支持txt/csv）"),
 	)
 	flagSet.CreateGroup("debug", "调试",
 		flagSet.StringVar(&options.Proxy, "proxy", "", "要使用的http/socks5代理列表（逗号分隔或文件输入）"),
@@ -47,9 +49,25 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 
 // verifyOptions 验证命令行选项
 func verifyOptions(opt *types.CmdOptions) error {
-	fmt.Println("命令行选项：", opt)
-	if len(opt.Target) == 0 && len(opt.TargetsFile) == 0 {
-		return fmt.Errorf("必须设置 `-target` 或 `-file`")
+	// 使用反射自动序列化命令行选项用于调试
+	//optionsStr := fmt.Sprintf("%+v", *opt)
+	//fmt.Println("命令行选项：", optionsStr)
+
+	// 验证目标输入
+	if len(opt.Target) == 0 && opt.TargetsFile == "" {
+		return fmt.Errorf("必须设置 `-url` 或 `-file` 参数指定扫描目标")
 	}
+
+	// 验证输出格式
+	if opt.Output != "" && opt.OutputFormat != "txt" && opt.OutputFormat != "csv" {
+		return fmt.Errorf("输出格式只支持 txt 或 csv")
+	}
+
+	// 验证线程数
+	if opt.Threads <= 0 {
+		logger.Warn("线程数无效，将使用默认值 10")
+		opt.Threads = 10
+	}
+
 	return nil
 }

@@ -9,6 +9,7 @@ package finger
 
 import (
 	"fmt"
+	"gxx/utils/logger"
 	"io"
 	"net/http"
 	"net/url"
@@ -332,7 +333,7 @@ func GetIconURL(pageURL string, html string) string {
 					faviconURL = baseURL + strings.TrimPrefix(dir, "/") + faviconPath
 				}
 			}
-			fmt.Println("页面提取到icon url", faviconURL)
+			logger.Debug("页面提取到icon url", faviconURL)
 		}
 	}
 

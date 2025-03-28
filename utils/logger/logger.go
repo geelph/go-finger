@@ -8,14 +8,15 @@
 package logger
 
 import (
-	"github.com/mgutz/ansi"
-	"github.com/natefinch/lumberjack"
-	"github.com/sirupsen/logrus"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mgutz/ansi"
+	"github.com/natefinch/lumberjack"
+	"github.com/sirupsen/logrus"
 )
 
 // CustomFormatter 自定义的日志格式化器
@@ -77,11 +78,18 @@ func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 type Logger struct {
 	terminalLogger *logrus.Logger
 	fileLogger     *logrus.Logger
+	logLevel       logrus.Level
 }
 
 var (
 	once     sync.Once
 	instance *Logger
+	// 默认日志级别
+	defaultLogger = &Logger{
+		terminalLogger: logrus.New(),
+		fileLogger:     logrus.New(),
+		logLevel:       logrus.InfoLevel,
+	}
 )
 
 func InitLogger(logDir string, maxFiles int, logLevel int) {
@@ -100,6 +108,13 @@ func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
 	plainFormatter := &PlainFormatter{CustomFormatter: *terminalFormatter}
 	fileLogger.SetFormatter(plainFormatter)
 
+	// 确保日志目录存在
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			terminalLogger.Errorf("创建日志目录失败: %v", err)
+		}
+	}
+
 	logFile := &lumberjack.Logger{
 		Filename:   logDir + "/" + time.Now().Format("2006-01-02") + ".log",
 		MaxBackups: maxFiles,
@@ -109,84 +124,112 @@ func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
 	}
 	fileLogger.SetOutput(logFile)
 
+	// 设置日志级别
+	var level logrus.Level
 	switch logLevel {
 	case 1:
-		terminalLogger.SetLevel(logrus.InfoLevel)
-		fileLogger.SetLevel(logrus.InfoLevel)
+		level = logrus.InfoLevel
 	case 2:
-		terminalLogger.SetLevel(logrus.ErrorLevel)
-		fileLogger.SetLevel(logrus.ErrorLevel)
+		level = logrus.ErrorLevel
 	case 3:
-		terminalLogger.SetLevel(logrus.WarnLevel)
-		fileLogger.SetLevel(logrus.WarnLevel)
+		level = logrus.WarnLevel
 	case 4:
-		terminalLogger.SetLevel(logrus.DebugLevel)
-		fileLogger.SetLevel(logrus.DebugLevel)
+		level = logrus.DebugLevel
 	case 5:
-		terminalLogger.SetLevel(logrus.TraceLevel)
-		fileLogger.SetLevel(logrus.TraceLevel)
+		level = logrus.TraceLevel
 	default:
-		terminalLogger.SetLevel(logrus.InfoLevel)
-		fileLogger.SetLevel(logrus.InfoLevel)
+		level = logrus.InfoLevel
+	}
+
+	// 确保日志级别正确设置
+	terminalLogger.SetLevel(level)
+	fileLogger.SetLevel(level)
+
+	// 验证日志级别是否正确设置
+	if logLevel == 4 || logLevel == 5 {
+		terminalLogger.Info("日志级别设置为:", level.String())
 	}
 
 	return &Logger{
 		terminalLogger: terminalLogger,
 		fileLogger:     fileLogger,
+		logLevel:       level,
 	}
 }
 
 func Info(args ...interface{}) {
 	if instance != nil {
 		instance.Info(args...)
+	} else {
+		defaultLogger.Info(args...)
 	}
 }
 
 func Error(args ...interface{}) {
 	if instance != nil {
 		instance.Error(args...)
+	} else {
+		defaultLogger.Error(args...)
 	}
 }
 
 func Warn(args ...interface{}) {
 	if instance != nil {
 		instance.Warn(args...)
+	} else {
+		defaultLogger.Warn(args...)
 	}
 }
 
 func Debug(args ...interface{}) {
 	if instance != nil {
 		instance.Debug(args...)
+	} else {
+		defaultLogger.Debug(args...)
 	}
 }
 
 func Success(args ...interface{}) {
 	if instance != nil {
 		instance.Success(args...)
+	} else {
+		defaultLogger.Success(args...)
 	}
 }
 
 func (l *Logger) Info(args ...interface{}) {
-	l.terminalLogger.Info(args...)
-	l.fileLogger.Info(args...)
+	if l.logLevel >= logrus.InfoLevel {
+		l.terminalLogger.Info(args...)
+		l.fileLogger.Info(args...)
+	}
 }
 
 func (l *Logger) Error(args ...interface{}) {
-	l.terminalLogger.Error(args...)
-	l.fileLogger.Error(args...)
+	if l.logLevel >= logrus.ErrorLevel {
+		l.terminalLogger.Error(args...)
+		l.fileLogger.Error(args...)
+	}
 }
 
 func (l *Logger) Warn(args ...interface{}) {
-	l.terminalLogger.Warn(args...)
-	l.fileLogger.Warn(args...)
+	if l.logLevel >= logrus.WarnLevel {
+		l.terminalLogger.Warn(args...)
+		l.fileLogger.Warn(args...)
+	}
 }
 
 func (l *Logger) Debug(args ...interface{}) {
-	l.terminalLogger.Debug(args...)
-	l.fileLogger.Debug(args...)
+	// 确保Debug级别的日志能够正确输出
+	// 注意：logrus.DebugLevel的值比logrus.InfoLevel小
+	if l.logLevel <= logrus.DebugLevel {
+		l.terminalLogger.Debug(args...)
+		l.fileLogger.Debug(args...)
+	}
 }
 
 func (l *Logger) Success(args ...interface{}) {
-	l.terminalLogger.WithField("type", "success").Info(args...)
-	l.fileLogger.WithField("type", "success").Info(args...)
+	if l.logLevel >= logrus.InfoLevel {
+		l.terminalLogger.WithField("type", "success").Info(args...)
+		l.fileLogger.WithField("type", "success").Info(args...)
+	}
 }

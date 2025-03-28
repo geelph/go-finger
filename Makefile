@@ -22,13 +22,13 @@ build-embed:
 release:
 	@echo "构建发布包（不嵌入指纹库）..."
 	@chmod +x build.sh
-	@./build.sh
+	@./build.sh --all
 
 # 使用build.sh脚本构建发布包（嵌入指纹库）
 release-embed:
 	@echo "构建发布包（嵌入指纹库）..."
 	@chmod +x build.sh
-	@./build.sh --embed
+	@./build.sh --embed --all
 
 # 清理构建产物
 clean:

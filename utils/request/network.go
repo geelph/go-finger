@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"golang.org/x/net/proxy"
-
 	"net"
 	"net/url"
 )

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"gxx/utils/logger"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -26,15 +27,20 @@ import (
 type CustomLib struct {
 	envOptions     []cel.EnvOption
 	programOptions []cel.ProgramOption
+	mu             sync.Mutex
 }
 
 // CompileOptions 返回环境选项
 func (c *CustomLib) CompileOptions() []cel.EnvOption {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.envOptions
 }
 
 // ProgramOptions 返回程序选项
 func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.programOptions
 }
 
@@ -50,7 +56,8 @@ func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.V
 	resultCh := make(chan result, 1)
 
 	go func() {
-		env, err := c.NewCelEnv()
+		// 为每个goroutine创建新的环境
+		env, err := cel.NewEnv(cel.Lib(c))
 		if err != nil {
 			resultCh <- result{nil, fmt.Errorf("创建CEL环境失败: %w", err)}
 			return
@@ -107,6 +114,9 @@ func Eval(env *cel.Env, expression string, params map[string]any) (ref.Val, erro
 
 // WriteRuleSetOptions 从YAML配置中添加变量声明
 func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	for _, v := range args {
 		key := v.Key.(string)
 		value := v.Value
@@ -134,6 +144,9 @@ func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
 
 // WriteRuleFunctionsROptions 注册用于处理r0 || r1规则解析的函数
 func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.envOptions = append(c.envOptions, cel.Function(
 		funcName,
 		cel.Overload(
@@ -149,15 +162,23 @@ func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool)
 
 // UpdateCompileOption 添加变量声明到环境选项
 func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(varName, varType)))
 }
 
 // Reset 重置CustomLib实例到初始状态
 func (c *CustomLib) Reset() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	*c = CustomLib{}
 }
 
 // WriteRuleIsVulOptions 添加漏洞检测函数声明
 func (c *CustomLib) WriteRuleIsVulOptions(key string, isVul bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(key+"()", decls.Bool)))
 }

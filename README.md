@@ -1,4 +1,63 @@
 # GXX 新一代基于yaml的指纹识别工具
+
+## 功能特点
+
+- 基于 YAML 配置的指纹识别规则
+- 支持 HTTP/HTTPS、TCP、UDP 协议
+- 支持代理配置
+- 支持批量目标扫描
+- 支持多种输出格式（TXT/CSV）
+- 支持自定义指纹规则
+- 支持调试模式
+
+## 快速开始
+
+### 安装
+
+```bash
+# 使用 go install 安装
+go install github.com/yourusername/gxx@latest
+
+# 或下载预编译版本
+# 从 releases 页面下载对应平台的二进制文件
+```
+
+### 基本使用
+
+```bash
+# 扫描单个目标
+gxx -u https://example.com
+
+# 从文件读取目标列表
+gxx -f targets.txt
+
+# 使用代理
+gxx -u https://example.com --proxy http://127.0.0.1:8080
+
+# 指定输出文件
+gxx -u https://example.com -o results.txt
+
+# 开启调试模式
+gxx -u https://example.com --debug
+```
+
+## 命令行参数
+
+### 输入选项
+- `-u, --url`: 要扫描的目标URL/主机（可指定多个）
+- `-f, --file`: 包含目标URL/主机列表的文件（每行一个）
+- `-t, --threads`: 并发线程数（默认：10）
+
+### 输出选项
+- `-o, --output`: 输出文件路径
+- `--format`: 输出文件格式（支持 txt/csv，默认：txt）
+
+### 调试选项
+- `--proxy`: HTTP/SOCKS5代理（支持逗号分隔的列表或文件输入）
+- `-p, --poc`: 测试单个YAML文件
+- `-pf, --poc-file`: 测试指定目录下的所有YAML文件
+- `--debug`: 开启调试模式
+
 ## 目录结构
 
 ```
