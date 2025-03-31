@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/chainreactors/proxyclient"
-	"github.com/projectdiscovery/retryablehttp-go"
+	"github.com/zan8in/retryablehttp"
 	"golang.org/x/net/context"
 )
 

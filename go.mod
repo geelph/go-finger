@@ -14,12 +14,12 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/projectdiscovery/goflags v0.1.72
 	github.com/projectdiscovery/rawhttp v0.1.87
-	github.com/projectdiscovery/retryablehttp-go v1.0.99
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/txthinking/socks5 v0.0.0-20230325130024-4230056ae301
 	github.com/valyala/fasthttp v1.59.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
+	github.com/zan8in/retryablehttp v0.0.0-20250328031451-21b2f964eafd
 	golang.org/x/net v0.35.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250219182151-9fdb1cabc7b2
 	google.golang.org/protobuf v1.36.5
@@ -43,6 +43,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/gaissmai/bart v0.9.5 // indirect
+	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
@@ -67,6 +68,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.79 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.94 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.99 // indirect
 	github.com/projectdiscovery/utils v0.4.10 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
@@ -88,6 +90,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	github.com/zan8in/pins v0.0.0-20230415064757-40257618b466 // indirect
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect

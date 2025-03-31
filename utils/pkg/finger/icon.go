@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"gxx/utils/logger"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"path"
@@ -20,7 +21,6 @@ import (
 
 	"github.com/chainreactors/proxyclient"
 	"github.com/spaolacci/murmur3"
-	"github.com/valyala/fasthttp"
 	_ "github.com/vmihailenco/msgpack/v5"
 )
 
@@ -92,95 +92,72 @@ func (g *GetIconHash) hashDataURL(iconURL string) int32 {
 
 // hashHTTPURL 处理 HTTP URL 并计算 hash 值
 func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
-	// 使用标准http库和proxyclient
+	iconURL = iconURL + "?time=" + fmt.Sprintf("%d%d", time.Now().Unix(), rand.New(rand.NewSource(time.Now().UnixNano())).Intn(10000))
+
+	// 创建HTTP客户端
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	// 如果有代理，使用proxyclient处理代理请求
 	if g.proxy != "" {
-		// 使用proxyclient处理代理请求
 		parsedURL, err := url.Parse(g.proxy)
 		if err != nil {
 			fmt.Println("代理地址解析失败:", err)
 			return 0
 		}
 
-		// 创建代理客户端
 		proxyClient, err := proxyclient.NewClient(parsedURL)
 		if err != nil {
 			fmt.Println("创建代理客户端失败:", err)
 			return 0
 		}
 
-		// 创建HTTP客户端
-		client := &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &http.Transport{
-				DialContext: proxyClient.DialContext,
-			},
+		client.Transport = &http.Transport{
+			DialContext: proxyClient.DialContext,
 		}
+	}
 
-		// 创建请求
-		req, err := http.NewRequest("GET", iconURL, nil)
+	// 创建请求
+	req, err := http.NewRequest("GET", iconURL, nil)
+	if err != nil {
+		fmt.Println("创建请求失败:", err)
+		return 0
+	}
+
+	// 设置请求头
+	for key, value := range g.headers {
+		req.Header.Set(key, value)
+	}
+
+	// 发送请求
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("icon获取报错，错误信息:", err)
+		return 0
+	}
+	defer resp.Body.Close()
+
+	// 读取响应体
+	var bodyBytes []byte
+	if resp.StatusCode == http.StatusOK {
+		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("创建请求失败:", err)
+			fmt.Println("读取响应体失败:", err)
 			return 0
 		}
 
-		// 设置请求头
-		for key, value := range g.headers {
-			req.Header.Set(key, value)
-		}
-
-		// 发送请求
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("icon获取报错，错误信息:", err)
-			return 0
-		}
-		defer resp.Body.Close()
-
-		// 读取响应体
-		var bodyBytes []byte
-		if resp.StatusCode == http.StatusOK {
-			bodyBytes, err = io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println("读取响应体失败:", err)
-				return 0
-			}
-
-			// 检查文件头
-			if len(bodyBytes) > 0 {
-				bodyHex := fmt.Sprintf("%x", bodyBytes[:8])
-				for _, fh := range g.fileHeader {
-					if strings.HasPrefix(bodyHex, strings.ToLower(fh)) {
-						return Mmh3Hash32(bodyBytes)
-					}
-				}
-			}
-		}
-	} else {
-		// 如果没有代理，使用fasthttp
-		req := fasthttp.AcquireRequest()
-		resp := fasthttp.AcquireResponse()
-		defer fasthttp.ReleaseRequest(req)
-		defer fasthttp.ReleaseResponse(resp)
-
-		req.SetRequestURI(iconURL)
-		for key, value := range g.headers {
-			req.Header.Set(key, value)
-		}
-
-		client := &fasthttp.Client{}
-		if err := client.DoTimeout(req, resp, 30*time.Second); err != nil {
-			fmt.Println("icon获取报错，错误信息: ", err)
-			return 0
-		}
-
-		if resp.StatusCode() == fasthttp.StatusOK && len(resp.Body()) != 0 {
+		// 检查文件头
+		if len(bodyBytes) > 0 {
+			bodyHex := fmt.Sprintf("%x", bodyBytes[:8])
 			for _, fh := range g.fileHeader {
-				if strings.HasPrefix(fmt.Sprintf("%x", resp.Body()), fh) {
-					return Mmh3Hash32(resp.Body())
+				if strings.HasPrefix(bodyHex, strings.ToLower(fh)) {
+					return Mmh3Hash32(bodyBytes)
 				}
 			}
 		}
 	}
+
 	return 0
 }
 
@@ -228,7 +205,7 @@ func (g *GetIconHash) Run() string {
 func GetIconURL(pageURL string, html string) string {
 	parsedURL, err := url.Parse(pageURL)
 	if err != nil {
-		fmt.Println("URL解析错误: ", err)
+		logger.Error(fmt.Sprintf("URL解析错误: %s", err))
 		return ""
 	}
 
@@ -284,7 +261,7 @@ func GetIconURL(pageURL string, html string) string {
 					faviconURL = baseURL + strings.TrimPrefix(dir, "/") + ic[0]
 				}
 			}
-			fmt.Println("发现新icon地址", faviconURL)
+			logger.Debug(fmt.Sprintf("发现新icon地址：%s", faviconURL))
 		} else if basePath != "" {
 			faviconPath := basePath
 			if !strings.HasSuffix(faviconPath, "/") {
@@ -294,7 +271,7 @@ func GetIconURL(pageURL string, html string) string {
 				}
 			}
 			faviconURL = baseURL + strings.TrimPrefix(strings.TrimPrefix(faviconPath, "/"), "./") + "favicon.ico"
-			fmt.Println("使用默认url+path", faviconURL)
+			logger.Debug(fmt.Sprintf("使用默认url+path：%s", faviconURL))
 		}
 	} else {
 		var linkTag string
@@ -338,15 +315,4 @@ func GetIconURL(pageURL string, html string) string {
 	}
 
 	return faviconURL
-}
-
-// urlJoin 拼接URL
-func urlJoin(baseURL string, relativePath string) string {
-	if strings.HasPrefix(relativePath, "http://") || strings.HasPrefix(relativePath, "https://") {
-		return relativePath
-	}
-	if strings.HasSuffix(baseURL, "/") {
-		return baseURL + relativePath
-	}
-	return baseURL + "/" + relativePath
 }

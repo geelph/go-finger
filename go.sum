@@ -87,6 +87,8 @@ github.com/gaissmai/bart v0.9.5/go.mod h1:KHeYECXQiBjTzQz/om2tqn3sZF1J7hw9m6z41f
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gliderlabs/ssh v0.1.1/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/go-errors/errors v1.0.1/go.mod h1:f4zRHt4oKfwPJE5k8C9vpYG+aDHdBFUsgrm6/TyX73Q=
+github.com/go-errors/errors v1.4.2 h1:J6MZopCL4uSllY1OfXM374weqZFFItUbrImctkmUxIA=
+github.com/go-errors/errors v1.4.2/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 github.com/go-gost/gosocks5 v0.3.0/go.mod h1:1G6I7HP7VFVxveGkoK8mnprnJqSqJjdcASKsdUn4Pp4=
 github.com/go-logr/logr v1.2.3/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.2.4/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
@@ -414,6 +416,10 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
+github.com/zan8in/pins v0.0.0-20230415064757-40257618b466 h1:3FGXsUq3s+y8D4XJY8xwWHsBSxuDs9bOqaSUokZ2wW0=
+github.com/zan8in/pins v0.0.0-20230415064757-40257618b466/go.mod h1:hwq0CUJ14mXaWUCNaD2WXj7aKwUJfuOP0fIt9mpy6i0=
+github.com/zan8in/retryablehttp v0.0.0-20250328031451-21b2f964eafd h1:IDBV+RWC85OqmGGrXm324EEJK0yGbU7nq6hfGx07dK8=
+github.com/zan8in/retryablehttp v0.0.0-20250328031451-21b2f964eafd/go.mod h1:KPJ+327tfi0jnoLfzQL8nbBcO/BGP+sUU1inh4GrmDA=
 github.com/zema1/rawhttp v0.2.0/go.mod h1:EYBmBgSu01yb/kLh6lgjJWa6kDV+DrSO8nbgmEzuG6E=
 github.com/zema1/suo5 v1.3.2-0.20250219115440-31983ee59a83/go.mod h1:MAuFXiTGFS3PLzZ6cTVsjdQqze4SWPfHvciBTPE6dkw=
 github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521/go.mod h1:3YZ9o3WnatTIZhuOtot4IcUfzoKVjUHqu6WALIyI0nE=

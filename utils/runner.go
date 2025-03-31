@@ -133,6 +133,7 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 		needNewRequest := rule.Value.Request.Path != "/" && rule.Value.Request.Path != "" || !firstRequestSent
 
 		if needNewRequest {
+			logger.Debug("发送指纹探测请求")
 			SetiableMaps, err := finger.SendRequest(target, rule.Value.Request, rule.Value, SetiableMap, proxy)
 			if err != nil {
 				logger.Debug(fmt.Sprintf("规则 %s 请求出错：%s", rule.Key, err.Error()))
@@ -140,6 +141,7 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 				customLib.WriteRuleFunctionsROptions(rule.Key, false)
 				continue
 			}
+			logger.Debug("请求发送完成，开始请求处理")
 			if len(SetiableMaps) > 0 {
 				SetiableMap = SetiableMaps
 			}
@@ -155,7 +157,7 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 				SetiableMap[k] = v
 			}
 		}
-
+		logger.Debug("请求完成，开始cel匹配处理")
 		result, err := customLib.Evaluate(rule.Value.Expression, SetiableMap)
 		if err != nil {
 			logger.Debug(fmt.Sprintf("规则 %s CEL解析错误：%s", rule.Key, err.Error()))
@@ -200,7 +202,6 @@ func writeResult(output, format, target string, fg *finger.Finger, finalResult b
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	fmt.Println(fmt.Sprintf("URL：%s  指纹：%s  匹配结果：%v", target, fg.Info.Name, finalResult))
 	// 格式化结果
 	var line string
 	if format == "csv" {
@@ -232,7 +233,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 	}
 
 	proxy := options.Proxy
-	logger.Debug("target:", target, "proxy:", proxy)
+	logger.Debug(fmt.Sprintf("Target: %s, Proxy: %s", target, proxy))
 
 	// 加载指纹规则
 	if err := loadFingerprints(options); err != nil {
@@ -270,6 +271,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 
 				// 如果指纹匹配成功，写入结果
 				if result {
+					fmt.Println(fmt.Sprintf("URL：%s  指纹：%s  匹配结果：%v", target, fg.Info.Name, result))
 					if err := writeResult(options.Output, options.OutputFormat, target, fg, result); err != nil {
 						resultChan <- fmt.Errorf("写入结果失败: %v", err)
 					}
