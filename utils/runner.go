@@ -14,6 +14,7 @@ import (
 	"gxx/utils/cel"
 	"gxx/utils/logger"
 	"gxx/utils/pkg/finger"
+	"gxx/utils/proto"
 	"gxx/utils/request"
 	"net/http"
 	"os"
@@ -145,6 +146,11 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 			if len(SetiableMaps) > 0 {
 				SetiableMap = SetiableMaps
 			}
+
+			// 打印请求和响应的原始数据
+			logger.Debug(fmt.Sprintf("请求RAW：\n%s", SetiableMaps["request"].(*proto.Request).Raw))
+			logger.Debug(fmt.Sprintf("响应RAW：\n%s", SetiableMaps["response"].(*proto.Response).Raw))
+
 			if !firstRequestSent {
 				baseResponseMap = make(map[string]any)
 				for k, v := range SetiableMap {

@@ -190,7 +190,6 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	// 处理请求的raw
 	protoReq := buildProtoRequest(resp, rule.Request.Method, rule.Request.Body, rule.Request.Path)
 	variableMap["request"] = protoReq
-	logger.Debug("请求RAW：\n", string(protoReq.Raw))
 
 	// 读取响应体
 	reader := io.LimitReader(resp.Body, maxDefaultBody)
