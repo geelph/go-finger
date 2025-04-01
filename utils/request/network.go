@@ -11,11 +11,15 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
-	"golang.org/x/net/proxy"
+	"github.com/chainreactors/proxyclient"
+
 	"net"
 	"net/url"
+
+	"golang.org/x/net/proxy"
 )
 
 const (
@@ -49,12 +53,40 @@ type Client struct {
 	conf    TcpOrUdpConfig
 }
 
+// parseAddress 解析地址，确保包含端口号
+func parseAddress(address string) string {
+	// 检查是否已经包含端口号
+	if _, _, err := net.SplitHostPort(address); err == nil {
+		return address
+	}
+
+	// 检查是否是 HTTPS 地址
+	if strings.HasPrefix(address, "https://") {
+		// 移除 https:// 前缀
+		address = strings.TrimPrefix(address, "https://")
+		return net.JoinHostPort(address, "443")
+	}
+
+	// 检查是否是 HTTP 地址
+	if strings.HasPrefix(address, "http://") {
+		// 移除 http:// 前缀
+		address = strings.TrimPrefix(address, "http://")
+		return net.JoinHostPort(address, "80")
+	}
+
+	// 默认使用 80 端口
+	return net.JoinHostPort(address, "80")
+}
+
 // NewClient 创建新客户端
 func NewClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 	var (
 		err  error
 		conn net.Conn
 	)
+
+	// 解析地址，确保包含端口号
+	address = parseAddress(address)
 
 	// 设置默认值
 	if conf.DialTimeout == 0 {
@@ -82,8 +114,8 @@ func NewClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid proxy URL: %w", err)
 		}
-		//dialer, err = proxyclient.NewClient(proxyURL)
-		dialer, err = proxy.FromURL(proxyURL, proxy.Direct)
+		dialer, err = proxyclient.NewClient(proxyURL)
+		//dialer, err = proxy.FromURL(proxyURL, proxy.Direct)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create proxy dialer: %w", err)
 		}
@@ -247,6 +279,7 @@ func (c *Client) readSize() int {
 // NewTcpClient 创建新的TCP客户端
 func NewTcpClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 	conf.Network = "tcp"
+	address = parseAddress(address)
 	return NewClient(address, conf)
 }
 
@@ -267,6 +300,7 @@ func (c *Client) RecvTcp() ([]byte, error) {
 // NewUdpClient 创建新的UDP客户端
 func NewUdpClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 	conf.Network = "udp"
+	address = parseAddress(address)
 	return NewClient(address, conf)
 }
 
@@ -288,6 +322,7 @@ func (c *Client) RecvUdp() ([]byte, error) {
 func NewLtsTcpClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 	conf.Network = "tcp"
 	conf.IsLts = true
+	address = parseAddress(address)
 	return NewClient(address, conf)
 }
 
@@ -303,6 +338,7 @@ func (c *Client) RecvLtsTcp() ([]byte, error) {
 func NewLtsUdpClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 	conf.Network = "udp"
 	conf.IsLts = true
+	address = parseAddress(address)
 	return NewClient(address, conf)
 }
 

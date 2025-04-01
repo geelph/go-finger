@@ -9,44 +9,46 @@ package request
 
 import (
 	"fmt"
-	"github.com/txthinking/socks5"
 	"log"
 	"testing"
 	"time"
 )
 
-func sendUDPMessage(message, target, proxyAddress string) error {
+func TestNewTcpClient(t *testing.T) {
 
-	// 创建 SOCKS5 代理客户端
-	dialer, err := socks5.NewClient(proxyAddress, "", "", 0, 0)
+	address := "4.ipw.cn"
+
+	conf := TcpOrUdpConfig{
+		Network:      "tcp",
+		MaxRetries:   3,
+		ReadSize:     2048,
+		DialTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		ProxyURL:     "http://127.0.0.1:10809",
+	}
+
+	client, err := NewTcpClient(address, conf)
 	if err != nil {
-		return fmt.Errorf("failed to create SOCKS5 client: %v", err)
+		log.Fatalf("Failed to create client: %v", err)
 	}
+	defer client.Close()
 
-	// 使用代理拨号器创建 UDP 连接
-	conn, err := dialer.Dial("udp", target)
+	message := []byte("GET / HTTP/1.1\r\nHost: 4.ipw.cn\r\nConnection: close\r\n\r\n")
+	err = client.SendTcp(message)
 	if err != nil {
-		return fmt.Errorf("failed to connect to UDP server: %v", err)
+		log.Fatalf("Failed to send data: %v", err)
 	}
-	defer conn.Close()
+	fmt.Println("Data sent successfully")
 
-	// 发送消息
-	if _, err := conn.Write([]byte(message)); err != nil {
-		return fmt.Errorf("failed to send message: %v", err)
+	response, err := client.RecvTcp()
+	if err != nil {
+		log.Fatalf("Failed to receive data: %v", err)
 	}
-
-	fmt.Println("Message sent successfully")
-	return nil
+	fmt.Printf("Received response: %s\n", string(response))
 }
-
-func TestNewClient(*testing.T) {
-	address := "193.112.194.72:38219" // 目标地址和端口
-	//proxyAddress := "socks5://127.0.0.1:10808"
-	//message := "Hello, UDP Server!"
-	//err := sendUDPMessage(message, address, proxyAddress)
-	//if err != nil {
-	//	fmt.Println("Error: ", err)
-	//}
+func TestNewUdpClient(*testing.T) {
+	address := "193.112.194.72:35469" // 目标地址和端口
 	conf := TcpOrUdpConfig{
 		Network:      "udp",
 		MaxRetries:   3,
@@ -76,24 +78,4 @@ func TestNewClient(*testing.T) {
 	}
 	fmt.Printf("Received response: %s\n", string(response))
 
-	//conn, err := net.DialTimeout("udp", address, 5*time.Second)
-	//if err != nil {
-	//	log.Fatalf("Failed to create UDP connection: %v", err)
-	//}
-	//defer conn.Close()
-	//
-	//message := []byte("Hello, UDP server!")
-	//_, err = conn.Write(message)
-	//if err != nil {
-	//	log.Fatalf("Failed to send data: %v", err)
-	//}
-	//fmt.Println("Data sent successfully")
-	//
-	//buf := make([]byte, 2048)
-	//conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	//n, err := conn.Read(buf)
-	//if err != nil {
-	//	log.Fatalf("Failed to receive data: %v", err)
-	//}
-	//fmt.Printf("Received response: %s\n", string(buf[:n]))
 }
