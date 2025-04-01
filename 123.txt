@@ -1,4 +1,0 @@
-URL: http://iks.smile-space.com:22	指纹ID: CVE-2001-1473-tcp	指纹名称: Deprecated SSHv1 Protocol Detection	匹配结果: true
-URL: http://iks.smile-space.com:22	指纹ID: CVE-2001-1473-tcp	指纹名称: Deprecated SSHv1 Protocol Detection	匹配结果: true
-URL: http://www.baidu.com	指纹ID: finger demo	指纹名称: finger demo test	匹配结果: true
-URL: http://www.baidu.com	指纹ID: finger demo	指纹名称: finger demo test	匹配结果: true

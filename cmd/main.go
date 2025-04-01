@@ -8,6 +8,7 @@
 package main
 
 import (
+	"fmt"
 	"gxx/cmd/cli"
 	"gxx/utils/logger"
 	"gxx/utils/output"
@@ -32,10 +33,14 @@ func main() {
 		logLevel = 4 // DEBUG级别
 		color.Blue("DEBUG模式已开启")
 	}
-
 	// 初始化日志系统，设置日志保存目录、最大文件数和日志级别
 	logger.InitLogger("logs", 5, logLevel)
+	// 配置输出文件啊
+	if options.Output == "" {
+		options.Output = "result_" + fmt.Sprintf("%d", time.Now().Unix()) + ".txt"
+	}
 
+	logger.Info(fmt.Sprintf("输出文件：%s", options.Output))
 	// 初始化输出文件
 	if err := output.InitOutput(options.Output, options.OutputFormat); err != nil {
 		logger.Error("初始化输出文件失败: %v", err)

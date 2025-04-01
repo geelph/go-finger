@@ -11,6 +11,7 @@ info:
 
 set:
   num: randomInt(800000000, 1000000000)
+  payload: randomLowercase(20)
 rules:
   r0:
     request:
@@ -24,5 +25,10 @@ rules:
       method: GET
       path: /phpinfo.php
     expression: response.body.bcontains(b'123') || response.icon_hash == "1236214049"
+  r2:
+    request:
+      method: GET
+      path: /{{num}}.php
+    expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
 
-expression: r0() || r1()
+expression: r0() || r1() || r2()

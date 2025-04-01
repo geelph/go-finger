@@ -9,3 +9,4 @@ gxx
 build/
 .DS_Store
 dist/
+result_*

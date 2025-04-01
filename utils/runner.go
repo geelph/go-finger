@@ -128,6 +128,10 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 	if len(fg.Set) > 0 {
 		finger.IsFuzzSet(fg.Set, SetiableMap, customLib)
 	}
+	// 处理payload
+	if len(fg.Payloads.Payloads) > 0 {
+		finger.IsFuzzSet(fg.Payloads.Payloads, SetiableMap, customLib)
+	}
 
 	// 评估规则
 	for _, rule := range fg.Rules {
@@ -174,6 +178,11 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 		}
 
 		customLib.WriteRuleFunctionsROptions(rule.Key, ruleResults[rule.Key])
+
+		// 更新output输出
+		if len(rule.Value.Output) > 0 {
+			finger.IsFuzzSet(rule.Value.Output, SetiableMap, customLib)
+		}
 	}
 
 	// 最终评估
@@ -181,7 +190,6 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 	if err != nil {
 		return false, fmt.Errorf("最终表达式解析错误：%v", err)
 	}
-
 	finalResult := result.Value().(bool)
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, finalResult))
 	return finalResult, nil
