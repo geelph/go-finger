@@ -103,13 +103,12 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 	if g.proxy != "" {
 		parsedURL, err := url.Parse(g.proxy)
 		if err != nil {
-			fmt.Println("代理地址解析失败:", err)
+			logger.Error(fmt.Sprintf("代理地址解析失败：%s", err))
 			return 0
 		}
-
 		proxyClient, err := proxyclient.NewClient(parsedURL)
 		if err != nil {
-			fmt.Println("创建代理客户端失败:", err)
+			logger.Error(fmt.Sprintf("创建代理客户端失败：%s", err))
 			return 0
 		}
 
