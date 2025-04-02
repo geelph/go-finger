@@ -10,6 +10,8 @@ package utils
 import (
 	"embed"
 	"fmt"
+	finger2 "gxx/pkg/finger"
+	"gxx/utils/common"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -17,7 +19,6 @@ import (
 
 //go:embed finger/*
 var EmbeddedFingerFS embed.FS
-
 var hasEmbeddedFingers bool
 
 func init() {
@@ -40,6 +41,28 @@ func GetFingerPath() string {
 	}
 	fmt.Println("使用文件系统中的指纹库路径")
 	return "finger/"
+}
+
+// GetFingerYaml 获取指纹yaml文件
+func GetFingerYaml() ([]*finger2.Finger, error) {
+	entries, err := EmbeddedFingerFS.ReadDir("finger")
+	if err != nil {
+		return nil, fmt.Errorf("初始化finger目录出错: %v", err)
+	}
+
+	var allFinger []*finger2.Finger
+	for _, entry := range entries {
+		if common.IsYamlFile(entry.Name()) {
+			poc, err := finger2.Load(entry.Name(), EmbeddedFingerFS)
+			if err != nil {
+				return nil, fmt.Errorf("加载文件 %s 出错: %v", entry.Name(), err)
+			}
+			if poc != nil {
+				allFinger = append(allFinger, poc)
+			}
+		}
+	}
+	return allFinger, nil
 }
 
 func ExtractEmbeddedFingers() (string, error) {

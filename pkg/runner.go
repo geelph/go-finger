@@ -5,17 +5,19 @@
     @File: runner.go
     @Date: 2025/3/10 下午2:11*
 */
-package utils
+package pkg
 
 import (
-	"embed"
 	"fmt"
+	"gxx/pkg/cel"
+	finger2 "gxx/pkg/finger"
+	"gxx/pkg/network"
 	"gxx/types"
-	"gxx/utils/cel"
+	"gxx/utils"
+	"gxx/utils/common"
 	"gxx/utils/logger"
-	"gxx/utils/pkg/finger"
+	"gxx/utils/output"
 	"gxx/utils/proto"
-	"gxx/utils/request"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,42 +25,31 @@ import (
 	"sync"
 )
 
-//go:embed finger/*
-var Fingers embed.FS
-var AllFinger []*finger.Finger
+var AllFinger []*finger2.Finger
 
 // loadFingerprints 加载指纹规则文件
 func loadFingerprints(options *types.CmdOptions) error {
+	var targetPath string
 	// 使用嵌入式指纹库
 	if options.PocFile == "" && options.PocYaml == "" {
-		entries, err := Fingers.ReadDir("finger")
+		logger.Info("使用默认指纹库")
+		fin, err := utils.GetFingerYaml()
 		if err != nil {
-			return fmt.Errorf("初始化finger目录出错: %v", err)
+			return err
 		}
-
-		for _, entry := range entries {
-			if isYamlFile(entry.Name()) {
-				if poc, err := finger.Load(entry.Name(), Fingers); err == nil && poc != nil {
-					AllFinger = append(AllFinger, poc)
-				}
-			}
-		}
-		return nil
+		AllFinger = fin
 	}
-
-	var targetPath string
 
 	if options.PocFile != "" {
 		targetPath = options.PocFile
 		logger.Info("加载yaml文件目录：", targetPath)
-
 		// 遍历目录中的所有文件
 		return filepath.Walk(targetPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil || info == nil {
 				return err
 			}
-			if !info.IsDir() && isYamlFile(path) {
-				if poc, err := finger.Read(path); err == nil && poc != nil {
+			if !info.IsDir() && common.IsYamlFile(path) {
+				if poc, err := finger2.Read(path); err == nil && poc != nil {
 					AllFinger = append(AllFinger, poc)
 				}
 			}
@@ -68,10 +59,9 @@ func loadFingerprints(options *types.CmdOptions) error {
 	} else if options.PocYaml != "" {
 		targetPath = options.PocYaml
 		logger.Info("加载yaml文件：", targetPath)
-
 		// 直接读取单个文件
-		if isYamlFile(targetPath) {
-			if poc, err := finger.Read(targetPath); err == nil && poc != nil {
+		if common.IsYamlFile(targetPath) {
+			if poc, err := finger2.Read(targetPath); err == nil && poc != nil {
 				AllFinger = append(AllFinger, poc)
 			} else if err != nil {
 				return fmt.Errorf("读取yaml文件出错: %v", err)
@@ -80,13 +70,8 @@ func loadFingerprints(options *types.CmdOptions) error {
 			return fmt.Errorf("%s 不是有效的yaml文件", targetPath)
 		}
 	}
-
+	logger.Info(fmt.Sprintf("加载指纹数量：%v个", len(AllFinger)))
 	return nil
-}
-
-// isYamlFile 判断文件是否为YAML格式
-func isYamlFile(filename string) bool {
-	return strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml")
 }
 
 // prepareRequest 准备HTTP请求
@@ -104,7 +89,7 @@ func prepareRequest(target string) (*http.Request, error) {
 }
 
 // evaluateFingerprint 评估单个指纹规则
-func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel.CustomLib) (bool, error) {
+func evaluateFingerprint(fg *finger2.Finger, target, proxy string, customLib *cel.CustomLib) (bool, error) {
 	SetiableMap := make(map[string]any)
 	logger.Debug("获取指纹ID:", fg.Id)
 
@@ -114,7 +99,7 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 		return false, err
 	}
 
-	tempReqData, err := request.ParseRequest(req)
+	tempReqData, err := network.ParseRequest(req)
 	if err != nil {
 		return false, fmt.Errorf("解析请求失败: %v", err)
 	}
@@ -126,11 +111,11 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 
 	// 处理set规则
 	if len(fg.Set) > 0 {
-		finger.IsFuzzSet(fg.Set, SetiableMap, customLib)
+		finger2.IsFuzzSet(fg.Set, SetiableMap, customLib)
 	}
 	// 处理payload
 	if len(fg.Payloads.Payloads) > 0 {
-		finger.IsFuzzSet(fg.Payloads.Payloads, SetiableMap, customLib)
+		finger2.IsFuzzSet(fg.Payloads.Payloads, SetiableMap, customLib)
 	}
 
 	// 评估规则
@@ -139,7 +124,7 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 
 		if needNewRequest {
 			logger.Debug("发送指纹探测请求")
-			SetiableMaps, err := finger.SendRequest(target, rule.Value.Request, rule.Value, SetiableMap, proxy)
+			SetiableMaps, err := finger2.SendRequest(target, rule.Value.Request, rule.Value, SetiableMap, proxy)
 			if err != nil {
 				logger.Debug(fmt.Sprintf("规则 %s 请求出错：%s", rule.Key, err.Error()))
 				ruleResults[rule.Key] = false
@@ -181,7 +166,7 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 
 		// 更新output输出
 		if len(rule.Value.Output) > 0 {
-			finger.IsFuzzSet(rule.Value.Output, SetiableMap, customLib)
+			finger2.IsFuzzSet(rule.Value.Output, SetiableMap, customLib)
 		}
 	}
 
@@ -193,43 +178,6 @@ func evaluateFingerprint(fg *finger.Finger, target, proxy string, customLib *cel
 	finalResult := result.Value().(bool)
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, finalResult))
 	return finalResult, nil
-}
-
-// writeResult 写入结果到文件
-func writeResult(output, format, target string, fg *finger.Finger, finalResult bool) error {
-	if output == "" {
-		return nil
-	}
-	// 确保输出目录存在
-	dir := filepath.Dir(output)
-	if dir != "." {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("创建输出目录失败: %v", err)
-		}
-	}
-
-	// 打开文件（追加模式）
-	file, err := os.OpenFile(output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("打开输出文件失败: %v", err)
-	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
-	// 格式化结果
-	var line string
-	if format == "csv" {
-		line = fmt.Sprintf("%s,%s,%s,%v\n", target, fg.Id, fg.Info.Name, finalResult)
-	} else {
-		line = fmt.Sprintf("URL: %s\t指纹ID: %s\t指纹名称: %s\t匹配结果: %v\n", target, fg.Id, fg.Info.Name, finalResult)
-	}
-
-	// 写入结果
-	if _, err := file.WriteString(line); err != nil {
-		return fmt.Errorf("写入结果失败: %v", err)
-	}
-
-	return nil
 }
 
 // NewFingerRunner 创建并运行指纹识别器
@@ -263,7 +211,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 	}
 
 	// 创建任务通道
-	taskChan := make(chan *finger.Finger, len(AllFinger))
+	taskChan := make(chan *finger2.Finger, len(AllFinger))
 	// 创建结果通道
 	resultChan := make(chan error, len(AllFinger))
 
@@ -286,7 +234,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 				// 如果指纹匹配成功，写入结果
 				if result {
 					fmt.Println(fmt.Sprintf("URL：%s  指纹：%s  匹配结果：%v", target, fg.Info.Name, result))
-					if err := writeResult(options.Output, options.OutputFormat, target, fg, result); err != nil {
+					if err := output.WriteResult(options.Output, options.OutputFormat, target, fg, result); err != nil {
 						resultChan <- fmt.Errorf("写入结果失败: %v", err)
 					}
 				}

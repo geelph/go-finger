@@ -9,10 +9,10 @@ package finger
 
 import (
 	"fmt"
+	"gxx/pkg/network"
 	"gxx/utils/common"
 	"gxx/utils/logger"
 	"gxx/utils/proto"
-	"gxx/utils/request"
 	"net/http"
 	"strings"
 )
@@ -49,7 +49,7 @@ func formatBody(body, contentType string, variableMap map[string]any) string {
 func buildProtoRequest(resp *http.Response, method, body, path string) *proto.Request {
 	protoReq := &proto.Request{
 		Method:      method,
-		Url:         request.Url2ProtoUrl(resp.Request.URL),
+		Url:         network.Url2ProtoUrl(resp.Request.URL),
 		ContentType: resp.Request.Header.Get("Content-Type"),
 		Body:        []byte(body),
 	}
@@ -89,7 +89,7 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64,
 	logger.Debug("icon hash：", iconHash)
 	return &proto.Response{
 		Status:      int32(resp.StatusCode),
-		Url:         request.Url2ProtoUrl(resp.Request.URL),
+		Url:         network.Url2ProtoUrl(resp.Request.URL),
 		Headers:     headers,
 		ContentType: resp.Header.Get("Content-Type"),
 		Body:        []byte(utf8RespBody),

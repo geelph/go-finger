@@ -5,7 +5,7 @@
     @File: raw_parse.go
     @Date: 2025/2/20 上午10:32*
 */
-package request
+package network
 
 import (
 	"gxx/utils/proto"

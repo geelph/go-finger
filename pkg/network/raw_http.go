@@ -5,7 +5,7 @@
     @File: raw_http.go
     @Date: 2025/2/8 下午4:05*
 */
-package request
+package network
 
 import (
 	"fmt"

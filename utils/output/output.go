@@ -3,6 +3,7 @@ package output
 import (
 	"encoding/csv"
 	"fmt"
+	finger2 "gxx/pkg/finger"
 	"os"
 	"path/filepath"
 	"sync"
@@ -42,26 +43,38 @@ func InitOutput(outputPath, format string) error {
 	return nil
 }
 
-// Write 写入数据到文件
-func Write(data []string, format string) error {
-	if outputFile == nil {
+// WriteResult 写入结果到文件
+func WriteResult(output, format, target string, fg *finger2.Finger, finalResult bool) error {
+	if output == "" {
 		return nil
 	}
+	// 确保输出目录存在
+	dir := filepath.Dir(output)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("创建输出目录失败: %v", err)
+		}
+	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
+	// 打开文件（追加模式）
+	file, err := os.OpenFile(output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("打开输出文件失败: %v", err)
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+	// 格式化结果
+	var line string
 	if format == "csv" {
-		if err := csvWriter.Write(data); err != nil {
-			return fmt.Errorf("写入CSV数据失败: %v", err)
-		}
-		csvWriter.Flush()
+		line = fmt.Sprintf("%s,%s,%s,%v\n", target, fg.Id, fg.Info.Name, finalResult)
 	} else {
-		// 默认txt格式
-		line := fmt.Sprintf("%s\n", data[0])
-		if _, err := outputFile.WriteString(line); err != nil {
-			return fmt.Errorf("写入文本数据失败: %v", err)
-		}
+		line = fmt.Sprintf("URL: %s\t指纹ID: %s\t指纹名称: %s\t匹配结果: %v\n", target, fg.Id, fg.Info.Name, finalResult)
+	}
+
+	// 写入结果
+	if _, err := file.WriteString(line); err != nil {
+		return fmt.Errorf("写入结果失败: %v", err)
 	}
 
 	return nil

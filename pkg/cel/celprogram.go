@@ -13,10 +13,10 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"gxx/pkg/network"
 	"gxx/utils/common"
 	"gxx/utils/config"
 	"gxx/utils/proto"
-	"gxx/utils/request"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -524,7 +524,7 @@ func reverseCheck(r *proto.Reverse, timeout int64) bool {
 	sub := strings.Split(r.Domain, ".")[0]
 	urlStr := fmt.Sprintf("http://api.ceye.io/v1/records?token=%s&type=dns&filter=%s", config.ReverseCeyeApiKey, sub)
 
-	resp, err := request.ReverseGet(urlStr)
+	resp, err := network.ReverseGet(urlStr)
 	if err != nil {
 		return false
 	}
@@ -550,7 +550,7 @@ func jndiCheck(reverse *proto.Reverse, timeout int64) bool {
 
 	urlStr := fmt.Sprintf("http://%s:%s/?api=%s", reverse.Url.Domain, config.ReverseApiPort, reverse.Url.Path[1:])
 
-	resp, err := request.ReverseGet(urlStr)
+	resp, err := network.ReverseGet(urlStr)
 	if err != nil {
 		return false
 	}

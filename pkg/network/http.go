@@ -5,7 +5,7 @@
     @File: http.go
     @Date: 2025/2/20 下午4:12*
 */
-package request
+package network
 
 import (
 	"bytes"

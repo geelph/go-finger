@@ -8,11 +8,11 @@
 package cli
 
 import (
+	"gxx/pkg"
 	"gxx/types"
-	"gxx/utils"
 )
 
 // Run 执行指纹识别
 func Run(options *types.CmdOptions) {
-	utils.NewFingerRunner(options)
+	pkg.NewFingerRunner(options)
 }

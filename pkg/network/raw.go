@@ -5,7 +5,7 @@
     @File: raw.go
     @Date: 2025/2/8 下午4:02*
 */
-package request
+package network
 
 import (
 	"bufio"

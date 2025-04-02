@@ -1,13 +1,7 @@
-/*
-  - Package logger
-    @Author: zhizhuo
-    @IDE：GoLand
-    @File: logger.go
-    @Date: 2025/2/20 下午3:39*
-*/
 package logger
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -145,11 +139,6 @@ func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
 	terminalLogger.SetLevel(level)
 	fileLogger.SetLevel(level)
 
-	// 验证日志级别是否正确设置
-	if logLevel == 4 || logLevel == 5 {
-		terminalLogger.Info("日志级别设置为:", level.String())
-	}
-
 	return &Logger{
 		terminalLogger: terminalLogger,
 		fileLogger:     fileLogger,
@@ -157,79 +146,84 @@ func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
 	}
 }
 
-func Info(args ...interface{}) {
+func Info(format string, args ...interface{}) {
 	if instance != nil {
-		instance.Info(args...)
+		instance.Info(format, args...)
 	} else {
-		defaultLogger.Info(args...)
+		defaultLogger.Info(format, args...)
 	}
 }
 
-func Error(args ...interface{}) {
+func Error(format string, args ...interface{}) {
 	if instance != nil {
-		instance.Error(args...)
+		instance.Error(format, args...)
 	} else {
-		defaultLogger.Error(args...)
+		defaultLogger.Error(format, args...)
 	}
 }
 
-func Warn(args ...interface{}) {
+func Warn(format string, args ...interface{}) {
 	if instance != nil {
-		instance.Warn(args...)
+		instance.Warn(format, args...)
 	} else {
-		defaultLogger.Warn(args...)
+		defaultLogger.Warn(format, args...)
 	}
 }
 
-func Debug(args ...interface{}) {
+func Debug(format string, args ...interface{}) {
 	if instance != nil {
-		instance.Debug(args...)
+		instance.Debug(format, args...)
 	} else {
-		defaultLogger.Debug(args...)
+		defaultLogger.Debug(format, args...)
 	}
 }
 
-func Success(args ...interface{}) {
+func Success(format string, args ...interface{}) {
 	if instance != nil {
-		instance.Success(args...)
+		instance.Success(format, args...)
 	} else {
-		defaultLogger.Success(args...)
+		defaultLogger.Success(format, args...)
 	}
 }
 
-func (l *Logger) Info(args ...interface{}) {
+func (l *Logger) Info(format string, args ...interface{}) {
 	if l.logLevel >= logrus.InfoLevel {
-		l.terminalLogger.Info(args...)
-		l.fileLogger.Info(args...)
+		message := fmt.Sprintf(format, args...)
+		l.terminalLogger.Info(message)
+		l.fileLogger.Info(message)
 	}
 }
 
-func (l *Logger) Error(args ...interface{}) {
+func (l *Logger) Error(format string, args ...interface{}) {
 	if l.logLevel >= logrus.ErrorLevel {
-		l.terminalLogger.Error(args...)
-		l.fileLogger.Error(args...)
+		message := fmt.Sprintf(format, args...)
+		l.terminalLogger.Error(message)
+		l.fileLogger.Error(message)
 	}
 }
 
-func (l *Logger) Warn(args ...interface{}) {
+func (l *Logger) Warn(format string, args ...interface{}) {
 	if l.logLevel >= logrus.WarnLevel {
-		l.terminalLogger.Warn(args...)
-		l.fileLogger.Warn(args...)
+		message := fmt.Sprintf(format, args...)
+		l.terminalLogger.Warn(message)
+		l.fileLogger.Warn(message)
 	}
 }
 
-func (l *Logger) Debug(args ...interface{}) {
+func (l *Logger) Debug(format string, args ...interface{}) {
 	// 确保Debug级别的日志能够正确输出
 	// 注意：logrus.DebugLevel的值比logrus.InfoLevel小
 	if l.logLevel <= logrus.DebugLevel {
-		l.terminalLogger.Debug(args...)
-		l.fileLogger.Debug(args...)
+		message := fmt.Sprintf(format, args...)
+		l.terminalLogger.Debug(message)
+		l.fileLogger.Debug(message)
 	}
 }
 
-func (l *Logger) Success(args ...interface{}) {
+func (l *Logger) Success(format string, args ...interface{}) {
 	if l.logLevel >= logrus.InfoLevel {
-		l.terminalLogger.WithField("type", "success").Info(args...)
-		l.fileLogger.WithField("type", "success").Info(args...)
+		message := fmt.Sprintf(format, args...)
+		l.terminalLogger.WithField("type", "success").Info(message)
+		l.fileLogger.WithField("type", "success").Info(message)
 	}
 }

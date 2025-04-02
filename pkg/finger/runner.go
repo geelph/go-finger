@@ -10,9 +10,9 @@ package finger
 import (
 	"fmt"
 	"golang.org/x/net/context"
+	"gxx/pkg/network"
 	"gxx/utils/common"
 	"gxx/utils/logger"
-	request2 "gxx/utils/request"
 	"io"
 	"net/http/httptrace"
 	"net/url"
@@ -28,7 +28,7 @@ var (
 // SendRequest yaml poc发送http请求
 func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[string]any, proxy string) (map[string]any, error) {
 
-	options := request2.OptionsRequest{
+	options := network.OptionsRequest{
 		Proxy:              "",             // 初始化为空，后面设置
 		Timeout:            defaultTimeout, // 增加超时时间到10秒
 		Retries:            2,              // 增加重试次数
@@ -74,7 +74,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			if err != nil {
 				return nil, fmt.Errorf("Error parsing address: %v\n", err)
 			}
-			nc, err := request2.NewTcpClient(rule.Request.Host, request2.TcpOrUdpConfig{
+			nc, err := network.NewTcpClient(rule.Request.Host, network.TcpOrUdpConfig{
 				Network:     rule.Request.Type,
 				ReadTimeout: time.Duration(rule.Request.ReadTimeout),
 				ReadSize:    rule.Request.ReadSize,
@@ -104,7 +104,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 				fmt.Println("tcp receive error:", err.Error())
 			}
 			_ = nc.Close()
-			err = request2.RawParse(nc, []byte(data), res, variableMap)
+			err = network.RawParse(nc, []byte(data), res, variableMap)
 			if err != nil {
 				fmt.Println("tcp or udp parse error:", err.Error())
 			}
@@ -115,7 +115,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			if err != nil {
 				return nil, fmt.Errorf("Error parsing address: %v\n", err)
 			}
-			nc, err := request2.NewUdpClient(rule.Request.Host, request2.TcpOrUdpConfig{
+			nc, err := network.NewUdpClient(rule.Request.Host, network.TcpOrUdpConfig{
 				Network:     rule.Request.Type,
 				ReadTimeout: time.Duration(rule.Request.ReadTimeout),
 				ReadSize:    rule.Request.ReadSize,
@@ -145,7 +145,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 				fmt.Println("udp receive error:", err.Error())
 			}
 			_ = nc.Close()
-			err = request2.RawParse(nc, []byte(data), res, variableMap)
+			err = network.RawParse(nc, []byte(data), res, variableMap)
 			if err != nil {
 				fmt.Println("udp or udp parse error:", err.Error())
 			}
@@ -158,7 +158,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 		if len(rule.Request.Raw) > 0 {
 			// 执行raw格式请求
 			fmt.Println("执行raw格式请求")
-			rt := request2.RawHttp{RawhttpClient: request2.GetRawHTTP(int(options.Timeout))}
+			rt := network.RawHttp{RawhttpClient: network.GetRawHTTP(int(options.Timeout))}
 			err := rt.RawHttpRequest(rule.Request.Raw, target, variableMap)
 			if err != nil {
 				return variableMap, err
@@ -167,7 +167,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	}
 
 	// 处理协议，增加通信协议
-	NewUrlStr, err := request2.CheckProtocol(urlStr)
+	NewUrlStr, err := network.CheckProtocol(urlStr)
 	if err != nil {
 		fmt.Println("检查http通信协议出错，错误信息：", err)
 		if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
@@ -178,7 +178,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	logger.Debug("请求URL：", NewUrlStr)
 
 	// 发送请求
-	resp, err := request2.SendRequestHttp(ctx, req.Method, NewUrlStr, rule.Request.Body, options)
+	resp, err := network.SendRequestHttp(ctx, req.Method, NewUrlStr, rule.Request.Body, options)
 	if err != nil {
 		fmt.Println("发送请求出错，错误信息：", err)
 		return variableMap, err

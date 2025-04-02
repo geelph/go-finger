@@ -5,7 +5,7 @@
     @File: network.go
     @Date: 2025/1/8 下午2:39*
 */
-package request
+package network
 
 import (
 	"crypto/tls"
