@@ -3,7 +3,7 @@
 GXX是一款强大的指纹识别工具，基于YAML配置的规则进行目标系统识别。
 本工具支持多种协议（HTTP/HTTPS、TCP、UDP），可进行高效的批量目标扫描和精准识别。
 
-## 功能特点
+## 💡 主要特性
 
 - **基于YAML配置**：使用简洁明了的YAML格式定义指纹识别规则
 - **多协议支持**：支持HTTP/HTTPS、TCP、UDP协议
@@ -13,7 +13,7 @@ GXX是一款强大的指纹识别工具，基于YAML配置的规则进行目标�
 - **自定义规则**：可根据需要自定义指纹识别规则
 - **调试模式**：内置调试功能，便于排查问题
 
-## 快速开始
+## 🚀 快速开始
 
 ### 安装
 
@@ -44,24 +44,32 @@ gxx -u https://example.com -o results.txt
 gxx -u https://example.com --debug
 ```
 
-## 命令行参数
+## 📖 命令行参数
 
 ### 输入选项
-- `-u, --url`: 要扫描的目标URL/主机（可指定多个）
-- `-f, --file`: 包含目标URL/主机列表的文件（每行一个）
-- `-t, --threads`: 并发线程数（默认：10）
+- `-u, --url`：要扫描的目标URL/主机（可指定多个）
+- `-f, --file`：包含目标URL/主机列表的文件（每行一个）
+- `-t, --threads`：并发线程数（默认：10）
 
 ### 输出选项
-- `-o, --output`: 输出文件路径
-- `--format`: 输出文件格式（支持 txt/csv，默认：txt）
+- `-o, --output`：输出文件路径
+- `--format`：输出文件格式（支持 txt/csv，默认：txt）
 
 ### 调试选项
-- `--proxy`: HTTP/SOCKS5代理（支持逗号分隔的列表或文件输入）
-- `-p, --poc`: 测试单个YAML文件
-- `-pf, --poc-file`: 测试指定目录下的所有YAML文件
-- `--debug`: 开启调试模式
+- `--proxy`：HTTP/SOCKS5代理（支持逗号分隔的列表或文件输入）
+- `-p, --poc`：测试单个YAML文件
+- `-pf, --poc-file`：测试指定目录下的所有YAML文件
+- `--debug`：开启调试模式
 
-## 项目目录结构
+## 🔍 示例代码
+
+查看 [example](example/) 目录获取完整使用示例：
+
+- [基本扫描](example/basic_scan.go)：单目标扫描
+- [代理扫描](example/proxy_scan.go)：使用代理进行扫描
+- [文件目标扫描](example/file_target_scan.go)：批量扫描多个目标
+
+## 📂 项目目录结构
 
 ```
 gxx/
@@ -78,12 +86,13 @@ gxx/
 ├── finger/                 # 指纹文件目录
 ├── test/                   # 测试目录
 ├── logs/                   # 日志输出目录
+├── example/                # 示例代码
 ├── go.mod                  # Go模块定义
 ├── go.sum                  # Go模块依赖校验和
 └── README.md               # 项目说明文档
 ```
 
-## 编译
+## 🔨 编译与构建
 
 ### 使用 Makefile (推荐)
 
@@ -115,20 +124,36 @@ chmod +x build.sh
 ./build.sh
 ```
 
-### 使用goreleaser编译
+### 使用 goreleaser 编译
 
 ```bash
 goreleaser build --snapshot --clean --snapshot
 ```
 
-## API使用
+## 🧰 API使用
 
-- `FingerScan`: 指纹扫描API函数
-- `NewFingerOptions`: 创建新的指纹扫描选项
+GXX提供了简单易用的API，便于集成到您的项目中：
 
-## 指纹规则格式
+```go
+// 创建新的扫描选项
+options, err := gxx.NewFingerOptions()
+if err != nil {
+    // 错误处理
+}
 
-详细的指纹规则格式说明请参考 [指纹规则格式说明.md](docs/指纹规则格式说明.md) 和 [指纹开发快速参考.md](docs/指纹开发快速参考.md)。
+// 设置目标
+options.Target = []string{"example.com"}
+options.Debug = true
+
+// 执行扫描
+gxx.FingerScan(options)
+```
+
+## 📝 指纹规则格式
+
+详细的指纹规则格式说明请参考：
+- [指纹规则格式说明](docs/指纹规则格式说明.md)
+- [指纹开发快速参考](docs/指纹开发快速参考.md)
 
 ### 基本结构示例
 
@@ -153,11 +178,17 @@ rules:
 expression: r0()
 ```
 
-## 贡献方式
+## 🤝 贡献指南
 
 - **规则贡献**：通过添加新的YAML格式指纹规则文件扩展指纹库
 - **代码贡献**：遵循项目代码结构进行功能开发
+- **问题反馈**：通过Issues提交问题或功能建议
+- **文档改进**：完善项目文档和使用示例
 
-## 许可证
+## ⚠️ 免责声明
 
-[许可证信息](LICENSE)
+本工具仅用于授权的安全测试和研究目的。使用者应遵守相关法律法规，未经授权不得对目标系统进行扫描。工具作者不对任何滥用行为负责。
+
+## 📜 许可证
+
+[MIT License](LICENSE)

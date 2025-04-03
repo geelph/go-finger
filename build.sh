@@ -100,7 +100,7 @@ build() {
     fi
 
     # 构建命令
-    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
+    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o gxx ./cmd/main.go"
     
     # 如果启用了嵌入指纹库
     if [ "$EMBED" == "true" ]; then
