@@ -99,3 +99,8 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64,
 		IconHash:    iconHash,
 	}
 }
+
+// BuildProtoResponse 构造proto.Response结构体 (公开版本)
+func BuildProtoResponse(resp *http.Response, utf8RespBody string, latency int64, proxy string) *proto.Response {
+	return buildProtoResponse(resp, utf8RespBody, latency, proxy)
+}

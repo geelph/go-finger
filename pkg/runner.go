@@ -116,8 +116,8 @@ type BaseInfo struct {
 	StatusCode int32
 }
 
-// GetBaseInfo 获取目标的基础信息（标题和Server信息）
-func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, int32, error) {
+// GetBaseInfo 获取目标的基础信息（标题和Server信息）并返回完整HTTP响应
+func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, int32, *http.Response, error) {
 	// 准备URL
 	urlWithProtocol := target
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
@@ -158,11 +158,10 @@ func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, 
 	// 发送请求
 	resp, err := network.SendRequestHttp(ctx, "GET", urlWithProtocol, "", options)
 	if err != nil {
-		return "", nil, 0, fmt.Errorf("发送请求失败: %v", err)
+		return "", nil, 0, nil, fmt.Errorf("发送请求失败: %v", err)
 	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+
+	// 注意：不要关闭resp.Body，让调用方负责关闭
 
 	// 获取状态码
 	statusCode := int32(resp.StatusCode)
@@ -173,7 +172,7 @@ func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, 
 	// 使用finger2包的GetServerInfoFromResponse方法提取Server信息
 	serverInfo := finger2.GetServerInfoFromResponse(resp)
 
-	return title, serverInfo, statusCode, nil
+	return title, serverInfo, statusCode, resp, nil
 }
 
 // NewFingerRunner 创建并运行指纹识别器
@@ -224,6 +223,27 @@ func NewFingerRunner(options *types.CmdOptions) {
 		return
 	}
 
+	// 确定输出格式
+	outputFormat := "txt" // 默认为txt格式
+	if options.Output != "" {
+		ext := strings.ToLower(filepath.Ext(options.Output))
+		if ext == ".csv" {
+			outputFormat = "csv"
+		}
+	}
+
+	// 初始化输出文件
+	if options.Output != "" {
+		if err := output.InitOutput(options.Output, outputFormat); err != nil {
+			logger.Error(fmt.Sprintf("初始化输出文件失败: %v", err))
+			return
+		}
+		// 确保在函数结束时关闭输出文件
+		defer func() {
+			_ = output.Close()
+		}()
+	}
+
 	logger.Info("开始目标扫描...")
 
 	// 创建结果存储
@@ -244,17 +264,15 @@ func NewFingerRunner(options *types.CmdOptions) {
 	fingerWorkerCount := 5 * urlWorkerCount
 	logger.Info(fmt.Sprintf("每个URL使用指纹识别线程：%v个", fingerWorkerCount))
 
-	// 创建URL任务通道
+	// 创建URL任务通道和完成通道
 	urlChan := make(chan string, len(targets))
+	doneChan := make(chan struct{}, len(targets))
 
 	// 创建一个WaitGroup来等待所有URL处理完成
 	var urlWg sync.WaitGroup
 
 	// 创建错误通道
 	errorChan := make(chan error, len(targets))
-
-	// 创建一个包含所有结果的切片，用于最终输出
-	var resultOutputs []string
 
 	// 暂停终端日志输出
 	logger.PauseTerminalLogging()
@@ -287,9 +305,6 @@ func NewFingerRunner(options *types.CmdOptions) {
 		outputMutex.Lock()
 		defer outputMutex.Unlock()
 
-		// 将结果保存到切片中
-		resultOutputs = append(resultOutputs, msg)
-
 		// 暂时清除进度条
 		fmt.Print("\033[2K\r")
 
@@ -300,6 +315,16 @@ func NewFingerRunner(options *types.CmdOptions) {
 		_ = bar.RenderBlank()
 	}
 
+	// 启动一个协程来更新进度条
+	startTime := time.Now()
+	go func() {
+		for range doneChan {
+			outputMutex.Lock()
+			_ = bar.Add(1)
+			outputMutex.Unlock()
+		}
+	}()
+
 	// 启动URL工作协程
 	for i := 0; i < urlWorkerCount; i++ {
 		urlWg.Add(1)
@@ -308,7 +333,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 
 			for target := range urlChan {
 				// 处理单个URL
-				targetResult, err := processURL(target, proxy, options.Timeout, fingerWorkerCount, options, saveResult)
+				targetResult, err := processURL(target, proxy, options.Timeout, fingerWorkerCount, options, saveResult, outputFormat)
 				if err != nil {
 					errorChan <- fmt.Errorf("处理URL %s 失败: %v", target, err)
 				}
@@ -318,10 +343,8 @@ func NewFingerRunner(options *types.CmdOptions) {
 				results[target] = targetResult
 				resultsMutex.Unlock()
 
-				// 更新进度条
-				outputMutex.Lock()
-				_ = bar.Add(1)
-				outputMutex.Unlock()
+				// 通知完成一个任务
+				doneChan <- struct{}{}
 			}
 		}()
 	}
@@ -334,15 +357,20 @@ func NewFingerRunner(options *types.CmdOptions) {
 
 	// 等待所有URL处理完成
 	urlWg.Wait()
+	close(doneChan)
 
 	// 确保最终完成100%进度
 	outputMutex.Lock()
 	_ = bar.Finish()
 	outputMutex.Unlock()
 
+	// 计算执行时间
+	elapsedTime := time.Since(startTime)
+	itemsPerSecond := float64(len(targets)) / elapsedTime.Seconds()
+
 	// 显示一行完整的100%进度条
-	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %d it/s)",
-		len(targets), len(targets), len(targets)/max(1, int(time.Since(time.Now().Add(-1*time.Minute)).Seconds())))
+	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %.2f it/s)",
+		len(targets), len(targets), itemsPerSecond)
 	fmt.Println(maxProgress)
 
 	// 恢复终端日志输出
@@ -394,10 +422,11 @@ func NewFingerRunner(options *types.CmdOptions) {
 
 	// 输出统计信息
 	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
-	fmt.Printf("扫描统计: 目标总数 %d, 匹配成功 %d, 匹配失败 %d\n",
+	fmt.Printf("扫描统计: 目标总数 %d, 匹配成功 %d, 匹配失败 %d, 总耗时 %.2fs\n",
 		len(targets),
 		matchCount,
-		noMatchCount)
+		noMatchCount,
+		elapsedTime.Seconds())
 
 	// 输出收集的错误信息
 	if len(errors) > 0 {
@@ -408,19 +437,11 @@ func NewFingerRunner(options *types.CmdOptions) {
 	}
 }
 
-// max 返回两个整数中的较大值
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 // processURL 处理单个URL的所有指纹识别
-func processURL(target string, proxy string, timeout int, workerCount int, options *types.CmdOptions, printResult func(string)) (*TargetResult, error) {
+func processURL(target string, proxy string, timeout int, workerCount int, options *types.CmdOptions, printResult func(string), outputFormat string) (*TargetResult, error) {
 	// 获取目标基础信息
 	logger.Debug(fmt.Sprintf("获取目标 %s 的基础信息", target))
-	title, serverInfo, statusCode, err := GetBaseInfo(target, proxy, timeout)
+	title, serverInfo, statusCode, httpResp, err := GetBaseInfo(target, proxy, timeout)
 
 	// 创建目标结果对象
 	targetResult := &TargetResult{
@@ -440,6 +461,18 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 		targetResult.StatusCode = 0
 	}
 
+	// 从httpResp中提取响应头用于保存
+	var initialResponse *proto.Response
+	if httpResp != nil {
+		// 读取响应体并转换为UTF-8
+		respBody, _ := io.ReadAll(httpResp.Body)
+		_ = httpResp.Body.Close()
+		// 使用Str2UTF8替代ConvertToUTF8
+		utf8RespBody := common.Str2UTF8(string(respBody))
+		initialResponse = finger2.BuildProtoResponse(httpResp, utf8RespBody, 0, proxy)
+		lastResponse = initialResponse // 保存初始响应
+	}
+
 	// 创建基础信息对象供指纹识别使用
 	baseInfo := &BaseInfo{
 		Title:      targetResult.Title,
@@ -452,25 +485,31 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 		return targetResult, nil
 	}
 
+	// 使用有缓冲的通道避免阻塞
+	bufferSize := min(len(AllFinger), 1000) // 避免过大的缓冲区
+
 	// 创建指纹识别任务通道
-	fingerChan := make(chan *finger2.Finger, len(AllFinger))
-
+	fingerChan := make(chan *finger2.Finger, bufferSize)
 	// 创建结果通道
-	resultChan := make(chan *FingerMatch, len(AllFinger))
-
+	resultChan := make(chan *FingerMatch, bufferSize)
 	// 创建错误通道
-	fingerErrorChan := make(chan error, len(AllFinger))
-
+	fingerErrorChan := make(chan error, bufferSize)
 	// 创建等待组
 	var fingerWg sync.WaitGroup
+
+	// 预先创建并复用CustomLib实例
+	customLibs := make([]*cel.CustomLib, workerCount)
+	for i := 0; i < workerCount; i++ {
+		customLibs[i] = cel.NewCustomLib()
+	}
 
 	// 启动指纹工作协程
 	for i := 0; i < workerCount; i++ {
 		fingerWg.Add(1)
-		go func() {
+		go func(workerID int) {
 			defer fingerWg.Done()
-			// 每个工作协程创建自己的CustomLib实例
-			customLib := cel.NewCustomLib()
+			// 使用预先创建的CustomLib实例
+			customLib := customLibs[workerID]
 
 			for fg := range fingerChan {
 				// 重置CustomLib避免上下文污染
@@ -479,43 +518,43 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 				// 执行指纹识别
 				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout)
 				if err != nil {
-					fingerErrorChan <- fmt.Errorf("URL %s 的指纹 %s 评估失败: %v", target, fg.Id, err)
+					select {
+					case fingerErrorChan <- fmt.Errorf("URL %s 的指纹 %s 评估失败: %v", target, fg.Id, err):
+					default:
+						// 如果通道已满，丢弃错误
+					}
 				} else if result {
 					// 只存储匹配成功的指纹
-					resultChan <- &FingerMatch{
+					select {
+					case resultChan <- &FingerMatch{
 						Finger: fg,
 						Result: true,
-					}
-
-					// 匹配成功立即写入结果文件
-					if options.Output != "" {
-						// 从文件扩展名确定输出格式
-						outputFormat := "txt" // 默认为txt格式
-						if ext := strings.ToLower(filepath.Ext(options.Output)); ext == ".csv" {
-							outputFormat = "csv"
-						}
-
-						if err := output.WriteResult(options.Output, outputFormat, target, fg, true); err != nil {
-							logger.Error(fmt.Sprintf("写入结果失败: %v", err))
-						}
+					}:
+					default:
+						// 如果通道已满，记录日志
+						logger.Debug(fmt.Sprintf("结果通道已满，丢弃指纹 %s 的结果", fg.Id))
 					}
 				}
 			}
-		}()
+		}(i)
 	}
 
-	// 发送指纹任务
-	for _, fg := range AllFinger {
-		fingerChan <- fg
-	}
-	close(fingerChan)
+	// 使用另一个goroutine发送指纹任务，避免阻塞
+	go func() {
+		for _, fg := range AllFinger {
+			fingerChan <- fg
+		}
+		close(fingerChan)
+	}()
 
 	// 启动一个协程收集结果
+	var matches []*FingerMatch
 	var matchesMutex sync.Mutex
+
 	go func() {
 		for match := range resultChan {
 			matchesMutex.Lock()
-			targetResult.Matches = append(targetResult.Matches, match)
+			matches = append(matches, match)
 			matchesMutex.Unlock()
 		}
 	}()
@@ -527,10 +566,21 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 	close(resultChan)
 	close(fingerErrorChan)
 
+	// 等待结果收集完成并赋值
+	time.Sleep(10 * time.Millisecond)
+	matchesMutex.Lock()
+	targetResult.Matches = matches
+	matchesMutex.Unlock()
+
 	// 收集错误
 	var fingerErrors []error
 	for err := range fingerErrorChan {
-		fingerErrors = append(fingerErrors, err)
+		// 只收集前100个错误，避免内存占用过多
+		if len(fingerErrors) < 100 {
+			fingerErrors = append(fingerErrors, err)
+		} else {
+			break
+		}
 	}
 
 	// 如果有太多错误，记录一些统计信息
@@ -538,7 +588,7 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 		logger.Debug(fmt.Sprintf("URL %s 指纹识别过程中发生 %d 个错误", target, len(fingerErrors)))
 	}
 
-	// URL处理完成后输出结果
+	// URL处理完成后处理结果
 	if len(targetResult.Matches) > 0 {
 		// 构建基础信息输出
 		statusCodeStr := ""
@@ -551,6 +601,7 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 			serverInfo = fmt.Sprintf("%s", targetResult.Server.ServerType)
 		}
 
+		// 构建统一格式的输出信息
 		baseInfoStr := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
 			targetResult.URL,
 			statusCodeStr,
@@ -558,7 +609,7 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 			serverInfo)
 
 		// 收集所有匹配的指纹名称
-		var fingerNames []string
+		fingerNames := make([]string, 0, len(targetResult.Matches))
 		for _, match := range targetResult.Matches {
 			fingerNames = append(fingerNames, match.Finger.Info.Name)
 		}
@@ -571,10 +622,45 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 
 		// 通过回调函数添加结果
 		printResult(outputMsg)
+
+		// 收集指纹信息写入结果文件
+		if options.Output != "" {
+			fingerList := make([]*finger2.Finger, 0, len(targetResult.Matches))
+			for _, match := range targetResult.Matches {
+				fingerList = append(fingerList, match.Finger)
+			}
+
+			// 创建写入选项结构体
+			writeOpts := &output.WriteOptions{
+				Output:      options.Output,
+				Format:      outputFormat,
+				Target:      target,
+				Fingers:     fingerList,
+				StatusCode:  targetResult.StatusCode,
+				Title:       targetResult.Title,
+				ServerInfo:  targetResult.Server,
+				FinalResult: true,
+			}
+
+			// 添加响应头信息
+			if lastResponse != nil {
+				writeOpts.Response = lastResponse
+			} else if initialResponse != nil {
+				// 如果没有完整的lastResponse，使用初始响应
+				writeOpts.Response = initialResponse
+			}
+			// 使用指定格式写入结果
+			if err := output.WriteFingerprints(writeOpts); err != nil {
+				logger.Error(fmt.Sprintf("写入结果失败: %v", err))
+			}
+		}
 	}
 
 	return targetResult, nil
 }
+
+// SendRequest获取的最后一个请求响应
+var lastResponse *proto.Response
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则
 func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *BaseInfo, proxy string, customLib *cel.CustomLib, timeout int) (bool, error) {
@@ -651,6 +737,11 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 			if len(SetiableMaps) > 0 {
 				// 完全替换为新的map
 				SetiableMap = SetiableMaps
+
+				// 保存最后一个响应用于输出
+				if resp, ok := SetiableMap["response"].(*proto.Response); ok {
+					lastResponse = resp
+				}
 			}
 		}
 
