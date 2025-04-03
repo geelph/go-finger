@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/fatih/color"
@@ -207,15 +206,15 @@ func NewFingerRunner(options *types.CmdOptions) {
 	// 记录原始URL数量
 	originalCount := len(targets)
 	logger.Info(fmt.Sprintf("原始目标数量：%v个", originalCount))
-	
+
 	// 进行URL去重
 	targets = common.RemoveDuplicateURLs(targets)
-	
+
 	// 记录去重后的URL数量和重复URL数量
 	duplicateCount := originalCount - len(targets)
 	logger.Info(fmt.Sprintf("重复目标数量：%v个", duplicateCount))
 	logger.Info(fmt.Sprintf("去重后目标数量：%v个", len(targets)))
-	
+
 	proxy := options.Proxy
 	logger.Debug(fmt.Sprintf("使用代理 Proxy: %s", proxy))
 
@@ -224,162 +223,127 @@ func NewFingerRunner(options *types.CmdOptions) {
 		logger.Error("加载指纹规则出错")
 		return
 	}
-	// 创建目标基础信息缓存
-	targetBaseInfoCache := make(map[string]*BaseInfo)
-	// 预先获取所有目标的基础信息
-	logger.Info("开始获取目标基础信息...")
-	for _, target := range targets {
-		logger.Debug(fmt.Sprintf("获取目标 %s 的基础信息", target))
-		title, serverInfo, statusCode, err := GetBaseInfo(target, proxy, options.Timeout)
-		if err != nil {
-			// 即使获取失败，也创建一个空的基础信息对象
-			targetBaseInfoCache[target] = &BaseInfo{
-				Title:      "",
-				Server:     types.EmptyServerInfo(),
-				StatusCode: 0,
-			}
-		} else {
-			targetBaseInfoCache[target] = &BaseInfo{
-				Title:      title,
-				Server:     serverInfo,
-				StatusCode: statusCode,
-			}
-		}
-	}
 
-	logger.Info("目标基础信息获取完成")
+	logger.Info("开始目标扫描...")
 
-	// 创建工作池
-	workerCount := 10
-	if options.Threads > 0 {
-		workerCount = options.Threads
-	}
-	logger.Info(fmt.Sprintf("使用工作线程：%v个", workerCount))
-
-	// 创建任务通道 - 以URL为单位创建任务
-	type Task struct {
-		Target string
-		Finger *finger2.Finger
-	}
-
-	// 计算总任务数
-	totalTasks := len(targets) * len(AllFinger)
-	logger.Info(fmt.Sprintf("总任务数：%v个", totalTasks))
-
-	// 创建任务通道
-	taskChan := make(chan Task, totalTasks)
-
-	// 创建错误通道
-	errorChan := make(chan error, totalTasks)
-
-	// 存储所有目标的结果，按目标URL索引
+	// 创建结果存储
 	results := make(map[string]*TargetResult)
-
-	// 创建互斥锁保护结果映射的并发访问
 	var resultsMutex sync.Mutex
 
-	// 再次暂停终端日志输出
+	// 创建互斥锁用于控制输出，避免输出混乱
+	var outputMutex sync.Mutex
+
+	// 创建URL处理协程池
+	urlWorkerCount := 10
+	if options.Threads > 0 {
+		urlWorkerCount = options.Threads
+	}
+	logger.Info(fmt.Sprintf("使用URL处理线程：%v个", urlWorkerCount))
+
+	// 创建指纹识别线程池大小
+	fingerWorkerCount := 5 * urlWorkerCount
+	logger.Info(fmt.Sprintf("每个URL使用指纹识别线程：%v个", fingerWorkerCount))
+
+	// 创建URL任务通道
+	urlChan := make(chan string, len(targets))
+
+	// 创建一个WaitGroup来等待所有URL处理完成
+	var urlWg sync.WaitGroup
+
+	// 创建错误通道
+	errorChan := make(chan error, len(targets))
+
+	// 创建一个包含所有结果的切片，用于最终输出
+	var resultOutputs []string
+
+	// 暂停终端日志输出
 	logger.PauseTerminalLogging()
 
-	// 创建最简单的进度条，仅使用ASCII字符
-	scanBar := progressbar.NewOptions64(
-		int64(totalTasks),
-		progressbar.OptionSetWidth(50), // 增加宽度，显示更清晰
+	// 创建自定义进度条
+	bar := progressbar.NewOptions64(
+		int64(len(targets)),
+		progressbar.OptionSetWidth(50),
 		progressbar.OptionEnableColorCodes(false),
 		progressbar.OptionShowBytes(false),
 		progressbar.OptionShowCount(),
-		progressbar.OptionShowIts(), // 显示每秒处理数量
+		progressbar.OptionShowIts(),
 		progressbar.OptionSetWriter(os.Stdout),
-		progressbar.OptionSetDescription("指纹识别"), // 更明确的描述
+		progressbar.OptionSetDescription("指纹识别"),
 		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "=", // 标准ASCII字符
-			SaucerHead:    ">", // 标准ASCII字符
-			SaucerPadding: " ", // 空格作为填充
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
 			BarStart:      "[",
 			BarEnd:        "]",
 		}),
-		progressbar.OptionOnCompletion(func() {
-			fmt.Println() // 完成后只添加一个换行，不清除进度条
-		}),
+		progressbar.OptionClearOnFinish(),
 	)
 
-	// 创建计数器来跟踪已完成的任务
-	var completedTasks int64
+	// 初始显示进度条
+	_ = bar.RenderBlank()
 
-	// 启动工作协程
-	var wg sync.WaitGroup
-	for i := 0; i < workerCount; i++ {
-		wg.Add(1)
+	// 存储输出的结果
+	saveResult := func(msg string) {
+		outputMutex.Lock()
+		defer outputMutex.Unlock()
+
+		// 将结果保存到切片中
+		resultOutputs = append(resultOutputs, msg)
+
+		// 暂时清除进度条
+		fmt.Print("\033[2K\r")
+
+		// 输出结果
+		fmt.Println(msg)
+
+		// 重新显示进度条
+		_ = bar.RenderBlank()
+	}
+
+	// 启动URL工作协程
+	for i := 0; i < urlWorkerCount; i++ {
+		urlWg.Add(1)
 		go func() {
-			defer wg.Done()
-			// 每个工作协程创建自己的CustomLib实例
-			customLib := cel.NewCustomLib()
+			defer urlWg.Done()
 
-			for task := range taskChan {
-				// 重置CustomLib避免上下文污染
-				customLib.Reset()
-
-				// 获取或创建当前目标的结果对象
-				resultsMutex.Lock()
-				targetResult, exists := results[task.Target]
-				if !exists {
-					// 首次处理该目标，创建结果对象并使用缓存的基础信息
-					baseInfo := targetBaseInfoCache[task.Target]
-					targetResult = &TargetResult{
-						URL:        task.Target,
-						StatusCode: baseInfo.StatusCode,
-						Title:      baseInfo.Title,
-						Server:     baseInfo.Server,
-						Matches:    make([]*FingerMatch, 0),
-					}
-					results[task.Target] = targetResult
+			for target := range urlChan {
+				// 处理单个URL
+				targetResult, err := processURL(target, proxy, options.Timeout, fingerWorkerCount, options, saveResult)
+				if err != nil {
+					errorChan <- fmt.Errorf("处理URL %s 失败: %v", target, err)
 				}
+
+				// 存储结果
+				resultsMutex.Lock()
+				results[target] = targetResult
 				resultsMutex.Unlock()
 
-				// 执行指纹识别，传入已缓存的基础信息，避免重复请求
-				baseInfo := targetBaseInfoCache[task.Target]
-				result, err := evaluateFingerprintWithCache(task.Finger, task.Target, baseInfo, proxy, customLib, options.Timeout)
-				if err != nil {
-					errorChan <- fmt.Errorf("URL %s 的指纹 %s 评估失败: %v", task.Target, task.Finger.Id, err)
-				} else {
-					// 存储匹配结果
-					fingerMatch := &FingerMatch{
-						Finger: task.Finger,
-						Result: result,
-					}
-
-					// 更新目标结果（需要加锁）
-					resultsMutex.Lock()
-					// 只记录匹配成功的指纹
-					if result {
-						targetResult.Matches = append(targetResult.Matches, fingerMatch)
-					}
-					resultsMutex.Unlock()
-				}
-
-				// 更新进度条和计数器
-				_ = scanBar.Add(1)
-				atomic.AddInt64(&completedTasks, 1)
+				// 更新进度条
+				outputMutex.Lock()
+				_ = bar.Add(1)
+				outputMutex.Unlock()
 			}
 		}()
 	}
 
-	// 发送任务 - 双层循环，先按URL再按指纹
+	// 发送URL任务
 	for _, target := range targets {
-		for _, fg := range AllFinger {
-			taskChan <- Task{
-				Target: target,
-				Finger: fg,
-			}
-		}
+		urlChan <- target
 	}
-	close(taskChan)
+	close(urlChan)
 
-	// 等待所有工作协程完成
-	wg.Wait()
+	// 等待所有URL处理完成
+	urlWg.Wait()
 
-	// 确保进度条完成，但不清除显示
-	_ = scanBar.Finish()
+	// 确保最终完成100%进度
+	outputMutex.Lock()
+	_ = bar.Finish()
+	outputMutex.Unlock()
+
+	// 显示一行完整的100%进度条
+	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %d it/s)",
+		len(targets), len(targets), len(targets)/max(1, int(time.Since(time.Now().Add(-1*time.Minute)).Seconds())))
+	fmt.Println(maxProgress)
 
 	// 恢复终端日志输出
 	logger.ResumeTerminalLogging()
@@ -392,66 +356,35 @@ func NewFingerRunner(options *types.CmdOptions) {
 		errors = append(errors, err.Error())
 	}
 
-	logger.Info("指纹识别完成，开始生成结果报告...")
+	logger.Info("指纹识别完成，开始生成结果汇总...")
 
-	// 处理并输出所有结果
+	// 输出最终统计信息
 	matchCount := 0
-	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
-	fmt.Println(color.GreenString("结果报告："))
-	for _, target := range targets {
-		targetResult, exists := results[target]
-		if !exists {
-			// 目标没有结果，可能是因为处理过程中出错了
-			continue
-		}
+	noMatchCount := 0
 
-		// 构建基础信息输出
-		statusCodeStr := ""
-		if targetResult.StatusCode > 0 {
-			statusCodeStr = fmt.Sprintf("（%d）", targetResult.StatusCode)
-		}
-
-		serverInfo := ""
-		if targetResult.Server != nil {
-			serverInfo = fmt.Sprintf("%s", targetResult.Server.ServerType)
-		}
-
-		baseInfo := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
-			targetResult.URL,
-			statusCodeStr,
-			targetResult.Title,
-			serverInfo)
-
-		// 如果有匹配的指纹，输出匹配信息
+	// 统计匹配成功和失败的数量
+	for _, targetResult := range results {
 		if len(targetResult.Matches) > 0 {
 			matchCount++
-			// 收集所有匹配的指纹名称
-			var fingerNames []string
-			for _, match := range targetResult.Matches {
-				fingerNames = append(fingerNames, match.Finger.Info.Name)
-
-				// 写入结果文件
-				if options.Output != "" {
-					// 从文件扩展名确定输出格式
-					outputFormat := "txt" // 默认为txt格式
-					if ext := strings.ToLower(filepath.Ext(options.Output)); ext == ".csv" {
-						outputFormat = "csv"
-					}
-
-					if err := output.WriteResult(options.Output, outputFormat, targetResult.URL, match.Finger, true); err != nil {
-						logger.Error(fmt.Sprintf("写入结果失败: %v", err))
-					}
-				}
+		} else {
+			noMatchCount++
+			// 只输出未匹配的URL信息，因为匹配成功的在处理完成时已经输出
+			statusCodeStr := ""
+			if targetResult.StatusCode > 0 {
+				statusCodeStr = fmt.Sprintf("（%d）", targetResult.StatusCode)
 			}
 
-			// 一次性输出所有匹配的指纹
-			outputMsg := fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
-				baseInfo,
-				strings.Join(fingerNames, "，"),
-				color.GreenString("成功"))
-			fmt.Println(outputMsg)
-		} else {
-			// 如果没有匹配的指纹，输出未匹配信息
+			serverInfo := ""
+			if targetResult.Server != nil {
+				serverInfo = fmt.Sprintf("%s", targetResult.Server.ServerType)
+			}
+
+			baseInfo := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
+				targetResult.URL,
+				statusCodeStr,
+				targetResult.Title,
+				serverInfo)
+
 			outputMsg := fmt.Sprintf("%s  匹配结果：%s",
 				baseInfo,
 				color.RedString("未匹配"))
@@ -464,7 +397,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 	fmt.Printf("扫描统计: 目标总数 %d, 匹配成功 %d, 匹配失败 %d\n",
 		len(targets),
 		matchCount,
-		len(targets)-matchCount)
+		noMatchCount)
 
 	// 输出收集的错误信息
 	if len(errors) > 0 {
@@ -473,6 +406,174 @@ func NewFingerRunner(options *types.CmdOptions) {
 			logger.Error(err)
 		}
 	}
+}
+
+// max 返回两个整数中的较大值
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// processURL 处理单个URL的所有指纹识别
+func processURL(target string, proxy string, timeout int, workerCount int, options *types.CmdOptions, printResult func(string)) (*TargetResult, error) {
+	// 获取目标基础信息
+	logger.Debug(fmt.Sprintf("获取目标 %s 的基础信息", target))
+	title, serverInfo, statusCode, err := GetBaseInfo(target, proxy, timeout)
+
+	// 创建目标结果对象
+	targetResult := &TargetResult{
+		URL:        target,
+		StatusCode: statusCode,
+		Title:      title,
+		Server:     serverInfo,
+		Matches:    make([]*FingerMatch, 0),
+	}
+
+	// 即使获取基础信息失败，也继续处理
+	if err != nil {
+		logger.Debug(fmt.Sprintf("获取目标 %s 基础信息失败: %v", target, err))
+		// 使用空的基础信息
+		targetResult.Title = ""
+		targetResult.Server = types.EmptyServerInfo()
+		targetResult.StatusCode = 0
+	}
+
+	// 创建基础信息对象供指纹识别使用
+	baseInfo := &BaseInfo{
+		Title:      targetResult.Title,
+		Server:     targetResult.Server,
+		StatusCode: targetResult.StatusCode,
+	}
+
+	// 如果没有指纹规则，直接返回结果
+	if len(AllFinger) == 0 {
+		return targetResult, nil
+	}
+
+	// 创建指纹识别任务通道
+	fingerChan := make(chan *finger2.Finger, len(AllFinger))
+
+	// 创建结果通道
+	resultChan := make(chan *FingerMatch, len(AllFinger))
+
+	// 创建错误通道
+	fingerErrorChan := make(chan error, len(AllFinger))
+
+	// 创建等待组
+	var fingerWg sync.WaitGroup
+
+	// 启动指纹工作协程
+	for i := 0; i < workerCount; i++ {
+		fingerWg.Add(1)
+		go func() {
+			defer fingerWg.Done()
+			// 每个工作协程创建自己的CustomLib实例
+			customLib := cel.NewCustomLib()
+
+			for fg := range fingerChan {
+				// 重置CustomLib避免上下文污染
+				customLib.Reset()
+
+				// 执行指纹识别
+				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout)
+				if err != nil {
+					fingerErrorChan <- fmt.Errorf("URL %s 的指纹 %s 评估失败: %v", target, fg.Id, err)
+				} else if result {
+					// 只存储匹配成功的指纹
+					resultChan <- &FingerMatch{
+						Finger: fg,
+						Result: true,
+					}
+
+					// 匹配成功立即写入结果文件
+					if options.Output != "" {
+						// 从文件扩展名确定输出格式
+						outputFormat := "txt" // 默认为txt格式
+						if ext := strings.ToLower(filepath.Ext(options.Output)); ext == ".csv" {
+							outputFormat = "csv"
+						}
+
+						if err := output.WriteResult(options.Output, outputFormat, target, fg, true); err != nil {
+							logger.Error(fmt.Sprintf("写入结果失败: %v", err))
+						}
+					}
+				}
+			}
+		}()
+	}
+
+	// 发送指纹任务
+	for _, fg := range AllFinger {
+		fingerChan <- fg
+	}
+	close(fingerChan)
+
+	// 启动一个协程收集结果
+	var matchesMutex sync.Mutex
+	go func() {
+		for match := range resultChan {
+			matchesMutex.Lock()
+			targetResult.Matches = append(targetResult.Matches, match)
+			matchesMutex.Unlock()
+		}
+	}()
+
+	// 等待所有指纹识别完成
+	fingerWg.Wait()
+
+	// 关闭结果通道
+	close(resultChan)
+	close(fingerErrorChan)
+
+	// 收集错误
+	var fingerErrors []error
+	for err := range fingerErrorChan {
+		fingerErrors = append(fingerErrors, err)
+	}
+
+	// 如果有太多错误，记录一些统计信息
+	if len(fingerErrors) > 0 {
+		logger.Debug(fmt.Sprintf("URL %s 指纹识别过程中发生 %d 个错误", target, len(fingerErrors)))
+	}
+
+	// URL处理完成后输出结果
+	if len(targetResult.Matches) > 0 {
+		// 构建基础信息输出
+		statusCodeStr := ""
+		if targetResult.StatusCode > 0 {
+			statusCodeStr = fmt.Sprintf("（%d）", targetResult.StatusCode)
+		}
+
+		serverInfo := ""
+		if targetResult.Server != nil {
+			serverInfo = fmt.Sprintf("%s", targetResult.Server.ServerType)
+		}
+
+		baseInfoStr := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
+			targetResult.URL,
+			statusCodeStr,
+			targetResult.Title,
+			serverInfo)
+
+		// 收集所有匹配的指纹名称
+		var fingerNames []string
+		for _, match := range targetResult.Matches {
+			fingerNames = append(fingerNames, match.Finger.Info.Name)
+		}
+
+		// 输出匹配成功的信息
+		outputMsg := fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
+			baseInfoStr,
+			strings.Join(fingerNames, "，"),
+			color.GreenString("成功"))
+
+		// 通过回调函数添加结果
+		printResult(outputMsg)
+	}
+
+	return targetResult, nil
 }
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则
