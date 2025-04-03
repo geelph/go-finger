@@ -23,7 +23,9 @@ build:
   image: golang:$GO_VERSION
   script:
     - echo "重建阿里源配置..."
-    - rm -f /etc/apt/sources.list
+    # 删除可能存在的源地址
+    - rm -rf /etc/apt/sources.list
+    - rm -rf /etc/apt/sources.list.d/*
     # 写入阿里源（假设是 Debian bookworm）
     - echo "deb http://mirrors.aliyun.com/debian/ bullseye main contrib non-free" > /etc/apt/sources.list
     - echo "deb http://mirrors.aliyun.com/debian/ bullseye-updates main contrib non-free" >> /etc/apt/sources.list
