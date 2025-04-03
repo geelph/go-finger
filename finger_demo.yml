@@ -17,7 +17,7 @@ rules:
     request:
       type: http # 请求类型，可以不写默认就是http
       method: GET # 请求方式，默认GET
-      path: /form/exportConfigByHttp # 请求路径，默认/
+      path: / # 请求路径，默认/
 #      follow_redirects: true # 是否禁用自动重定向跟随
     expression: response.status == 302 || response.body.bcontains(b'123') # 匹配规则
   r1:

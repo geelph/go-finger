@@ -119,6 +119,10 @@ func setDefaults(options *OptionsRequest) {
 // configureHeaders 配置请求头信息
 func configureHeaders(req *retryablehttp.Request, options OptionsRequest) {
 	req.Header.Set("User-Agent", common.RandomUA())
+	req.Header.Set("Accept", "application/x-shockwave-flash, image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, */*'")
+	req.Header.Set("X-Forwarded-For", common.GetRandomIP())
+	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Cache-Control", "no-cache")
 	// default post content-type
 	if req.Method == http.MethodPost && len(req.Header.Get("Content-Type")) == 0 {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")

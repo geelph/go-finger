@@ -22,15 +22,21 @@ import (
 
 var (
 	maxDefaultBody int64 = 5 * 1024 * 1024  // 最大读取响应体限制（5MB）
-	defaultTimeout       = 10 * time.Second // 默认请求超时时间
+	defaultTimeout       = 3 * time.Second // 默认请求超时时间
 )
 
 // SendRequest yaml poc发送http请求
-func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[string]any, proxy string) (map[string]any, error) {
+func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[string]any, proxy string, timeout int) (map[string]any, error) {
+
+	// 设置超时时间，如果传入的超时时间为0，则使用默认超时时间
+	timeoutDuration := time.Duration(timeout) * time.Second
+	if timeout <= 0 {
+		timeoutDuration = defaultTimeout
+	}
 
 	options := network.OptionsRequest{
 		Proxy:              "",             // 初始化为空，后面设置
-		Timeout:            defaultTimeout, // 增加超时时间到10秒
+		Timeout:            timeoutDuration, // 使用确定的超时参数
 		Retries:            2,              // 增加重试次数
 		FollowRedirects:    !rule.Request.FollowRedirects,
 		InsecureSkipVerify: true, // 忽略SSL证书错误
@@ -84,7 +90,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 				ServerName:  info.Host,
 			})
 			if err != nil {
-				fmt.Println("tcp error:", err.Error())
+				logger.Debug(fmt.Sprintf("tcp error：%s", err.Error()))
 				return nil, err
 			}
 			data := rule.Request.Data
@@ -95,18 +101,19 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 					data = common.FromHex(data)
 				}
 			}
+			logger.Debug(fmt.Sprintf("TCP发送数据：%s", data))
 			errs := nc.Send([]byte(data))
 			if errs != nil {
-				fmt.Println("tcp send error:", errs.Error())
+				logger.Debug(fmt.Sprintf("tcp send error：%s", errs.Error()))
 			}
 			res, err := nc.RecvTcp()
 			if err != nil {
-				fmt.Println("tcp receive error:", err.Error())
+				logger.Debug(fmt.Sprintf("tcp receive error：%s", err.Error()))
 			}
 			_ = nc.Close()
 			err = network.RawParse(nc, []byte(data), res, variableMap)
 			if err != nil {
-				fmt.Println("tcp or udp parse error:", err.Error())
+				logger.Debug(fmt.Sprintf("tcp or udp parse error：%s", err.Error()))
 			}
 			return variableMap, nil
 		case common.UDP_Type:
@@ -125,7 +132,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 				ServerName:  info.Host,
 			})
 			if err != nil {
-				fmt.Println("udp error:", err.Error())
+				logger.Debug(fmt.Sprintf("udp error：%s", err.Error()))
 				return nil, err
 			}
 			data := rule.Request.Data
@@ -163,6 +170,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 			if err != nil {
 				return variableMap, err
 			}
+			return variableMap, nil
 		}
 	}
 
@@ -175,7 +183,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 		}
 	}
 
-	logger.Debug("请求URL：", NewUrlStr)
+	logger.Debug(fmt.Sprintf("请求URL：%s", NewUrlStr))
 
 	// 发送请求
 	resp, err := network.SendRequestHttp(ctx, req.Method, NewUrlStr, rule.Request.Body, options)

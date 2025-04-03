@@ -11,6 +11,7 @@ import (
 	"bytes"
 	rand2 "crypto/rand"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -474,4 +475,36 @@ func ParseAddress(address string) (AddressInfo, error) {
 	info.Hostname = parsedURL.Hostname()
 
 	return info, nil
+}
+
+// GetRandomIP 获取随机ip地址
+func GetRandomIP() string {
+	rand.Seed(time.Now().UnixNano())
+	ip := make(net.IP, 4)
+	binary.BigEndian.PutUint32(ip, rand.Uint32())
+	return ip.String()
+}
+
+// RemoveDuplicateURLs 去除重复的URL
+func RemoveDuplicateURLs(urls []string) []string {
+	// 使用map来判断URL是否重复
+	urlMap := make(map[string]bool)
+	var result []string
+
+	for _, url := range urls {
+		// 规范化URL，移除前后空格
+		url = strings.TrimSpace(url)
+		// 跳过空URL
+		if url == "" {
+			continue
+		}
+		
+		// 如果URL不在map中，添加到结果中
+		if !urlMap[url] {
+			urlMap[url] = true
+			result = append(result, url)
+		}
+	}
+
+	return result
 }

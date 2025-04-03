@@ -309,7 +309,7 @@ func GetIconURL(pageURL string, html string) string {
 					faviconURL = baseURL + strings.TrimPrefix(dir, "/") + faviconPath
 				}
 			}
-			logger.Debug("页面提取到icon url", faviconURL)
+			logger.Debug(fmt.Sprintf("页面提取到icon url %s", faviconURL))
 		}
 	}
 

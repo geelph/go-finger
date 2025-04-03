@@ -16,7 +16,7 @@ import (
 // 默认版本信息
 const defaultVersion = "1.0.0"
 const defaultAuthor = "zhizhuo"
-const defaultBuildDate = "2025-03-10" // 默认构建日期
+const defaultBuildDate = "BUILD_TIME" // 默认构建日期
 
 // 从环境变量获取值，如果不存在则使用默认值
 func getEnvOrDefault(key, defaultValue string) string {

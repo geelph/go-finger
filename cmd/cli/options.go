@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"gxx/types"
 	"gxx/utils/logger"
+	"path/filepath"
+	"strings"
 
 	"github.com/projectdiscovery/goflags"
 )
@@ -26,12 +28,12 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 	)
 	flagSet.CreateGroup("output", "输出",
 		flagSet.StringVarP(&options.Output, "output", "o", "", "输出文件路径（支持txt/csv格式）"),
-		flagSet.StringVarP(&options.OutputFormat, "format", "fmt", "txt", "输出文件格式（支持txt/csv）"),
 	)
 	flagSet.CreateGroup("debug", "调试",
 		flagSet.StringVar(&options.Proxy, "proxy", "", "要使用的http/socks5代理列表（逗号分隔或文件输入）"),
 		flagSet.StringVar(&options.PocYaml, "p", "", "测试单个的yaml文件"),
 		flagSet.StringVar(&options.PocFile, "pf", "", "测试指定目录下面所有的yaml文件"),
+		flagSet.IntVar(&options.Timeout, "timeout", 3, "所有请求的超时时间（秒），默认3秒"),
 		flagSet.BoolVar(&options.Debug, "debug", false, "是否开启debug模式，默认关闭"),
 	)
 
@@ -58,15 +60,24 @@ func verifyOptions(opt *types.CmdOptions) error {
 		return fmt.Errorf("必须设置 `-url` 或 `-file` 参数指定扫描目标")
 	}
 
-	// 验证输出格式
-	if opt.Output != "" && opt.OutputFormat != "txt" && opt.OutputFormat != "csv" {
-		return fmt.Errorf("输出格式只支持 txt 或 csv")
+	// 验证输出文件格式
+	if opt.Output != "" {
+		ext := strings.ToLower(filepath.Ext(opt.Output))
+		if ext != ".txt" && ext != ".csv" {
+			return fmt.Errorf("输出文件格式只支持 .txt 或 .csv")
+		}
 	}
 
 	// 验证线程数
 	if opt.Threads <= 0 {
 		logger.Warn("线程数无效，将使用默认值 10")
 		opt.Threads = 10
+	}
+
+	// 验证超时时间
+	if opt.Timeout <= 0 {
+		logger.Warn("超时时间无效，将使用默认值 3 秒")
+		opt.Timeout = 3
 	}
 
 	return nil

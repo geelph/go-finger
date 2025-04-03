@@ -86,7 +86,7 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64,
 	iconUrl := GetIconURL(resp.Request.URL.String(), utf8RespBody)
 	// 计算icon hash，传入代理参数
 	iconHash := NewGetIconHash(iconUrl, proxy).Run()
-	logger.Debug("icon hash：", iconHash)
+	logger.Debug(fmt.Sprintf("icon hash：%s", iconHash))
 	return &proto.Response{
 		Status:      int32(resp.StatusCode),
 		Url:         network.Url2ProtoUrl(resp.Request.URL),

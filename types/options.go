@@ -17,7 +17,6 @@ type CmdOptions struct {
 	TargetsFile  string              // 测试目标文件
 	Threads      int                 // 并发线程数
 	Output       string              // 输出文件路径
-	OutputFormat string              // 输出文件格式
 	PocFile      string              // POC文件路径
 	PocYaml      string              // 单个POC yaml文件
 	Timeout      int                 // 超时时间

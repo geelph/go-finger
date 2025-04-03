@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -73,6 +74,8 @@ type Logger struct {
 	terminalLogger *logrus.Logger
 	fileLogger     *logrus.Logger
 	logLevel       logrus.Level
+	originalOutput io.Writer    // 保存原始的终端输出
+	outputMutex    sync.Mutex   // 保护输出切换的互斥锁
 }
 
 var (
@@ -83,9 +86,13 @@ var (
 		terminalLogger: logrus.New(),
 		fileLogger:     logrus.New(),
 		logLevel:       logrus.InfoLevel,
+		originalOutput: os.Stdout,
 	}
+	// 空输出对象，用于暂停终端日志
+	nullOutput = io.Discard
 )
 
+// InitLogger 初始化全局日志实例
 func InitLogger(logDir string, maxFiles int, logLevel int) {
 	once.Do(func() {
 		instance = NewLogger(logDir, maxFiles, logLevel)
@@ -143,7 +150,36 @@ func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
 		terminalLogger: terminalLogger,
 		fileLogger:     fileLogger,
 		logLevel:       level,
+		originalOutput: os.Stdout,
 	}
+}
+
+// PauseTerminalLogging 暂停终端日志输出，在显示进度条前调用
+func PauseTerminalLogging() {
+	if instance != nil {
+		instance.PauseTerminalLogging()
+	}
+}
+
+// ResumeTerminalLogging 恢复终端日志输出，在进度条完成后调用
+func ResumeTerminalLogging() {
+	if instance != nil {
+		instance.ResumeTerminalLogging()
+	}
+}
+
+// PauseTerminalLogging 暂停终端日志输出的实例方法
+func (l *Logger) PauseTerminalLogging() {
+	l.outputMutex.Lock()
+	defer l.outputMutex.Unlock()
+	l.terminalLogger.SetOutput(nullOutput)
+}
+
+// ResumeTerminalLogging 恢复终端日志输出的实例方法
+func (l *Logger) ResumeTerminalLogging() {
+	l.outputMutex.Lock()
+	defer l.outputMutex.Unlock()
+	l.terminalLogger.SetOutput(l.originalOutput)
 }
 
 func Info(format string, args ...interface{}) {

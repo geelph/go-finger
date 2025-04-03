@@ -13,6 +13,8 @@ import (
 	"gxx/utils/logger"
 	"gxx/utils/output"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -41,15 +43,40 @@ func main() {
 	}
 
 	logger.Info(fmt.Sprintf("输出文件：%s", options.Output))
+	
+	// 从文件扩展名确定输出格式
+	outputFormat := "txt" // 默认为txt格式
+	if options.Output != "" {
+		ext := strings.ToLower(filepath.Ext(options.Output))
+		if ext == ".csv" {
+			outputFormat = "csv"
+		}
+	}
+	
 	// 初始化输出文件
-	if err := output.InitOutput(options.Output, options.OutputFormat); err != nil {
+	if err := output.InitOutput(options.Output, outputFormat); err != nil {
 		logger.Error("初始化输出文件失败: %v", err)
 		os.Exit(1)
 	}
 	defer output.Close()
 
+	// 显示开始扫描的信息
+	startTime := time.Now()
+	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
+	fmt.Println(color.YellowString(" 开始扫描，请耐心等待..."))
+	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
+	
 	// 执行主程序
 	cli.Run(options)
+
+	// 显示扫描完成的信息
+	elapsed := time.Since(startTime)
+	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
+	fmt.Printf("%s 耗时: %s\n", 
+		color.GreenString("扫描完成!"), 
+		color.YellowString("%s", elapsed.Round(time.Second)))
+	fmt.Printf("结果已保存至: %s\n", color.CyanString(options.Output))
+	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
 
 	// 确保所有日志都被写入
 	time.Sleep(2 * time.Second)

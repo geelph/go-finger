@@ -172,7 +172,14 @@ func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
 func (c *CustomLib) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	*c = CustomLib{}
+	// 只重置字段，不替换整个结构体
+	c.envOptions = nil
+	c.programOptions = nil
+	
+	// 重新初始化为默认值
+	reg := types.NewEmptyRegistry()
+	c.envOptions = ReadCompileOptions(reg)
+	c.programOptions = ReadProgramOptions(reg)
 }
 
 // WriteRuleIsVulOptions 添加漏洞检测函数声明
