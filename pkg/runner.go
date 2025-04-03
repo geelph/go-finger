@@ -120,7 +120,7 @@ func evaluateFingerprint(fg *finger2.Finger, target, proxy string, customLib *ce
 
 	// 评估规则
 	for _, rule := range fg.Rules {
-		needNewRequest := rule.Value.Request.Path != "/" && rule.Value.Request.Path != "" || !firstRequestSent
+		needNewRequest := (rule.Value.Request.Path != "/" && rule.Value.Request.Path != "") || !firstRequestSent
 
 		if needNewRequest {
 			logger.Debug("发送指纹探测请求")
@@ -184,7 +184,7 @@ func evaluateFingerprint(fg *finger2.Finger, target, proxy string, customLib *ce
 func NewFingerRunner(options *types.CmdOptions) {
 	var target string
 	if len(options.Target) == 0 && options.TargetsFile == "" {
-		fmt.Println("错误: Target 和 TargetsFile 必填其中一项")
+		fmt.Println("错误: URL 和 File 必填其中一项")
 		return
 	}
 
@@ -204,11 +204,11 @@ func NewFingerRunner(options *types.CmdOptions) {
 	}
 
 	// 创建工作池
-	workerCount := options.Threads
-	logger.Info(fmt.Sprintf("使用工作线程：%v个", workerCount))
+	workerCount := 10
 	if options.Threads > 0 {
 		workerCount = options.Threads
 	}
+	logger.Info(fmt.Sprintf("使用工作线程：%v个", workerCount))
 
 	// 创建任务通道
 	taskChan := make(chan *finger2.Finger, len(AllFinger))
