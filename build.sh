@@ -82,7 +82,8 @@ build() {
             exit 1
     esac
 
-    OUTPUT_NAME="${APP_NAME}_${PLATFORM}_${ARCH}_${VERSION}"
+    OUTPUT_NAME="${APP_NAME}"
+    OUTPUT_ZIP_NAME="${APP_NAME}_${PLATFORM}_${ARCH}_${VERSION}"
 
     echo "正在为 ${PLATFORM}/${ARCH} 构建..."
 
@@ -100,7 +101,7 @@ build() {
     fi
 
     # 构建命令
-    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o gxx ./cmd/main.go"
+    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
     
     # 如果启用了嵌入指纹库
     if [ "$EMBED" == "true" ]; then
@@ -133,7 +134,7 @@ build() {
     fi
 
     # 压缩成 zip 文件
-    ZIP_FILE="$BUILD_DIR/$OUTPUT_NAME.zip"
+    ZIP_FILE="$BUILD_DIR/$OUTPUT_ZIP_NAME.zip"
     if ! zip -j "$ZIP_FILE" "$OUTPUT_FILE"; then
         echo "${PLATFORM}/${ARCH} 的 ZIP 打包失败。"
         exit 1
