@@ -100,6 +100,11 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64,
 	}
 }
 
+// BuildProtoRequest 构造proto.Request结构体 (公开版本)
+func BuildProtoRequest(resp *http.Response, method, body, path string) *proto.Request {
+	return buildProtoRequest(resp, method, body, path)
+}
+
 // BuildProtoResponse 构造proto.Response结构体 (公开版本)
 func BuildProtoResponse(resp *http.Response, utf8RespBody string, latency int64, proxy string) *proto.Response {
 	return buildProtoResponse(resp, utf8RespBody, latency, proxy)

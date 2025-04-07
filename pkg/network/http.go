@@ -64,7 +64,7 @@ func initGlobalClient() {
 func NewRequestHttp(urlStr string, options OptionsRequest) (*http.Response, error) {
 	setDefaults(&options)
 	if options.Proxy != "" {
-		logger.Debug("使用代理 ", options.Proxy)
+		logger.Debug(fmt.Sprintf("使用代理：%s", options.Proxy))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
@@ -89,7 +89,7 @@ func NewRequestHttp(urlStr string, options OptionsRequest) (*http.Response, erro
 func SendRequestHttp(ctx context.Context, Method string, UrlStr string, Body string, options OptionsRequest) (*http.Response, error) {
 	setDefaults(&options)
 	if options.Proxy != "" {
-		logger.Debug("使用代理 ", options.Proxy)
+		logger.Debug(fmt.Sprintf("使用代理：%s", options.Proxy))
 	}
 	req, err := retryablehttp.NewRequestWithContext(ctx, Method, UrlStr, Body)
 	if err != nil {
