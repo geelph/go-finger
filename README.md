@@ -42,6 +42,9 @@ gxx -u https://example.com -o results.txt
 
 # 开启调试模式
 gxx -u https://example.com --debug
+
+# 禁用文件日志记录
+gxx -u https://example.com --no-file-log
 ```
 
 ## 📖 命令行参数
@@ -60,6 +63,7 @@ gxx -u https://example.com --debug
 - `-p, --poc`：测试单个YAML文件
 - `-pf, --poc-file`：测试指定目录下的所有YAML文件
 - `--debug`：开启调试模式
+- `--no-file-log`：禁用文件日志记录，仅输出日志到控制台
 
 ## 🔍 示例代码
 

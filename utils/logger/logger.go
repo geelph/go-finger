@@ -93,13 +93,13 @@ var (
 )
 
 // InitLogger 初始化全局日志实例
-func InitLogger(logDir string, maxFiles int, logLevel int) {
+func InitLogger(logDir string, maxFiles int, logLevel int, noFileLog ...bool) {
 	once.Do(func() {
-		instance = NewLogger(logDir, maxFiles, logLevel)
+		instance = NewLogger(logDir, maxFiles, logLevel, noFileLog...)
 	})
 }
 
-func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
+func NewLogger(logDir string, maxFiles int, logLevel int, noFileLog ...bool) *Logger {
 	terminalLogger := logrus.New()
 	terminalFormatter := &CustomFormatter{IsColored: true}
 	terminalLogger.SetFormatter(terminalFormatter)
@@ -109,21 +109,32 @@ func NewLogger(logDir string, maxFiles int, logLevel int) *Logger {
 	plainFormatter := &PlainFormatter{CustomFormatter: *terminalFormatter}
 	fileLogger.SetFormatter(plainFormatter)
 
-	// 确保日志目录存在
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(logDir, 0755); err != nil {
-			terminalLogger.Errorf("创建日志目录失败: %v", err)
-		}
+	// 默认启用文件日志
+	disableFileLog := false
+	if len(noFileLog) > 0 && noFileLog[0] {
+		disableFileLog = true
 	}
 
-	logFile := &lumberjack.Logger{
-		Filename:   logDir + "/" + time.Now().Format("2006-01-02") + ".log",
-		MaxBackups: maxFiles,
-		MaxSize:    10,
-		MaxAge:     30,
-		Compress:   true,
+	if !disableFileLog {
+		// 确保日志目录存在
+		if _, err := os.Stat(logDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(logDir, 0755); err != nil {
+				terminalLogger.Errorf("创建日志目录失败: %v", err)
+			}
+		}
+
+		logFile := &lumberjack.Logger{
+			Filename:   logDir + "/" + time.Now().Format("2006-01-02") + ".log",
+			MaxBackups: maxFiles,
+			MaxSize:    10,
+			MaxAge:     30,
+			Compress:   true,
+		}
+		fileLogger.SetOutput(logFile)
+	} else {
+		// 如果禁用文件日志，将文件日志输出设置为空
+		fileLogger.SetOutput(io.Discard)
 	}
-	fileLogger.SetOutput(logFile)
 
 	// 设置日志级别
 	var level logrus.Level

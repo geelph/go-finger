@@ -155,15 +155,21 @@ func Select(pocPath string, pocName string) (string, error) {
 // Load 加载yaml文件
 func Load(fileName string, Fingers embed.FS) (*Finger, error) {
 	p := &Finger{}
-	yamlFile, err := Fingers.ReadFile("finger/" + fileName)
+	// 检查文件名是否已经包含finger/前缀，避免重复路径
+	filePath := fileName
+	if !strings.HasPrefix(fileName, "finger/") {
+		filePath = "finger/" + fileName
+	}
+	
+	yamlFile, err := Fingers.ReadFile(filePath)
 
 	if err != nil {
-		fmt.Printf("[-] load poc %s error1: %v\n", fileName, err)
+		fmt.Printf("[-] load poc %s error1: %v\n", filePath, err)
 		return nil, err
 	}
 	err = yaml.Unmarshal(yamlFile, p)
 	if err != nil {
-		fmt.Printf("[-] load poc %s error2: %v\n", fileName, err)
+		fmt.Printf("[-] load poc %s error2: %v\n", filePath, err)
 		return nil, err
 	}
 	return p, err

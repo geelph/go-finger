@@ -23,4 +23,5 @@ type CmdOptions struct {
 	Retries      int                 // 重试次数，默认3次
 	Proxy        string              // 代理地址
 	Debug        bool                // 设置debug模式
+	NoFileLog    bool                // 是否禁用文件日志，仅输出到控制台
 }

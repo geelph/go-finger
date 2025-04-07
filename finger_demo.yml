@@ -24,7 +24,7 @@ rules:
     request:
       method: GET
       path: /phpinfo.php
-    expression: response.body.bcontains(b'123') || response.icon_hash == "1236214049"
+    expression: response.raw_header.ibcontains(b'AWS') || response.icon_hash == "1236214049"
   r2:
     request:
       method: GET

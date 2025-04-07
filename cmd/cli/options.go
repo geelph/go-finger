@@ -35,6 +35,7 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 		flagSet.StringVar(&options.PocFile, "pf", "", "测试指定目录下面所有的yaml文件"),
 		flagSet.IntVar(&options.Timeout, "timeout", 3, "所有请求的超时时间（秒），默认3秒"),
 		flagSet.BoolVar(&options.Debug, "debug", false, "是否开启debug模式，默认关闭"),
+		flagSet.BoolVar(&options.NoFileLog, "no-file-log", false, "禁用文件日志记录，仅输出到控制台"),
 	)
 
 	// 实例化操作

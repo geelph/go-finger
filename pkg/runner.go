@@ -20,6 +20,7 @@ import (
 	"gxx/utils/output"
 	"gxx/utils/proto"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -49,12 +50,12 @@ func loadFingerprints(options *types.CmdOptions) error {
 	if options.PocFile != "" {
 		targetPath = options.PocFile
 		logger.Info(fmt.Sprintf("加载yaml文件目录：%s", targetPath))
-		// 遍历目录中的所有文件
-		return filepath.Walk(targetPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info == nil {
+		// 使用WalkDir递归遍历目录中的所有文件
+		return filepath.WalkDir(targetPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
 				return err
 			}
-			if !info.IsDir() && common.IsYamlFile(path) {
+			if !d.IsDir() && common.IsYamlFile(path) {
 				if poc, err := finger2.Read(path); err == nil && poc != nil {
 					AllFinger = append(AllFinger, poc)
 				}
@@ -211,8 +212,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 
 	// 记录去重后的URL数量和重复URL数量
 	duplicateCount := originalCount - len(targets)
-	logger.Info(fmt.Sprintf("重复目标数量：%v个", duplicateCount))
-	logger.Info(fmt.Sprintf("去重后目标数量：%v个", len(targets)))
+	logger.Info(fmt.Sprintf("重复目标数量：%v个，去重后目标数量：%v个", duplicateCount, len(targets)))
 
 	proxy := options.Proxy
 	logger.Debug(fmt.Sprintf("使用代理 Proxy: %s", proxy))
@@ -273,9 +273,6 @@ func NewFingerRunner(options *types.CmdOptions) {
 
 	// 创建错误通道
 	errorChan := make(chan error, len(targets))
-
-	// 暂停终端日志输出
-	logger.PauseTerminalLogging()
 
 	// 创建自定义进度条
 	bar := progressbar.NewOptions64(
@@ -372,9 +369,6 @@ func NewFingerRunner(options *types.CmdOptions) {
 	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %.2f it/s)",
 		len(targets), len(targets), itemsPerSecond)
 	fmt.Println(maxProgress)
-
-	// 恢复终端日志输出
-	logger.ResumeTerminalLogging()
 
 	close(errorChan)
 
@@ -723,7 +717,6 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 			useCache = true
 			logger.Debug(fmt.Sprintf("规则 %s 使用缓存的根路径HTTP响应", rule.Key))
 		}
-
 		// 如果不使用缓存，则发送新请求
 		if !useCache {
 			logger.Debug(fmt.Sprintf("发送指纹探测请求，路径：%s，类型：%s", rule.Value.Request.Path, rule.Value.Request.Type))
@@ -744,7 +737,8 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 				}
 			}
 		}
-
+		logger.Debug(fmt.Sprintf("请求数据包：\n%s", SetiableMap["request"].(*proto.Request).Raw))
+		logger.Debug(fmt.Sprintf("响应数据包：\n%s", SetiableMap["response"].(*proto.Response).Raw))
 		logger.Debug("开始cel匹配处理")
 		result, err := customLib.Evaluate(rule.Value.Expression, SetiableMap)
 		if err != nil {

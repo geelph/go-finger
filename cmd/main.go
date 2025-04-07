@@ -36,7 +36,13 @@ func main() {
 		color.Blue("DEBUG模式已开启")
 	}
 	// 初始化日志系统，设置日志保存目录、最大文件数和日志级别
-	logger.InitLogger("logs", 5, logLevel)
+	logger.InitLogger("logs", 5, logLevel, options.NoFileLog)
+	
+	// 如果禁用了文件日志，显示通知
+	if options.NoFileLog {
+		color.Blue("文件日志记录功能已禁用")
+	}
+	
 	// 配置输出文件啊
 	if options.Output == "" {
 		options.Output = "result_" + fmt.Sprintf("%d", time.Now().Unix()) + ".txt"

@@ -13,8 +13,6 @@ import (
 	finger2 "gxx/pkg/finger"
 	"gxx/utils/common"
 	"io/fs"
-	"os"
-	"path/filepath"
 )
 
 //go:embed finger/*
@@ -45,59 +43,30 @@ func GetFingerPath() string {
 
 // GetFingerYaml 获取指纹yaml文件
 func GetFingerYaml() ([]*finger2.Finger, error) {
-	entries, err := EmbeddedFingerFS.ReadDir("finger")
-	if err != nil {
-		return nil, fmt.Errorf("初始化finger目录出错: %v", err)
-	}
-
 	var allFinger []*finger2.Finger
-	for _, entry := range entries {
-		if common.IsYamlFile(entry.Name()) {
-			poc, err := finger2.Load(entry.Name(), EmbeddedFingerFS)
+
+	// 递归遍历所有目录查找yaml文件
+	err := fs.WalkDir(EmbeddedFingerFS, "finger", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 只处理yaml文件
+		if !d.IsDir() && common.IsYamlFile(d.Name()) {
+			poc, err := finger2.Load(path, EmbeddedFingerFS)
 			if err != nil {
-				return nil, fmt.Errorf("加载文件 %s 出错: %v", entry.Name(), err)
+				return fmt.Errorf("加载文件 %s 出错: %v", path, err)
 			}
 			if poc != nil {
 				allFinger = append(allFinger, poc)
 			}
 		}
-	}
-	return allFinger, nil
-}
-
-func ExtractEmbeddedFingers() (string, error) {
-	if !hasEmbeddedFingers {
-		return "", fmt.Errorf("没有嵌入的指纹库")
-	}
-
-	tempDir, err := os.MkdirTemp("", "gxx-fingers-*")
-	if err != nil {
-		return "", fmt.Errorf("创建临时目录失败: %v", err)
-	}
-
-	err = fs.WalkDir(EmbeddedFingerFS, "finger", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		targetPath := filepath.Join(tempDir, path)
-
-		if d.IsDir() {
-			return os.MkdirAll(targetPath, 0755)
-		}
-
-		data, err := EmbeddedFingerFS.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		return os.WriteFile(targetPath, data, 0644)
+		return nil
 	})
 
 	if err != nil {
-		os.RemoveAll(tempDir)
-		return "", fmt.Errorf("提取指纹库失败: %v", err)
+		return nil, fmt.Errorf("遍历指纹目录出错: %v", err)
 	}
 
-	return tempDir, nil
+	return allFinger, nil
 }
