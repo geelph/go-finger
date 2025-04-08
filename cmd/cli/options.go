@@ -10,7 +10,6 @@ package cli
 import (
 	"fmt"
 	"gxx/types"
-	"gxx/utils/logger"
 	"path/filepath"
 	"strings"
 
@@ -40,7 +39,7 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 
 	// 实例化操作
 	if err := flagSet.Parse(); err != nil {
-		logger.Error("无法解析标志: %s\n", err)
+		return options, fmt.Errorf("无法解析标志: %s", err)
 	}
 	// 验证必参数是否传入
 	if err := verifyOptions(options); err != nil {
@@ -71,13 +70,13 @@ func verifyOptions(opt *types.CmdOptions) error {
 
 	// 验证线程数
 	if opt.Threads <= 0 {
-		logger.Warn("线程数无效，将使用默认值 10")
+		fmt.Println("[-] 线程数无效，将使用默认值 10")
 		opt.Threads = 10
 	}
 
 	// 验证超时时间
 	if opt.Timeout <= 0 {
-		logger.Warn("超时时间无效，将使用默认值 3 秒")
+		fmt.Println("[-] 超时时间无效，将使用默认值 3 秒")
 		opt.Timeout = 3
 	}
 
