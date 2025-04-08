@@ -8,6 +8,7 @@
 package finger
 
 import (
+	"crypto/tls"
 	"fmt"
 	"gxx/utils/common"
 	"gxx/utils/logger"
@@ -98,6 +99,9 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 	// 创建HTTP客户端
 	client := &http.Client{
 		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
 	}
 
 	// 如果有代理，使用proxyclient处理代理请求
@@ -114,14 +118,15 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 		}
 
 		client.Transport = &http.Transport{
-			DialContext: proxyClient.DialContext,
+			DialContext:     proxyClient.DialContext,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 	}
 
 	// 创建请求
 	req, err := http.NewRequest("GET", iconURL, nil)
 	if err != nil {
-		fmt.Println("创建请求失败:", err)
+		logger.Error(fmt.Sprintf("创建请求失败: %s", err))
 		return 0
 	}
 
@@ -133,17 +138,19 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("icon获取报错，错误信息:", err)
+		logger.Debug(fmt.Sprintf("icon获取报错，错误信息：%s", err))
 		return 0
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	// 读取响应体
 	var bodyBytes []byte
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("读取响应体失败:", err)
+			logger.Debug(fmt.Sprintf("读取响应体失败: %s", err))
 			return 0
 		}
 
@@ -182,7 +189,7 @@ func StandBase64(raw []byte) []byte {
 // Mmh3Hash32 计算Mmh3Hash32哈希值
 func Mmh3Hash32(raw []byte) int32 {
 	hasher := murmur3.New32()
-	hasher.Write(raw)
+	_, _ = hasher.Write(raw)
 	return int32(hasher.Sum32())
 }
 
