@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/chainreactors/proxyclient"
 	"gxx/utils/common"
 	"gxx/utils/logger"
 	"gxx/utils/proto"
@@ -21,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainreactors/proxyclient"
 	"github.com/zan8in/retryablehttp"
 	"golang.org/x/net/context"
 )
@@ -57,7 +57,37 @@ func init() {
 // initGlobalClient 初始化全局客户端实例
 func initGlobalClient() {
 	opts := retryablehttp.DefaultOptionsSingle
+	opts.Timeout = defaultTimeout * time.Second
+
+	// 设置全局默认的TLS配置
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+		MinVersion:         tls.VersionTLS10,
+		CipherSuites: []uint16{
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+		},
+	}
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+
 	RetryClient = retryablehttp.NewClient(opts)
+	RetryClient.HTTPClient.Transport = transport
+	RetryClient.HTTPClient2.Transport = transport
 }
 
 // NewRequestHttp 创建并发送HTTP请求
@@ -114,6 +144,9 @@ func setDefaults(options *OptionsRequest) {
 	if options.Retries == 0 {
 		options.Retries = 3
 	}
+
+	// 默认启用忽略TLS证书验证
+	options.InsecureSkipVerify = true
 }
 
 // configureHeaders 配置请求头信息
@@ -135,7 +168,15 @@ func configureHeaders(req *retryablehttp.Request, options OptionsRequest) {
 
 // configureClient 配置HTTP客户端参数
 func configureClient(options OptionsRequest) *retryablehttp.Client {
+	if RetryClient == nil {
+		logger.Error("RetryClient 未初始化")
+		return nil // 返回一个默认的客户端或 nil
+	}
+
 	client := RetryClient
+	client.HTTPClient.Timeout = options.Timeout
+	client.HTTPClient2.Timeout = options.Timeout
+
 	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if !options.FollowRedirects {
 			return http.ErrUseLastResponse // 禁止重定向
@@ -143,36 +184,56 @@ func configureClient(options OptionsRequest) *retryablehttp.Client {
 		return nil
 	}
 
-	// 只有当代理地址不为空时才进行代理设置
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: options.InsecureSkipVerify, // 注意：仅用于测试目的
+		MinVersion:         tls.VersionTLS10,
+		CipherSuites: []uint16{
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+		},
+	}
+
+	var transport *http.Transport
+
 	if options.Proxy != "" {
-		parsedURL, err := url.Parse(options.Proxy)
+		proxyURL, err := url.Parse(options.Proxy)
 		if err != nil {
-			logger.Error("代理地址解析失败:", err)
-			// 不返回nil，继续使用默认client
-		} else {
-			dialer, err := proxyclient.NewClient(parsedURL)
-			if err != nil {
-				logger.Error("创建代理客户端失败:", err)
-				// 不返回nil，继续使用默认client
-			} else {
-				client.HTTPClient.Transport = &http.Transport{
-					DialContext: dialer.DialContext,
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: options.InsecureSkipVerify,
-					},
-				}
-			}
+			logger.Error("代理地址解析失败: %v", err)
+			return client // 返回默认client以继续使用
 		}
+
+		dialer, err := proxyclient.NewClient(proxyURL)
+		if err != nil {
+			logger.Error("创建代理客户端失败: %v", err)
+			return client // 返回默认client以继续使用
+		}
+
+		transport = &http.Transport{
+			DialContext:     dialer.DialContext,
+			TLSClientConfig: tlsConfig,
+		}
+
 	} else {
-		// 没有代理时使用默认Transport
-		client.HTTPClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: options.InsecureSkipVerify,
-			},
+		transport = &http.Transport{
+			TLSClientConfig: tlsConfig,
 		}
 	}
 
-	client.HTTPClient.Timeout = options.Timeout
+	client.HTTPClient.Transport = transport
+
 	return client
 }
 
@@ -210,6 +271,18 @@ func simpleRetryHttpGet(target string) ([]byte, int, error) {
 	defer func() {
 		RetryClient.HTTPClient.CheckRedirect = originalCheckRedirect
 	}()
+
+	// 确保有TLS配置，并且忽略证书验证
+	if transport, ok := RetryClient.HTTPClient.Transport.(*http.Transport); ok {
+		if transport.TLSClientConfig == nil {
+			transport.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS10,
+			}
+		} else {
+			transport.TLSClientConfig.InsecureSkipVerify = true
+		}
+	}
 
 	resp, err := RetryClient.Do(req)
 	if err != nil {
