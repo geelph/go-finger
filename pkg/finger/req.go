@@ -75,6 +75,10 @@ func buildProtoRequest(resp *http.Response, method, body, path string) *proto.Re
 func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64, proxy string) *proto.Response {
 	headers := make(map[string]string)
 	rawHeaderBuilder := strings.Builder{}
+	rawHeaderBuilder.WriteString(resp.Proto)
+	rawHeaderBuilder.WriteString(" ")
+	rawHeaderBuilder.WriteString(resp.Status)
+	rawHeaderBuilder.WriteString("\n")
 	for k := range resp.Header {
 		headers[strings.ToLower(k)] = resp.Header.Get(k)
 		rawHeaderBuilder.WriteString(k)

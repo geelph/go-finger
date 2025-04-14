@@ -8,7 +8,6 @@ import (
 	"gxx/utils/proto"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 )
@@ -18,22 +17,6 @@ var (
 	csvWriter     *csv.Writer
 	mu            sync.Mutex
 	headerWritten bool
-	// 预定义状态码映射，避免重复判断
-	statusTextMap = map[string]string{
-		"200": "OK",
-		"201": "Created",
-		"204": "No Content",
-		"301": "Moved Permanently",
-		"302": "Found",
-		"304": "Not Modified",
-		"400": "Bad Request",
-		"401": "Unauthorized",
-		"403": "Forbidden",
-		"404": "Not Found",
-		"500": "Internal Server Error",
-		"502": "Bad Gateway",
-		"503": "Service Unavailable",
-	}
 )
 
 // WriteOptions 定义写入选项结构体，用于传递写入参数
@@ -45,7 +28,7 @@ type WriteOptions struct {
 	StatusCode  int32             // 状态码
 	Title       string            // 页面标题
 	ServerInfo  *types.ServerInfo // 服务器信息
-	RespHeaders map[string]string // 响应头
+	RespHeaders string            // 响应头
 	Response    *proto.Response   // 完整响应对象(可选)
 	FinalResult bool              // 最终匹配结果
 	Remark      string            // 备注(可选)
@@ -154,7 +137,7 @@ func openOutputFile(output, format string) error {
 // WriteFingerprints 使用结构体选项写入指纹组合结果
 func WriteFingerprints(opts *WriteOptions) error {
 	// 检查参数有效性
-	if opts.Output == "" || len(opts.Fingers) == 0 {
+	if opts.Output == "" {
 		return nil
 	}
 
@@ -190,55 +173,9 @@ func WriteFingerprints(opts *WriteOptions) error {
 	if opts.ServerInfo != nil {
 		serverInfoStr = opts.ServerInfo.ServerType
 	}
-	// 获取并合并响应头信息 - 预分配合理的容量
-	headersCapacity := 10
-	if opts.Response != nil && opts.Response.Headers != nil {
-		headersCapacity = len(opts.Response.Headers) + 2 // 额外为Status和Protocol预留空间
-	} else if opts.RespHeaders != nil {
-		headersCapacity = len(opts.RespHeaders) + 2
-	}
-
-	headers := make(map[string]string, headersCapacity)
-
-	// 如果提供了完整响应对象，优先使用其中的headers
-	if opts.Response != nil && opts.Response.Headers != nil {
-		for k, v := range opts.Response.Headers {
-			headers[k] = v
-		}
-
-		// 添加状态码到头信息
-		headers["Status"] = fmt.Sprintf("%d", opts.Response.Status)
-
-		// 尝试从response中提取协议信息
-		if len(opts.Response.Raw) > 0 {
-			rawStr := string(opts.Response.Raw)
-			if strings.HasPrefix(rawStr, "HTTP/2") {
-				headers["Protocol"] = "HTTP/2"
-			} else if strings.HasPrefix(rawStr, "HTTP/1.1") {
-				headers["Protocol"] = "HTTP/1.1"
-			}
-		}
-	}
-
-	// 合并传入的自定义响应头
-	if opts.RespHeaders != nil {
-		for k, v := range opts.RespHeaders {
-			headers[k] = v
-		}
-	}
-
-	// 若状态码未设置，使用传入的状态码
-	if _, exists := headers["Status"]; !exists && opts.StatusCode > 0 {
-		headers["Status"] = fmt.Sprintf("%d", opts.StatusCode)
-	}
-
-	// 若Server头未设置，从ServerInfo添加
-	if _, exists := headers["Server"]; !exists && opts.ServerInfo != nil && opts.ServerInfo.OriginalServer != "" {
-		headers["Server"] = opts.ServerInfo.OriginalServer
-	}
 
 	// 格式化响应头为HTTP标准格式
-	headersStr := formatHeaders(headers)
+	headersStr := string(opts.Response.RawHeader)
 
 	// 写入结果
 	if opts.Format == "csv" {
@@ -292,74 +229,8 @@ func WriteFingerprints(opts *WriteOptions) error {
 	return nil
 }
 
-// formatHeaders 将响应头格式化为标准HTTP头格式
-func formatHeaders(headers map[string]string) string {
-	if len(headers) == 0 {
-		return ""
-	}
-
-	// 预分配足够的容量
-	var sb strings.Builder
-	sb.Grow(256) // 预估合理的初始容量
-
-	// 首先添加状态行
-	statusCode := "200"
-	if status, exists := headers["Status"]; exists {
-		statusCode = status
-		delete(headers, "Status") // 从headers中移除，避免重复显示
-	}
-
-	// 构建HTTP协议和状态行
-	protocol := "HTTP/1.1"
-	if proto, exists := headers["Protocol"]; exists {
-		protocol = proto
-		delete(headers, "Protocol")
-	}
-
-	// 获取状态码文本，使用预定义map替代多个if判断
-	statusText, exists := statusTextMap[statusCode]
-	if !exists {
-		statusText = "OK" // 默认值
-	}
-
-	// 添加状态行
-	fmt.Fprintf(&sb, "%s %s %s\n", protocol, statusCode, statusText)
-
-	// 添加常见重要响应头（按照常见顺序排序）
-	orderedHeaders := []string{
-		"Date", "Server", "Content-Type", "Content-Length",
-		"Last-Modified", "ETag", "Cache-Control", "Expires",
-		"X-Powered-By", "Set-Cookie",
-	}
-
-	// 首先添加重要的响应头
-	for _, key := range orderedHeaders {
-		if value, exists := headers[key]; exists && value != "" {
-			fmt.Fprintf(&sb, "%s: %s\n", key, value)
-			delete(headers, key) // 从map中删除已处理的头
-		}
-	}
-
-	// 然后添加剩余的响应头（按字母顺序）
-	// 预分配剩余键的容量
-	remainingKeys := make([]string, 0, len(headers))
-	for key := range headers {
-		// 直接在循环中过滤非标准HTTP头
-		if key != "Title" && key != "Version" && key != "ServerType" {
-			remainingKeys = append(remainingKeys, key)
-		}
-	}
-	sort.Strings(remainingKeys)
-
-	for _, key := range remainingKeys {
-		fmt.Fprintf(&sb, "%s: %s\n", key, headers[key])
-	}
-
-	return sb.String()
-}
-
 // WriteResult 写入单个指纹结果到文件(兼容旧版接口)
-func WriteResult(output, format, target string, fg *finger2.Finger, statusCode int32, title string, serverInfo *types.ServerInfo, respHeaders map[string]string, finalResult bool) error {
+func WriteResult(output, format, target string, fg *finger2.Finger, statusCode int32, title string, serverInfo *types.ServerInfo, respHeaders string, finalResult bool) error {
 	// 转换为结构体选项
 	opts := &WriteOptions{
 		Output:      output,

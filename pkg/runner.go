@@ -484,11 +484,7 @@ func processURL(target string, proxy string, timeout int, workerCount int, optio
 	matches := runFingerDetection(target, baseInfo, proxy, timeout, workerCount)
 	targetResult.Matches = matches
 
-	// 如果有匹配结果，处理输出
-	if len(targetResult.Matches) > 0 {
-		handleMatchResults(targetResult, options, printResult, outputFormat, initialResponse)
-	}
-
+	handleMatchResults(targetResult, options, printResult, outputFormat, initialResponse)
 	return targetResult, nil
 }
 
@@ -584,11 +580,12 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 	baseInfoStr := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
 		targetResult.URL, statusCodeStr, targetResult.Title, serverInfo)
 
-	outputMsg := fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
-		baseInfoStr, strings.Join(fingerNames, "，"), color.GreenString("成功"))
-
-	// 输出结果
-	printResult(outputMsg)
+	if len(targetResult.Matches) > 0 && targetResult.Matches[0].Result {
+		outputMsg := fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
+			baseInfoStr, strings.Join(fingerNames, "，"), color.GreenString("成功"))
+		// 输出结果
+		printResult(outputMsg)
+	}
 
 	// 写入结果文件
 	if options.Output != "" {
@@ -613,15 +610,15 @@ func writeResultToFile(targetResult *TargetResult, outputs, format string, initi
 		Title:       targetResult.Title,
 		ServerInfo:  targetResult.Server,
 		FinalResult: true,
+		RespHeaders: string(initialResponse.RawHeader),
 	}
 
 	// 添加响应信息
 	if lastResponse != nil {
 		writeOpts.Response = lastResponse
-	} else if initialResponse != nil {
+	} else {
 		writeOpts.Response = initialResponse
 	}
-
 	// 写入结果
 	if err := output.WriteFingerprints(writeOpts); err != nil {
 		logger.Error(fmt.Sprintf("写入结果失败: %v", err))

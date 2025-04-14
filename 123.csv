@@ -1,0 +1,2 @@
+URL,状态码,标题,服务器信息,指纹ID,指纹名称,响应头,匹配结果,备注
+http://172.22.3.251/,200,EWEB,nginx,[],[],"HTTP/1.1 200 OK\nAccept-Ranges: bytes\nDate: Thu, 10 Apr 2025 14:13:40 GMT\nContent-Type: text/html\nLast-Modified: Mon, 13 Jun 2022 13:43:18 GMT\nX-Content-Type-Options: nosniff\nX-Xss-Protection: 1; mode=block\nStrict-Transport-Security: max-age=31536000; includeSubdomains;\nServer: nginx\nContent-Length: 1627\nConnection: keep-alive\nEtag: ""62a73ef6-65b""",true,发现0个指纹
