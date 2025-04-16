@@ -99,6 +99,10 @@ build() {
     if [ "$DEBUG" == "true" ]; then
         LDFLAGS="-w"
     fi
+    
+    # 添加构建时间
+    BUILD_DATE=$(date +"%Y-%m-%d")
+    LDFLAGS="$LDFLAGS -X 'gxx/cmd/cli.defaultBuildDate=$BUILD_DATE'"
 
     # 构建命令
     BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"

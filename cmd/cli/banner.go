@@ -16,7 +16,9 @@ import (
 // 默认版本信息
 const defaultVersion = "1.0.0"
 const defaultAuthor = "zhizhuo"
-const defaultBuildDate = "BUILD_TIME" // 默认构建日期
+
+// 使用 var 定义 defaultBuildDate，使其可以通过 ldflags 注入
+var defaultBuildDate = "BUILD_TIME" // 默认构建日期
 
 // 从环境变量获取值，如果不存在则使用默认值
 func getEnvOrDefault(key, defaultValue string) string {
@@ -39,7 +41,7 @@ var Banner = strings.TrimSpace(`
 // getBuildDate 获取构建日期
 func getBuildDate() string {
 	buildDate := getEnvOrDefault("GXX_BUILD_DATE", defaultBuildDate)
-	// 如果是在构建时，使用当前日期
+	// 如果是默认的 BUILD_TIME，使用当前日期
 	if buildDate == "BUILD_TIME" {
 		return time.Now().Format("2006-01-02")
 	}

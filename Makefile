@@ -6,7 +6,8 @@ all: build
 # 构建项目（不嵌入指纹库）
 build:
 	@echo "构建项目（不嵌入指纹库）..."
-	@go build -o gxx ./cmd/main.go
+	@BUILD_DATE=$$(date +"%Y-%m-%d") && \
+	go build -ldflags "-w -s -X 'gxx/cmd/cli.defaultBuildDate=$$BUILD_DATE'" -o gxx ./cmd/main.go
 	@echo "构建完成，请确保 'finger' 目录与二进制文件放在同一目录下"
 
 # 构建项目（嵌入指纹库）
@@ -14,7 +15,8 @@ build-embed:
 	@echo "构建项目（嵌入指纹库）..."
 	@cp utils/finger/embed.go utils/finger/embed.go.bak
 	@sed -i.bak 's|// //go:embed all:finger|//go:embed all:finger|g' utils/finger/embed.go
-	@go build -o gxx ./cmd/main.go
+	@BUILD_DATE=$$(date +"%Y-%m-%d") && \
+	go build -ldflags "-w -s -X 'gxx/cmd/cli.defaultBuildDate=$$BUILD_DATE'" -o gxx ./cmd/main.go
 	@mv utils/finger/embed.go.bak utils/finger/embed.go
 	@echo "构建完成，指纹库已嵌入到二进制文件中"
 
