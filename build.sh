@@ -3,6 +3,9 @@
 # 设置应用名称和版本号
 APP_NAME="gxx"
 VERSION="1.1.0"
+AUTHOR="jiajiu内部版本"
+# 添加构建时间
+BUILD_DATE=$(date +"%Y-%m-%d")
 
 # 创建构建目录
 BUILD_DIR="build"
@@ -99,12 +102,10 @@ build() {
     if [ "$DEBUG" == "true" ]; then
         LDFLAGS="-w"
     fi
-    
-    # 添加构建时间
-    BUILD_DATE=$(date +"%Y-%m-%d")
+
 
     # 构建命令
-    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH BUILD_DATE=$BUILD_DATE go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
+    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH BUILD_DATE=$BUILD_DATE GXX_VERSION=$VERSION GXX_AUTHOR=$AUTHOR go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
     
     # 如果启用了嵌入指纹库
     if [ "$EMBED" == "true" ]; then
