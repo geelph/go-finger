@@ -127,7 +127,6 @@ func loadFingerprints(options *types.CmdOptions) error {
 			return fmt.Errorf("%s 不是有效的yaml文件", targetPath)
 		}
 	}
-	logger.Info(fmt.Sprintf("加载指纹数量：%v个", len(AllFinger)))
 	return nil
 }
 
@@ -218,7 +217,7 @@ func NewFingerRunner(options *types.CmdOptions) {
 		logger.Error(fmt.Sprintf("加载指纹规则出错: %v", err))
 		return
 	}
-
+	logger.Info(fmt.Sprintf("加载指纹数量：%v个", len(AllFinger)))
 	// 确定输出格式并初始化输出文件
 	outputFormat := getOutputFormat(options)
 	if options.Output != "" {
