@@ -290,6 +290,8 @@ github.com/projectdiscovery/stringsutil v0.0.2 h1:uzmw3IVLJSMW1kEg8eCStG/cGbYYZA
 github.com/projectdiscovery/stringsutil v0.0.2/go.mod h1:EJ3w6bC5fBYjVou6ryzodQq37D5c6qbAYQpGmAy+DC0=
 github.com/projectdiscovery/utils v0.4.10 h1:rwTHowpQgEWZqpuKCzNP/loUNVcM0z3zyfjd8rvJRiM=
 github.com/projectdiscovery/utils v0.4.10/go.mod h1:rjMHKcVQ0EbF6Zo69bjkDSqQHoXqaW/DxA8V9SU4/Zw=
+github.com/projectdiscovery/wappalyzergo v0.2.24 h1:Y2PitvgdyRq1z/q4zmSvXCah1zJesisAEj9Ru1CtI+A=
+github.com/projectdiscovery/wappalyzergo v0.2.24/go.mod h1:F8X79ljvmvrG+EIxdxWS9VbdkVTsQupHYz+kXlp8O0o=
 github.com/prometheus/client_golang v0.8.0/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
 github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e/go.mod h1:daVV7qP5qjZbuso7PdcryaAu0sAZbrN9i7WWcTMWvro=

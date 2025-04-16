@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	maxDefaultBody int64 = 5 * 1024 * 1024  // 最大读取响应体限制（5MB）
-	defaultTimeout       = 3 * time.Second // 默认请求超时时间
+	maxDefaultBody int64 = 5 * 1024 * 1024 // 最大读取响应体限制（5MB）
+	defaultTimeout       = 5 * time.Second // 默认请求超时时间
 )
 
 // SendRequest yaml poc发送http请求
@@ -35,9 +35,9 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	}
 
 	options := network.OptionsRequest{
-		Proxy:              "",             // 初始化为空，后面设置
+		Proxy:              "",              // 初始化为空，后面设置
 		Timeout:            timeoutDuration, // 使用确定的超时参数
-		Retries:            2,              // 增加重试次数
+		Retries:            2,               // 增加重试次数
 		FollowRedirects:    !rule.Request.FollowRedirects,
 		InsecureSkipVerify: true, // 忽略SSL证书错误
 		CustomHeaders:      map[string]string{},
@@ -188,7 +188,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	// 发送请求
 	resp, err := network.SendRequestHttp(ctx, req.Method, NewUrlStr, rule.Request.Body, options)
 	if err != nil {
-		fmt.Println("发送请求出错，错误信息：", err)
+		logger.Debug(fmt.Sprintf("发送请求出错，错误信息：%s", err))
 		return variableMap, err
 	}
 	defer func(Body io.ReadCloser) {

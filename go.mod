@@ -14,6 +14,7 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/projectdiscovery/goflags v0.1.72
 	github.com/projectdiscovery/rawhttp v0.1.87
+	github.com/projectdiscovery/wappalyzergo v0.2.24
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spaolacci/murmur3 v1.1.0

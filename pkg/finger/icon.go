@@ -8,8 +8,9 @@
 package finger
 
 import (
-	"crypto/tls"
+	"context"
 	"fmt"
+	"gxx/pkg/network"
 	"gxx/utils/common"
 	"gxx/utils/logger"
 	"io"
@@ -21,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainreactors/proxyclient"
 	"github.com/spaolacci/murmur3"
 	_ "github.com/vmihailenco/msgpack/v5"
 )
@@ -95,55 +95,24 @@ func (g *GetIconHash) hashDataURL(iconURL string) int32 {
 // hashHTTPURL 处理 HTTP URL 并计算 hash 值
 func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 	iconURL = iconURL + "?time=" + fmt.Sprintf("%d%d", time.Now().Unix(), rand.New(rand.NewSource(time.Now().UnixNano())).Intn(10000))
-
-	// 创建HTTP客户端
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
+	options := network.OptionsRequest{
+		Proxy:              g.proxy,
+		Timeout:            5 * time.Second,
+		Retries:            2,
+		FollowRedirects:    true,
+		InsecureSkipVerify: true,
+		CustomHeaders:      g.headers,
 	}
+	// 创建上下文
+	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+	defer cancel()
 
-	// 如果有代理，使用proxyclient处理代理请求
-	if g.proxy != "" {
-		parsedURL, err := url.Parse(g.proxy)
-		if err != nil {
-			logger.Error(fmt.Sprintf("代理地址解析失败：%s", err))
-			return 0
-		}
-		proxyClient, err := proxyclient.NewClient(parsedURL)
-		if err != nil {
-			logger.Error(fmt.Sprintf("创建代理客户端失败：%s", err))
-			return 0
-		}
-
-		client.Transport = &http.Transport{
-			DialContext:     proxyClient.DialContext,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-	}
-
-	// 创建请求
-	req, err := http.NewRequest("GET", iconURL, nil)
+	// 发送请求
+	resp, err := network.SendRequestHttp(ctx, "GET", iconURL, "", options)
 	if err != nil {
 		logger.Error(fmt.Sprintf("创建请求失败: %s", err))
 		return 0
 	}
-
-	// 设置请求头
-	for key, value := range g.headers {
-		req.Header.Set(key, value)
-	}
-
-	// 发送请求
-	resp, err := client.Do(req)
-	if err != nil {
-		logger.Debug(fmt.Sprintf("icon获取报错，错误信息：%s", err))
-		return 0
-	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
 
 	// 读取响应体
 	var bodyBytes []byte

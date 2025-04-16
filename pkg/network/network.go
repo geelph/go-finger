@@ -24,9 +24,9 @@ import (
 
 const (
 	DefaultNetwork      = "tcp"
-	DefaultDialTimeout  = 10 * time.Second
-	DefaultWriteTimeout = 10 * time.Second
-	DefaultReadTimeout  = 10 * time.Second
+	DefaultDialTimeout  = 5 * time.Second
+	DefaultWriteTimeout = 5 * time.Second
+	DefaultReadTimeout  = 5 * time.Second
 	DefaultRetryDelay   = 2 * time.Second
 	DefaultReadSize     = 2048
 	DefaultMaxRetries   = 3
@@ -136,7 +136,7 @@ func NewClient(address string, conf TcpOrUdpConfig) (*Client, error) {
 					conn = tlsConn
 					break
 				} else {
-					conn.Close()
+					_ = conn.Close()
 				}
 			} else {
 				break
@@ -158,7 +158,7 @@ func (c *Client) Send(data []byte) error {
 		return errors.New("connection is not established")
 	}
 
-	c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
+	_ = c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
 	_, err := c.conn.Write(data)
 	if err != nil {
 		var ne net.Error
@@ -176,7 +176,7 @@ func (c *Client) Receive() ([]byte, error) {
 		return nil, errors.New("connection is not established")
 	}
 
-	c.conn.SetReadDeadline(time.Now().Add(c.readTimeout()))
+	_ = c.conn.SetReadDeadline(time.Now().Add(c.readTimeout()))
 	buf := make([]byte, c.readSize())
 	n, err := c.conn.Read(buf)
 	if err != nil {
@@ -200,7 +200,7 @@ func (c *Client) retryWrite(data []byte) error {
 		conn, err := net.DialTimeout(c.network(), c.conn.RemoteAddr().String(), c.dialTimeout())
 		if err == nil {
 			c.conn = conn
-			c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
 			_, err = c.conn.Write(data)
 			if err == nil {
 				return nil
@@ -217,7 +217,7 @@ func (c *Client) retryRead(buf []byte) error {
 		conn, err := net.DialTimeout(c.network(), c.conn.RemoteAddr().String(), c.dialTimeout())
 		if err == nil {
 			c.conn = conn
-			c.conn.SetReadDeadline(time.Now().Add(c.readTimeout()))
+			_ = c.conn.SetReadDeadline(time.Now().Add(c.readTimeout()))
 			n, err := c.conn.Read(buf)
 			if err == nil && n > 0 {
 				return nil

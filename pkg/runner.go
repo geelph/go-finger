@@ -161,7 +161,7 @@ func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, 
 	// 创建请求选项
 	timeoutDuration := time.Duration(timeout) * time.Second
 	if timeout <= 0 {
-		timeoutDuration = 3 * time.Second // 使用默认3秒作为超时时间
+		timeoutDuration = 5 * time.Second // 使用默认3秒作为超时时间
 	}
 
 	options := network.OptionsRequest{
@@ -610,7 +610,7 @@ func writeResultToFile(targetResult *TargetResult, outputs, format string, initi
 		ServerInfo:  targetResult.Server,
 		FinalResult: true,
 	}
-	
+
 	// 检查 initialResponse 是否为 nil，再设置 RespHeaders
 	if initialResponse != nil {
 		writeOpts.RespHeaders = string(initialResponse.RawHeader)
