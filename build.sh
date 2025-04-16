@@ -103,9 +103,11 @@ build() {
         LDFLAGS="-w"
     fi
 
+    # 添加版本和作者信息到 ldflags
+    LDFLAGS="$LDFLAGS -X 'gxx/cmd/cli.defaultVersion=$VERSION' -X 'gxx/cmd/cli.defaultAuthor=$AUTHOR' -X 'gxx/cmd/cli.defaultBuildDate=$BUILD_DATE'"
 
     # 构建命令
-    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH BUILD_DATE=$BUILD_DATE GXX_VERSION=$VERSION GXX_AUTHOR=$AUTHOR go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
+    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
     
     # 如果启用了嵌入指纹库
     if [ "$EMBED" == "true" ]; then

@@ -9,7 +9,7 @@ build:
 	@BUILD_DATE=$$(date +"%Y-%m-%d") && \
 	GXX_VERSION="1.0.0" && \
 	GXX_AUTHOR="zhizhuo" && \
-	BUILD_DATE=$$BUILD_DATE GXX_VERSION=$$GXX_VERSION GXX_AUTHOR=$$GXX_AUTHOR go build -o gxx ./cmd/main.go
+	go build -ldflags "-X 'gxx/cmd/cli.defaultVersion=$$GXX_VERSION' -X 'gxx/cmd/cli.defaultAuthor=$$GXX_AUTHOR' -X 'gxx/cmd/cli.defaultBuildDate=$$BUILD_DATE'" -o gxx ./cmd/main.go
 	@echo "构建完成，请确保 'finger' 目录与二进制文件放在同一目录下"
 
 # 构建项目（嵌入指纹库）
@@ -20,7 +20,7 @@ build-embed:
 	@BUILD_DATE=$$(date +"%Y-%m-%d") && \
 	GXX_VERSION="1.0.0" && \
 	GXX_AUTHOR="zhizhuo" && \
-	BUILD_DATE=$$BUILD_DATE GXX_VERSION=$$GXX_VERSION GXX_AUTHOR=$$GXX_AUTHOR go build -o gxx ./cmd/main.go
+	go build -ldflags "-X 'gxx/cmd/cli.defaultVersion=$$GXX_VERSION' -X 'gxx/cmd/cli.defaultAuthor=$$GXX_AUTHOR' -X 'gxx/cmd/cli.defaultBuildDate=$$BUILD_DATE'" -o gxx ./cmd/main.go
 	@mv utils/finger/embed.go.bak utils/finger/embed.go
 	@echo "构建完成，指纹库已嵌入到二进制文件中"
 
