@@ -155,6 +155,7 @@ func configureHeaders(req *retryablehttp.Request, options OptionsRequest) {
 	req.Header.Set("Accept", "application/x-shockwave-flash, image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, */*")
 	req.Header.Set("X-Forwarded-For", common.GetRandomIP())
 	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Cookie", "cookie="+common.RandomString(15))
 	req.Header.Set("Cache-Control", "no-cache")
 	// default post content-type
 	if req.Method == http.MethodPost && len(req.Header.Get("Content-Type")) == 0 {
@@ -181,8 +182,28 @@ func configureClient(options OptionsRequest) *retryablehttp.Client {
 		if !options.FollowRedirects {
 			return http.ErrUseLastResponse // 禁止重定向
 		}
+		
+		// 从之前的响应中获取Set-Cookie并添加到请求中
+		if len(via) > 0 {
+			for _, prevReq := range via {
+				if prevReq.Response != nil && len(prevReq.Response.Header["Set-Cookie"]) > 0 {
+					for _, cookie := range prevReq.Response.Cookies() {
+						req.AddCookie(cookie)
+					}
+				}
+			}
+		}
+		
+		// 限制最大重定向次数
+		if len(via) >= 10 {
+			return errors.New("stopped after 10 redirects")
+		}
+		
 		return nil
 	}
+	
+	// 为HTTPClient2设置相同的CheckRedirect函数
+	client.HTTPClient2.CheckRedirect = client.HTTPClient.CheckRedirect
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: options.InsecureSkipVerify, // 注意：仅用于测试目的
