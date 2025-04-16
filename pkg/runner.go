@@ -609,13 +609,17 @@ func writeResultToFile(targetResult *TargetResult, outputs, format string, initi
 		Title:       targetResult.Title,
 		ServerInfo:  targetResult.Server,
 		FinalResult: true,
-		RespHeaders: string(initialResponse.RawHeader),
+	}
+	
+	// 检查 initialResponse 是否为 nil，再设置 RespHeaders
+	if initialResponse != nil {
+		writeOpts.RespHeaders = string(initialResponse.RawHeader)
 	}
 
 	// 添加响应信息
 	if lastResponse != nil {
 		writeOpts.Response = lastResponse
-	} else {
+	} else if initialResponse != nil {
 		writeOpts.Response = initialResponse
 	}
 	// 写入结果
