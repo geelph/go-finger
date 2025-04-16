@@ -3,7 +3,7 @@
 # 设置应用名称和版本号
 APP_NAME="gxx"
 VERSION="1.1.0"
-AUTHOR="jiajiu内部版本"
+AUTHOR="zhizhuo"
 # 添加构建时间
 BUILD_DATE=$(date +"%Y-%m-%d")
 
