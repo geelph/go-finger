@@ -102,10 +102,9 @@ build() {
     
     # 添加构建时间
     BUILD_DATE=$(date +"%Y-%m-%d")
-    LDFLAGS="$LDFLAGS -X 'gxx/cmd/cli.defaultBuildDate=$BUILD_DATE'"
 
     # 构建命令
-    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
+    BUILD_CMD="env GOOS=$GOOS GOARCH=$GOARCH BUILD_DATE=$BUILD_DATE go build -ldflags \"$LDFLAGS\" -o $OUTPUT_FILE ./cmd/main.go"
     
     # 如果启用了嵌入指纹库
     if [ "$EMBED" == "true" ]; then
