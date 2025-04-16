@@ -123,8 +123,8 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 			return 0
 		}
 
-		// 检查文件头
-		if len(bodyBytes) > 0 {
+		// 验证是否为图片
+		if strings.HasPrefix(resp.Header.Get("Content-Type"), "image") || len(bodyBytes) > 0 {
 			bodyHex := fmt.Sprintf("%x", bodyBytes[:8])
 			logger.Debug(fmt.Sprintf("响应头前8个Hex: %s", string(bodyHex)))
 			for _, fh := range g.fileHeader {
