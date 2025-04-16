@@ -53,7 +53,7 @@ func NewGetIconHash(iconURL string, proxy string, retries ...int) *GetIconHash {
 			"Connection":      "close",
 		},
 		fileHeader: []string{
-			"89504E470", "89504e470", "000001000", "474946383", "FFD8FFE00", "FFD8FFE10", "3c7376672", "3c3f786d6",
+			"89504E470", "89504e470", "00000100", "474946383", "FFD8FFE00", "FFD8FFE10", "3c7376672", "3c3f786d6",
 		},
 		proxy: proxy,
 	}
@@ -126,6 +126,7 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 		// 检查文件头
 		if len(bodyBytes) > 0 {
 			bodyHex := fmt.Sprintf("%x", bodyBytes[:8])
+			logger.Debug(fmt.Sprintf("响应头前8个Hex: %s", string(bodyHex)))
 			for _, fh := range g.fileHeader {
 				if strings.HasPrefix(bodyHex, strings.ToLower(fh)) {
 					return Mmh3Hash32(bodyBytes)
