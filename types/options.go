@@ -24,10 +24,11 @@ type CmdOptions struct {
 	Threads     int                 // 并发线程数
 	Output      string              // 输出文件路径
 	PocOptions  YamlFingerType      // POC yaml文件配置
-	Timeout     int                 // 超时时间
+	Timeout     int                 // 超时时间，默认5秒
 	Retries     int                 // 重试次数，默认3次
 	Proxy       string              // 代理地址
 	Debug       bool                // 设置debug模式
 	NoFileLog   bool                // 是否禁用文件日志，仅输出到控制台
 	JSONOutput  bool                // 是否使用JSON格式输出结果
+	SockOutput  string              // socket文件输出路径，启用后会以JSON格式输出到socket文件
 }

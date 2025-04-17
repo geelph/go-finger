@@ -27,6 +27,8 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 	)
 	flagSet.CreateGroup("output", "输出",
 		flagSet.StringVarP(&options.Output, "output", "o", "", "输出文件路径（支持txt/csv格式）"),
+		flagSet.BoolVar(&options.JSONOutput, "json", false, "使用JSON格式输出结果到文件（默认关闭）"),
+		flagSet.StringVar(&options.SockOutput, "sock", "", "socket文件输出路径，启用后以JSON格式输出到socket文件"),
 	)
 	flagSet.CreateGroup("debug", "调试",
 		flagSet.StringVar(&options.Proxy, "proxy", "", "要使用的http/socks5代理列表（逗号分隔或文件输入）"),
@@ -61,10 +63,18 @@ func verifyOptions(opt *types.CmdOptions) error {
 	}
 
 	// 验证输出文件格式
-	if opt.Output != "" {
+	if opt.Output != "" && !opt.JSONOutput { // 如果启用了JSON格式输出，则不检查文件扩展名
 		ext := strings.ToLower(filepath.Ext(opt.Output))
 		if ext != ".txt" && ext != ".csv" {
-			return fmt.Errorf("输出文件格式只支持 .txt 或 .csv")
+			return fmt.Errorf("输出文件格式只支持 .txt 或 .csv，或者使用 -json 参数启用JSON格式输出")
+		}
+	}
+
+	// 验证socket文件扩展名
+	if opt.SockOutput != "" {
+		ext := strings.ToLower(filepath.Ext(opt.SockOutput))
+		if ext != ".sock" {
+			return fmt.Errorf("socket输出文件必须使用.sock扩展名")
 		}
 	}
 

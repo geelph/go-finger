@@ -1,0 +1,414 @@
+{
+  "url": "http://117.66.237.251:8999/#/",
+  "status_code": 200,
+  "title": "移动管理平台-企业管理",
+  "server": "",
+  "headers": "HTTP/1.1 200 OK\nServer: nginx\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html; charset=utf-8\nLast-Modified: Tue, 01 Apr 2025 16:21:11 GMT",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "http://218.4.161.35:1280/",
+  "status_code": 200,
+  "title": "跨网文件安全交换系统",
+  "server": "",
+  "headers": "HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nSet-Cookie: BAIDUID=87781D2219BA3B823461A31DF13BCE92:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nStrict-Transport-Security: max-age=172800\nX-Ua-Compatible: IE=Edge,chrome=1\nTraceid: 1744894260051597876217809272413330871449\nX-Xss-Protection: 1;mode=block\nBdpagetype: 1\nBdqid: 0xf7273ee700c01499\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://www.360.com",
+  "status_code": 200,
+  "title": "360官网 -360安全中心 - 360安全软件 - 360智能硬件 - 360智能家居 - 360企业服务",
+  "server": "nginx",
+  "headers": "HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nSet-Cookie: BAIDUID=87781D2219BA3B823461A31DF13BCE92:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nStrict-Transport-Security: max-age=172800\nX-Ua-Compatible: IE=Edge,chrome=1\nTraceid: 1744894260051597876217809272413330871449\nX-Xss-Protection: 1;mode=block\nBdpagetype: 1\nBdqid: 0xf7273ee700c01499\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": [
+      "Nginx"
+    ],
+    "reverse_proxies": [
+      "Nginx"
+    ],
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://www.baidu.com",
+  "status_code": 200,
+  "title": "百度一下，你就知道",
+  "server": "BWS/1.1",
+  "finger_ids": [
+    "finger demo"
+  ],
+  "finger_names": [
+    "finger demo test"
+  ],
+  "headers": "HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nSet-Cookie: BAIDUID=87781D2219BA3B823461A31DF13BCE92:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nStrict-Transport-Security: max-age=172800\nX-Ua-Compatible: IE=Edge,chrome=1\nTraceid: 1744894260051597876217809272413330871449\nX-Xss-Protection: 1;mode=block\nBdpagetype: 1\nBdqid: 0xf7273ee700c01499\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": [
+      "HSTS"
+    ],
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现1个指纹"
+}
+{
+  "url": "https://www.sougou.com",
+  "status_code": 200,
+  "title": "搜狗宠物天下",
+  "server": "",
+  "headers": "HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nSet-Cookie: BAIDUID=87781D2219BA3B823461A31DF13BCE92:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nStrict-Transport-Security: max-age=172800\nX-Ua-Compatible: IE=Edge,chrome=1\nTraceid: 1744894260051597876217809272413330871449\nX-Xss-Protection: 1;mode=block\nBdpagetype: 1\nBdqid: 0xf7273ee700c01499\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": [
+      "Varnish"
+    ],
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://www.tcrcb.com:8088",
+  "status_code": 200,
+  "title": "",
+  "server": "WVS",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "http://tcgxqczj.de-line.net:8999/#/",
+  "status_code": 200,
+  "title": "移动管理平台-企业管理",
+  "server": "",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "http://218.4.161.34:9875/",
+  "status_code": 200,
+  "title": "在线查看影像",
+  "server": "nginx/1.14.2",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": [
+      "Nginx:1.14.2"
+    ],
+    "reverse_proxies": [
+      "Nginx:1.14.2"
+    ],
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery:3.1.1",
+      "SweetAlert"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "http://223.108.229.198:11002/login/index.html",
+  "status_code": 200,
+  "title": "",
+  "server": "",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": [
+      "Java"
+    ],
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "http://223.108.229.198:11003/",
+  "status_code": 200,
+  "title": "",
+  "server": "",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": [
+      "Java"
+    ],
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://mplatform.tcrcb.com:8081/login",
+  "status_code": 200,
+  "title": "科技管理平台 - 登录",
+  "server": "nginx",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": [
+      "Nginx"
+    ],
+    "reverse_proxies": [
+      "Nginx"
+    ],
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery:2.2.3",
+      "crypto-js"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "http://223.108.229.203:18999",
+  "status_code": 200,
+  "title": "移动管理平台-企业管理",
+  "server": "",
+  "headers": "HTTP/1.1 200 \nServer: nginx\nSet-Cookie: JSESSIONIDIG=b662ac73-046b-4751-a1be-ce61a57743e7; Path=/; HttpOnly; SameSite=lax; Secure\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\nContent-Language: zh-CN\nAccess-Control-Allow-Origin: *\nDate: Thu, 17 Apr 2025 12:51:00 GMT\nContent-Type: text/html;charset=UTF-8\nVary: Accept-Encoding\nX-Frame-Options: SAMEORIGIN\nVia: 1.1 ID-3714112501055372 uproxy-23",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://218.4.137.74:10010",
+  "status_code": 200,
+  "title": "",
+  "server": "nginx/1.27.0",
+  "headers": "HTTP/1.1 200 \nLast-Modified: Wed, 11 Dec 2024 02:35:03 GMT\nX-Frame-Options: DENY\nServer: nginx/1.27.0\nDate: Thu, 17 Apr 2025 12:51:03 GMT\nContent-Length: 7142\nStrict-Transport-Security: max-age=31536000\nContent-Type: text/html\nTraceid: e4d23a743cbc58f6\nAccept-Ranges: bytes",
+  "wappalyzer": {
+    "web_servers": [
+      "Nginx:1.27.0"
+    ],
+    "reverse_proxies": [
+      "Nginx:1.27.0"
+    ],
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": [
+      "HSTS"
+    ],
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://www.baidu.com",
+  "status_code": 200,
+  "title": "百度一下，你就知道",
+  "server": "BWS/1.1",
+  "finger_ids": [
+    "finger demo"
+  ],
+  "finger_names": [
+    "finger demo test"
+  ],
+  "headers": "HTTP/1.1 200 OK\nBdpagetype: 1\nX-Ua-Compatible: IE=Edge,chrome=1\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nSet-Cookie: BAIDUID=65CEE263534A9336F13A08F251E2725C:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nX-Xss-Protection: 1;mode=block\nBdqid: 0xdc72ae0301613375\nStrict-Transport-Security: max-age=172800\nTraceid: 1744894281266352794615884950163620442997\nContent-Type: text/html; charset=utf-8\nDate: Thu, 17 Apr 2025 12:51:21 GMT\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": [
+      "HSTS"
+    ],
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现1个指纹"
+}
+{
+  "url": "https://www.360.com",
+  "status_code": 200,
+  "title": "360官网 -360安全中心 - 360安全软件 - 360智能硬件 - 360智能家居 - 360企业服务",
+  "server": "nginx",
+  "headers": "HTTP/1.1 200 OK\nBdpagetype: 1\nX-Ua-Compatible: IE=Edge,chrome=1\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nSet-Cookie: BAIDUID=65CEE263534A9336F13A08F251E2725C:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nX-Xss-Protection: 1;mode=block\nBdqid: 0xdc72ae0301613375\nStrict-Transport-Security: max-age=172800\nTraceid: 1744894281266352794615884950163620442997\nContent-Type: text/html; charset=utf-8\nDate: Thu, 17 Apr 2025 12:51:21 GMT\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": [
+      "Nginx"
+    ],
+    "reverse_proxies": [
+      "Nginx"
+    ],
+    "java_script_frameworks": null,
+    "java_script_libraries": null,
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": null,
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}
+{
+  "url": "https://www.sougou.com",
+  "status_code": 200,
+  "title": "搜狗宠物天下",
+  "server": "",
+  "headers": "HTTP/1.1 200 OK\nBdpagetype: 1\nX-Ua-Compatible: IE=Edge,chrome=1\nP3p: CP=\" OTI DSP COR IVA OUR IND COM \"\nSet-Cookie: BAIDUID=65CEE263534A9336F13A08F251E2725C:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com\nX-Xss-Protection: 1;mode=block\nBdqid: 0xdc72ae0301613375\nStrict-Transport-Security: max-age=172800\nTraceid: 1744894281266352794615884950163620442997\nContent-Type: text/html; charset=utf-8\nDate: Thu, 17 Apr 2025 12:51:21 GMT\nServer: BWS/1.1",
+  "wappalyzer": {
+    "web_servers": null,
+    "reverse_proxies": null,
+    "java_script_frameworks": null,
+    "java_script_libraries": [
+      "jQuery"
+    ],
+    "web_frameworks": null,
+    "static_site_generator": null,
+    "programming_languages": null,
+    "caching": [
+      "Varnish"
+    ],
+    "security": null,
+    "hosting_panels": null,
+    "other": null
+  },
+  "match_result": true,
+  "remark": "发现0个指纹"
+}

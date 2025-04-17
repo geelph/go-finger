@@ -22,7 +22,6 @@ import (
 	"gxx/utils/proto"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -152,23 +151,22 @@ func prepareRequest(target string) (*http.Request, error) {
 // GetBaseInfo 获取目标的基础信息（标题和Server信息）并返回完整HTTP响应
 func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, int32, *http.Response, *wappalyzer.TypeWappalyzer, error) {
 	// 准备URL
-	urlWithProtocol := target
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
-		urlWithProtocol = "https://" + target
+		target = "https://" + target
 	}
 
 	// 检查并规范化URL协议
-	checkedURL, err := network.CheckProtocol(urlWithProtocol)
-	if err == nil && checkedURL != "" {
-		urlWithProtocol = checkedURL
+	if checkedURL, err := network.CheckProtocol(target); err == nil && checkedURL != "" {
+		target = checkedURL
+	}
+
+	// 设置超时
+	timeoutDuration := time.Duration(timeout) * time.Second
+	if timeout <= 0 {
+		timeoutDuration = 5 * time.Second
 	}
 
 	// 创建请求选项
-	timeoutDuration := time.Duration(timeout) * time.Second
-	if timeout <= 0 {
-		timeoutDuration = 5 * time.Second // 使用默认3秒作为超时时间
-	}
-
 	options := network.OptionsRequest{
 		Proxy:              proxy,
 		Timeout:            timeoutDuration,
@@ -184,38 +182,34 @@ func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, 
 		},
 	}
 
-	// 创建上下文
-	ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+	// 发送请求
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 
-	// 发送请求
-	resp, err := network.SendRequestHttp(ctx, "GET", urlWithProtocol, "", options)
+	resp, err := network.SendRequestHttp(ctx, "GET", target, "", options)
 	if err != nil {
 		return "", nil, 0, nil, nil, fmt.Errorf("发送请求失败: %v", err)
 	}
 
-	// 注意：不要关闭resp.Body，让调用方负责关闭
-
-	// 获取状态码
+	// 提取基本信息
 	statusCode := int32(resp.StatusCode)
-
-	// 使用finger2包的GetTitle方法提取标题
-	title := finger2.GetTitle(urlWithProtocol, resp)
-
-	// 使用finger2包的GetServerInfoFromResponse方法提取Server信息
+	title := finger2.GetTitle(target, resp)
 	serverInfo := finger2.GetServerInfoFromResponse(resp)
+
+	// 获取站点技术信息
 	wapp, err := wappalyzer.NewWappalyzer()
 	if err != nil {
-		log.Fatal(fmt.Sprintf("wappalyzer初始化错误，错误信息：%s", err.Error()))
+		return title, serverInfo, statusCode, resp, nil, nil
 	}
-	data, _ := io.ReadAll(resp.Body)
-	WappData, err := wapp.GetWappalyzer(resp.Header, data)
-	if err != nil {
-		return "", nil, 0, nil, nil, fmt.Errorf("获取站点使用技术时发生错误：%v", err)
-	}
-	logger.Debug(fmt.Sprintf("当前站点使用技术：%s", WappData))
 
-	return title, serverInfo, statusCode, resp, WappData, nil
+	data, _ := io.ReadAll(resp.Body)
+	wappData, err := wapp.GetWappalyzer(resp.Header, data)
+	if err != nil {
+		return title, serverInfo, statusCode, resp, nil, nil
+	}
+
+	logger.Debug(fmt.Sprintf("当前站点使用技术：%s", wappData))
+	return title, serverInfo, statusCode, resp, wappData, nil
 }
 
 // NewFingerRunner 创建并运行指纹识别器
@@ -243,6 +237,15 @@ func NewFingerRunner(options *types.CmdOptions) {
 		defer func() {
 			_ = output.Close()
 		}()
+	}
+
+	// 初始化socket文件输出
+	if options.SockOutput != "" {
+		if err := output.InitSockOutput(options.SockOutput); err != nil {
+			logger.Error(fmt.Sprintf("初始化socket输出文件失败: %v", err))
+			return
+		}
+		logger.Info(fmt.Sprintf("Socket输出文件：%s", options.SockOutput))
 	}
 
 	// 设置并发参数
@@ -307,10 +310,10 @@ func runScan(targets []string, options *types.CmdOptions, urlWorkerCount, finger
 			for target := range urlChan {
 				// 处理单个URL
 				targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, fingerWorkerCount)
-				
+
 				// 将结果写入文件并显示结果
 				handleMatchResults(targetResult, options, saveResult, outputFormat)
-				
+
 				// 存储结果
 				resultsMutex.Lock()
 				results[target] = targetResult
@@ -485,7 +488,7 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	// 执行指纹识别
 	matches := runFingerDetection(target, baseInfo, proxy, timeout, workerCount)
 	targetResult.Matches = matches
-	
+
 	return targetResult, nil
 }
 
@@ -493,10 +496,11 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int) []*FingerMatch {
 	bufferSize := min(len(AllFinger), 1000)
 
-	// 创建通道
+	// 创建任务通道
 	fingerChan := make(chan *finger2.Finger, bufferSize)
-	resultChan := make(chan *FingerMatch, bufferSize)
 	var fingerWg sync.WaitGroup
+
+	// 线程安全地存储匹配结果
 	var matches []*FingerMatch
 	var matchesMutex sync.Mutex
 
@@ -519,51 +523,38 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 				// 执行指纹识别
 				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout)
 				if err == nil && result.Result {
-					// 将完整的匹配结果发送到结果通道
+					// 创建匹配结果对象
 					resultMatch := &FingerMatch{
 						Finger:   fg,
 						Result:   true,
 						Request:  result.Request,
 						Response: result.Response,
 					}
-					
-					// 添加到匹配结果列表并立即通知有新的匹配
+
+					// 添加到匹配结果列表
 					matchesMutex.Lock()
 					matches = append(matches, resultMatch)
 					matchesMutex.Unlock()
-					
-					// 发送到结果通道进行实时处理
-					select {
-					case resultChan <- resultMatch:
-					default:
-						// 通道已满，忽略结果
-					}
 				}
 			}
 		}(i)
 	}
 
 	// 发送指纹任务
-	go func() {
-		for _, fg := range AllFinger {
-			fingerChan <- fg
-		}
-		close(fingerChan)
-	}()
+	for _, fg := range AllFinger {
+		fingerChan <- fg
+	}
+	close(fingerChan)
 
 	// 等待所有指纹识别完成
 	fingerWg.Wait()
-	close(resultChan)
-
-	// 等待结果收集完成
-	time.Sleep(10 * time.Millisecond)
 
 	return matches
 }
 
 // handleMatchResults 处理匹配结果
 func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, printResult func(string), outputFormat string) {
-	// 构建输出信息
+	// 构建基础信息
 	statusCodeStr := ""
 	if targetResult.StatusCode > 0 {
 		statusCodeStr = fmt.Sprintf("（%d）", targetResult.StatusCode)
@@ -571,38 +562,44 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 
 	serverInfo := ""
 	if targetResult.Server != nil {
-		serverInfo = fmt.Sprintf("%s", targetResult.Server.ServerType)
-	}
-
-	// 收集所有匹配的指纹名称
-	fingerNames := make([]string, 0, len(targetResult.Matches))
-	for _, match := range targetResult.Matches {
-		fingerNames = append(fingerNames, match.Finger.Info.Name)
+		serverInfo = targetResult.Server.ServerType
 	}
 
 	// 构建输出信息
 	baseInfoStr := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
 		targetResult.URL, statusCodeStr, targetResult.Title, serverInfo)
 
-	// 无论是否有匹配结果，都输出基本信息
+	// 根据匹配结果构建完整输出信息
+	var outputMsg string
 	if len(targetResult.Matches) > 0 {
-		outputMsg := fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
+		// 收集所有匹配的指纹名称
+		fingerNames := make([]string, 0, len(targetResult.Matches))
+		for _, match := range targetResult.Matches {
+			fingerNames = append(fingerNames, match.Finger.Info.Name)
+		}
+		outputMsg = fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
 			baseInfoStr, strings.Join(fingerNames, "，"), color.GreenString("成功"))
-		// 输出结果
-		printResult(outputMsg)
 	} else {
-		outputMsg := fmt.Sprintf("%s  匹配结果：%s", baseInfoStr, color.RedString("未匹配"))
-		printResult(outputMsg)
+		outputMsg = fmt.Sprintf("%s  匹配结果：%s", baseInfoStr, color.RedString("未匹配"))
 	}
 
-	// 写入结果文件
+	// 输出结果
+	printResult(outputMsg)
+
+	// 写入输出文件
 	if options.Output != "" {
 		writeResultToFile(targetResult, options.Output, outputFormat)
 	}
+
+	// 写入socket文件
+	if options.SockOutput != "" {
+		writeResultToSock(targetResult)
+	}
 }
 
-// writeResultToFile 将结果写入文件
-func writeResultToFile(targetResult *TargetResult, outputs, format string) {
+// createWriteOptions 创建通用的写入选项结构体
+func createWriteOptions(targetResult *TargetResult, outputPath string, format string) *output.WriteOptions {
+	// 收集指纹信息
 	fingerList := make([]*finger2.Finger, 0, len(targetResult.Matches))
 	for _, match := range targetResult.Matches {
 		fingerList = append(fingerList, match.Finger)
@@ -610,7 +607,7 @@ func writeResultToFile(targetResult *TargetResult, outputs, format string) {
 
 	// 创建写入选项结构体
 	writeOpts := &output.WriteOptions{
-		Output:      outputs,
+		Output:      outputPath,
 		Format:      format,
 		Target:      targetResult.URL,
 		Fingers:     fingerList,
@@ -627,19 +624,37 @@ func writeResultToFile(targetResult *TargetResult, outputs, format string) {
 		writeOpts.Response = lastResponse
 	}
 
+	return writeOpts
+}
+
+// writeResultToFile 将结果写入文件
+func writeResultToFile(targetResult *TargetResult, outputs, format string) {
+	writeOpts := createWriteOptions(targetResult, outputs, format)
+
 	// 写入结果
 	if err := output.WriteFingerprints(writeOpts); err != nil {
-		logger.Error(fmt.Sprintf("写入结果失败: %v", err))
+		logger.Error(fmt.Sprintf("写入结果文件失败: %v", err))
+	}
+}
+
+// writeResultToSock 将结果写入socket文件
+func writeResultToSock(targetResult *TargetResult) {
+	writeOpts := createWriteOptions(targetResult, "", "")
+
+	// 写入socket文件
+	if err := output.WriteToSock(writeOpts); err != nil {
+		logger.Error(fmt.Sprintf("写入socket文件失败: %v", err))
 	}
 }
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则
 func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *BaseInfo, proxy string, customLib *cel.CustomLib, timeout int) (*FingerMatch, error) {
 	// 初始化变量映射
-	ResulrData := &FingerMatch{
+	resultData := &FingerMatch{
 		Finger: fg,
 	}
-	SetiableMap := make(map[string]any)
+	varMap := make(map[string]any)
+
 	logger.Debug(fmt.Sprintf("获取指纹ID：%s", fg.Id))
 
 	// 准备基础请求
@@ -654,13 +669,12 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 	}
 
 	// 设置基础变量
-	SetiableMap["request"] = tempReqData
-	// 设置缓存的基础信息
-	SetiableMap["title"] = baseInfo.Title
-	SetiableMap["server"] = baseInfo.Server
+	varMap["request"] = tempReqData
+	varMap["title"] = baseInfo.Title
+	varMap["server"] = baseInfo.Server
 
-	// 确保SetiableMap中包含response字段，初始化为缓存的响应
-	SetiableMap["response"] = &proto.Response{
+	// 初始化响应对象
+	varMap["response"] = &proto.Response{
 		Status:      baseInfo.StatusCode,
 		Headers:     map[string]string{},
 		ContentType: "",
@@ -671,39 +685,47 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 		Latency:     0,
 	}
 
-	// 处理set规则
+	// 处理预设规则
 	if len(fg.Set) > 0 {
-		finger2.IsFuzzSet(fg.Set, SetiableMap, customLib)
+		finger2.IsFuzzSet(fg.Set, varMap, customLib)
 	}
-	// 处理payload
 	if len(fg.Payloads.Payloads) > 0 {
-		finger2.IsFuzzSet(fg.Payloads.Payloads, SetiableMap, customLib)
+		finger2.IsFuzzSet(fg.Payloads.Payloads, varMap, customLib)
 	}
-	ResulrData.Request = lastRequest
-	ResulrData.Response = lastResponse
+
+	resultData.Request = lastRequest
+	resultData.Response = lastResponse
+
 	// 评估规则
 	for _, rule := range fg.Rules {
-		// 检查是否可以使用缓存
+		// 优先使用缓存
 		if shouldUseCache(rule) {
-			SetiableMap["request"] = lastRequest
-			SetiableMap["response"] = lastResponse
+			varMap["request"] = lastRequest
+			varMap["response"] = lastResponse
 		} else {
 			// 发送新请求
-			newVarMap, err := finger2.SendRequest(target, rule.Value.Request, rule.Value, SetiableMap, proxy, timeout)
+			newVarMap, err := finger2.SendRequest(target, rule.Value.Request, rule.Value, varMap, proxy, timeout)
 			if err != nil {
 				customLib.WriteRuleFunctionsROptions(rule.Key, false)
 				continue
 			}
-			// 这里只缓存访问/的请求数据
-			if len(newVarMap) > 0 && rule.Value.Request.Path == "/" {
-				SetiableMap = newVarMap
-				updateCache(SetiableMap)
+
+			// 更新变量映射并缓存根路径请求
+			if len(newVarMap) > 0 {
+				varMap = newVarMap
+				if rule.Value.Request.Path == "/" {
+					updateCache(varMap)
+				}
 			}
 		}
-		logger.Debug(fmt.Sprintf("请求数据包：\n%s", SetiableMap["request"].(*proto.Request).Raw))
-		logger.Debug(fmt.Sprintf("响应数据包：\n%s", SetiableMap["response"].(*proto.Response).Raw))
+
+		// 调试信息输出
+		logger.Debug(fmt.Sprintf("请求数据包：\n%s", varMap["request"].(*proto.Request).Raw))
+		logger.Debug(fmt.Sprintf("响应数据包：\n%s", varMap["response"].(*proto.Response).Raw))
 		logger.Debug("开始cel匹配处理")
-		result, err := customLib.Evaluate(rule.Value.Expression, SetiableMap)
+
+		// 执行规则评估
+		result, err := customLib.Evaluate(rule.Value.Expression, varMap)
 		if err != nil {
 			logger.Debug(fmt.Sprintf("规则 %s CEL解析错误：%s", rule.Key, err.Error()))
 			customLib.WriteRuleFunctionsROptions(rule.Key, false)
@@ -713,20 +735,22 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 			customLib.WriteRuleFunctionsROptions(rule.Key, ruleBool)
 		}
 
-		// 更新output输出
+		// 处理输出规则
 		if len(rule.Value.Output) > 0 {
-			finger2.IsFuzzSet(rule.Value.Output, SetiableMap, customLib)
+			finger2.IsFuzzSet(rule.Value.Output, varMap, customLib)
 		}
 	}
 
-	// 最终评估
-	result, err := customLib.Evaluate(fg.Expression, SetiableMap)
+	// 执行最终评估
+	result, err := customLib.Evaluate(fg.Expression, varMap)
 	if err != nil {
 		return nil, fmt.Errorf("最终表达式解析错误：%v", err)
 	}
-	ResulrData.Result = result.Value().(bool)
-	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, result.Value().(bool)))
-	return ResulrData, nil
+
+	resultData.Result = result.Value().(bool)
+	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
+
+	return resultData, nil
 }
 
 // shouldUseCache 判断是否应该使用缓存

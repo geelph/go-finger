@@ -50,9 +50,14 @@ func main() {
 
 	logger.Info(fmt.Sprintf("输出文件：%s", options.Output))
 
-	// 从文件扩展名确定输出格式
+	// 确定输出格式
 	outputFormat := "txt" // 默认为txt格式
-	if options.Output != "" {
+	if options.JSONOutput {
+		// 如果设置了JSON输出选项，则优先使用JSON格式
+		outputFormat = "json"
+		logger.Info("使用JSON格式输出结果")
+	} else if options.Output != "" {
+		// 否则从文件扩展名确定输出格式
 		ext := strings.ToLower(filepath.Ext(options.Output))
 		if ext == ".csv" {
 			outputFormat = "csv"
@@ -64,6 +69,16 @@ func main() {
 		logger.Error("初始化输出文件失败: %v", err)
 		os.Exit(1)
 	}
+	
+	// 初始化socket文件输出（如果启用）
+	if options.SockOutput != "" {
+		if err := output.InitSockOutput(options.SockOutput); err != nil {
+			logger.Error("初始化socket输出文件失败: %v", err)
+			os.Exit(1)
+		}
+		logger.Info(fmt.Sprintf("Socket输出文件：%s", options.SockOutput))
+	}
+	
 	defer func() {
 		_ = output.Close()
 	}()
