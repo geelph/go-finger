@@ -23,10 +23,10 @@ func ExtractServerInfo(header http.Header) (string, string) {
 	}
 
 	// 提取版本 - 先处理，因为cleanServerString可能会移除版本信息
-	version := extractVersion(serverValue)
+	version := ExtractVersion(serverValue)
 
 	// 清理无用内容
-	cleanedServer := cleanServerString(serverValue)
+	cleanedServer := CleanServerString(serverValue)
 
 	// 移除服务器名称后的版本号（如 nginx/1.18.0 变为 nginx）
 	if version != "" {
@@ -48,8 +48,8 @@ func ExtractServerInfo(header http.Header) (string, string) {
 	return cleanedServer, version
 }
 
-// cleanServerString 移除服务器信息中没有用的内容
-func cleanServerString(server string) string {
+// CleanServerString 移除服务器信息中没有用的内容
+func CleanServerString(server string) string {
 	// 移除括号及其内容
 	noParentheses := regexp.MustCompile(`\([^)]*\)`).ReplaceAllString(server, "")
 
@@ -63,8 +63,8 @@ func cleanServerString(server string) string {
 	return cleaned
 }
 
-// extractVersion 从服务器字符串中提取版本信息
-func extractVersion(server string) string {
+// ExtractVersion 从服务器字符串中提取版本信息
+func ExtractVersion(server string) string {
 	// 检查是否有 name/version 格式
 	slashVersionRegex := regexp.MustCompile(`\/(\d+(\.\d+)*)`)
 	slashMatches := slashVersionRegex.FindStringSubmatch(server)

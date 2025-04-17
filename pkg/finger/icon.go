@@ -8,7 +8,9 @@
 package finger
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"gxx/pkg/network"
 	"gxx/utils/common"
@@ -125,15 +127,15 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 
 		// 验证是否为图片
 		if strings.HasPrefix(resp.Header.Get("Content-Type"), "image") && len(bodyBytes) > 0 {
-			return Mmh3Hash32(bodyBytes)
+			return Mmh3Hash32(StandBase64(bodyBytes))
 		}
 
 		if len(bodyBytes) > 0 {
 			bodyHex := fmt.Sprintf("%x", bodyBytes[:8])
-			logger.Debug(fmt.Sprintf("响应头前8个Hex: %s", string(bodyHex)))
+			logger.Debug(fmt.Sprintf("响应头前8个字节: %s", bodyHex))
 			for _, fh := range g.fileHeader {
 				if strings.HasPrefix(bodyHex, strings.ToLower(fh)) {
-					return Mmh3Hash32(bodyBytes)
+					return Mmh3Hash32(StandBase64(bodyBytes))
 				}
 			}
 		}
@@ -147,17 +149,17 @@ func StandBase64(raw []byte) []byte {
 	if len(raw) == 0 {
 		return []byte{}
 	}
-	data := make([]byte, len(raw))
-	copy(data, raw)
-
-	for i, b := range data {
-		if b == '_' {
-			data[i] = '/'
-		} else if b == '-' {
-			data[i] = '+'
+	bckd := base64.StdEncoding.EncodeToString(raw)
+	var buffer bytes.Buffer
+	for i := 0; i < len(bckd); i++ {
+		ch := bckd[i]
+		buffer.WriteByte(ch)
+		if (i+1)%76 == 0 {
+			buffer.WriteByte('\n')
 		}
 	}
-	return data
+	buffer.WriteByte('\n')
+	return buffer.Bytes()
 }
 
 // Mmh3Hash32 计算Mmh3Hash32哈希值
