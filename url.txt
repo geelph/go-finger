@@ -7,3 +7,13 @@ https://www.sougou.com
 https://www.baidu.com
 https://www.360.com
 https://www.sougou.com
+https://218.4.137.74:10010
+https://www.tcrcb.com:8088
+http://tcgxqczj.de-line.net:8999/#/
+http://223.108.229.203:18999
+http://117.66.237.251:8999/#/
+http://223.108.229.198:11002/login/index.html
+http://223.108.229.198:11003/
+http://218.4.161.34:9875/
+https://mplatform.tcrcb.com:8081/login
+http://218.4.161.35:1280/

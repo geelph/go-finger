@@ -307,8 +307,10 @@ func runScan(targets []string, options *types.CmdOptions, urlWorkerCount, finger
 			for target := range urlChan {
 				// 处理单个URL
 				targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, fingerWorkerCount)
-				// 将结果写入文件
+				
+				// 将结果写入文件并显示结果
 				handleMatchResults(targetResult, options, saveResult, outputFormat)
+				
 				// 存储结果
 				resultsMutex.Lock()
 				results[target] = targetResult
@@ -433,8 +435,6 @@ func printSummary(targets []string, results map[string]*TargetResult) {
 			matchCount++
 		} else {
 			noMatchCount++
-			// 只输出未匹配的URL信息
-			printNoMatchResult(targetResult)
 		}
 	}
 
@@ -442,25 +442,6 @@ func printSummary(targets []string, results map[string]*TargetResult) {
 	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
 	fmt.Printf("扫描统计: 目标总数 %d, 匹配成功 %d, 匹配失败 %d\n",
 		len(targets), matchCount, noMatchCount)
-}
-
-// printNoMatchResult 打印未匹配结果
-func printNoMatchResult(targetResult *TargetResult) {
-	statusCodeStr := ""
-	if targetResult.StatusCode > 0 {
-		statusCodeStr = fmt.Sprintf("（%d）", targetResult.StatusCode)
-	}
-
-	serverInfo := ""
-	if targetResult.Server != nil {
-		serverInfo = fmt.Sprintf("%s", targetResult.Server.ServerType)
-	}
-
-	baseInfo := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
-		targetResult.URL, statusCodeStr, targetResult.Title, serverInfo)
-
-	outputMsg := fmt.Sprintf("%s  匹配结果：%s", baseInfo, color.RedString("未匹配"))
-	fmt.Println(outputMsg)
 }
 
 // ProcessURL 处理单个URL的所有指纹识别
@@ -504,6 +485,7 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	// 执行指纹识别
 	matches := runFingerDetection(target, baseInfo, proxy, timeout, workerCount)
 	targetResult.Matches = matches
+	
 	return targetResult, nil
 }
 
@@ -515,6 +497,8 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 	fingerChan := make(chan *finger2.Finger, bufferSize)
 	resultChan := make(chan *FingerMatch, bufferSize)
 	var fingerWg sync.WaitGroup
+	var matches []*FingerMatch
+	var matchesMutex sync.Mutex
 
 	// 预先创建并复用CustomLib实例
 	customLibs := make([]*cel.CustomLib, workerCount)
@@ -535,9 +519,22 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 				// 执行指纹识别
 				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout)
 				if err == nil && result.Result {
-					// 只存储匹配成功的指纹
+					// 将完整的匹配结果发送到结果通道
+					resultMatch := &FingerMatch{
+						Finger:   fg,
+						Result:   true,
+						Request:  result.Request,
+						Response: result.Response,
+					}
+					
+					// 添加到匹配结果列表并立即通知有新的匹配
+					matchesMutex.Lock()
+					matches = append(matches, resultMatch)
+					matchesMutex.Unlock()
+					
+					// 发送到结果通道进行实时处理
 					select {
-					case resultChan <- &FingerMatch{Finger: fg, Result: true}:
+					case resultChan <- resultMatch:
 					default:
 						// 通道已满，忽略结果
 					}
@@ -552,18 +549,6 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 			fingerChan <- fg
 		}
 		close(fingerChan)
-	}()
-
-	// 收集结果
-	var matches []*FingerMatch
-	var matchesMutex sync.Mutex
-
-	go func() {
-		for match := range resultChan {
-			matchesMutex.Lock()
-			matches = append(matches, match)
-			matchesMutex.Unlock()
-		}
 	}()
 
 	// 等待所有指纹识别完成
@@ -599,10 +584,14 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 	baseInfoStr := fmt.Sprintf("URL：%s %s  标题：%s  Server：%s",
 		targetResult.URL, statusCodeStr, targetResult.Title, serverInfo)
 
-	if len(targetResult.Matches) > 0 && targetResult.Matches[0].Result {
+	// 无论是否有匹配结果，都输出基本信息
+	if len(targetResult.Matches) > 0 {
 		outputMsg := fmt.Sprintf("%s  指纹：[%s]  匹配结果：%s",
 			baseInfoStr, strings.Join(fingerNames, "，"), color.GreenString("成功"))
 		// 输出结果
+		printResult(outputMsg)
+	} else {
+		outputMsg := fmt.Sprintf("%s  匹配结果：%s", baseInfoStr, color.RedString("未匹配"))
 		printResult(outputMsg)
 	}
 
