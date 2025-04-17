@@ -44,6 +44,16 @@
 - 执行指纹识别并处理结果
 - 详细展示匹配的指纹信息
 
+### 5. [Wappalyzer技术栈识别](wappalyzer_scan/)
+
+展示如何使用集成的Wappalyzer功能单独进行网站技术栈识别，无需执行完整的指纹扫描。
+
+**主要功能**:
+- 使用WappalyzerScan API进行技术栈识别
+- 获取Web服务器、编程语言、框架等技术信息
+- 详细展示分析结果
+- 快速识别网站使用的技术组件
+
 ## 运行示例
 
 每个示例目录下都有独立的README文件和main.go文件。要运行特定示例，进入其目录并执行：
@@ -65,13 +75,22 @@ options, err := gxx.NewFingerOptions()
 err := gxx.InitFingerRules(options)
 
 // 3. 获取目标基础信息
-title, serverInfo, statusCode, resp, err := gxx.GetBaseInfo(target, proxy, timeout)
+baseInfo, err := gxx.GetBaseInfo(target, proxy, timeout)
+// 访问基础信息
+fmt.Printf("标题: %s\n", baseInfo.Title)
+fmt.Printf("状态码: %d\n", baseInfo.StatusCode)
+if baseInfo.ServerInfo != nil {
+    fmt.Printf("服务器: %s\n", baseInfo.ServerInfo.ServerType)
+}
 
 // 4. 执行指纹识别
 result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
 
 // 5. 获取匹配结果
 matches := gxx.GetFingerMatches(result)
+
+// 6. 单独执行技术栈分析
+wappResult, err := gxx.WappalyzerScan(target, proxy, timeout)
 ```
 
 ## 主要API函数
@@ -80,9 +99,20 @@ matches := gxx.GetFingerMatches(result)
 |------|------|
 | `NewFingerOptions()` | 创建新的扫描选项 |
 | `InitFingerRules(options)` | 初始化指纹规则库 |
-| `GetBaseInfo(target, proxy, timeout)` | 获取目标基础信息 |
+| `GetBaseInfo(target, proxy, timeout)` | 获取目标基础信息(包含标题、服务器信息、技术栈等) |
 | `FingerScan(target, proxy, timeout, workerCount)` | 执行指纹识别 |
 | `GetFingerMatches(result)` | 获取匹配的指纹列表 |
+| `WappalyzerScan(target, proxy, timeout)` | 单独进行技术栈识别(不执行指纹匹配) |
+
+## 主要数据类型
+
+| 类型 | 描述 |
+|------|------|
+| `gxx.BaseInfoType` | 目标基础信息，包含标题、服务器信息、状态码、技术栈等 |
+| `gxx.TargetResult` | 扫描结果，包含匹配的指纹和基础信息 |
+| `gxx.FingerMatch` | 指纹匹配结果，包含指纹详情和匹配数据 |
+| `gxx.TypeWappalyzer` | 技术栈分析结果，包含Web服务器、编程语言、框架等信息 |
+| `gxx.ServerInfo` | 服务器信息，包含类型、版本等 |
 
 ## 主要配置选项
 
@@ -102,6 +132,8 @@ matches := gxx.GetFingerMatches(result)
 2. **查看示例README**：每个示例目录下都有详细的README文件
 3. **API初始化顺序**：确保先调用`InitFingerRules`再执行指纹识别
 4. **并发与性能**：利用并发特性可以显著提高扫描效率
+5. **技术栈识别**：如果只需获取技术栈信息，可以直接使用`WappalyzerScan`函数
+6. **基础信息获取**：使用`GetBaseInfo`函数可快速获取目标网站的基本信息
 
 ## 问题反馈
 

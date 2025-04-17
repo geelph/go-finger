@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"gxx"
+	_ "gxx/types"
 	"os"
 	"time"
 )
@@ -26,19 +27,16 @@ func main() {
 	}
 
 	// 设置目标URL - 可以设置多个目标
-	options.Target = []string{"example.com"}
-
-	// 启用调试模式以查看详细日志
-	options.Debug = true
+	targets := []string{"example.com"}
 
 	// 可选：设置超时时间（秒）
-	options.Timeout = 5
+	timeout := 5
 
 	// 可选：设置线程数
-	options.Threads = 5
+	workerCount := 5
 
 	// 执行扫描并输出结果
-	fmt.Println("开始扫描目标:", options.Target)
+	fmt.Println("开始扫描目标:", targets)
 	fmt.Println("--------------------------------------------")
 
 	// 初始化指纹规则库
@@ -48,11 +46,11 @@ func main() {
 	}
 
 	// 对每个目标单独扫描
-	for _, target := range options.Target {
+	for _, target := range targets {
 		fmt.Printf("扫描目标: %s\n", target)
 
 		// 使用API接口方式扫描单个目标
-		result, err := gxx.FingerScan(target, options.Proxy, options.Timeout, options.Threads)
+		result, err := gxx.FingerScan(target, "", timeout, workerCount)
 		if err != nil {
 			fmt.Printf("扫描失败: %v\n", err)
 			continue
@@ -61,6 +59,10 @@ func main() {
 		// 输出基本信息
 		fmt.Printf("URL: %s, 状态码: %d, 标题: %s\n",
 			result.URL, result.StatusCode, result.Title)
+
+		if result.Server != nil {
+			fmt.Printf("服务器: %s\n", result.Server.ServerType)
+		}
 
 		// 输出匹配的指纹
 		matches := gxx.GetFingerMatches(result)
@@ -71,6 +73,20 @@ func main() {
 			}
 		} else {
 			fmt.Println("未匹配到任何指纹")
+		}
+
+		// 输出技术栈信息
+		if result.Wappalyzer != nil {
+			fmt.Println("\n技术栈信息:")
+			if len(result.Wappalyzer.WebServers) > 0 {
+				fmt.Printf("  Web服务器: %v\n", result.Wappalyzer.WebServers)
+			}
+			if len(result.Wappalyzer.ProgrammingLanguages) > 0 {
+				fmt.Printf("  编程语言: %v\n", result.Wappalyzer.ProgrammingLanguages)
+			}
+			if len(result.Wappalyzer.WebFrameworks) > 0 {
+				fmt.Printf("  Web框架: %v\n", result.Wappalyzer.WebFrameworks)
+			}
 		}
 
 		fmt.Println()
@@ -100,7 +116,7 @@ func (c *CLI) Run() {
 	// 对于每个目标，我们可以单独调用API
 	for _, target := range c.options.Target {
 		// 初始化指纹规则库（如果尚未初始化）
-		if err := gxx.InitFingerRules(c.options); err != nil {
+		if err := gxx.InitFingerRules(c.options.PocOptions); err != nil {
 			fmt.Printf("初始化指纹规则库失败: %v\n", err)
 			continue
 		}

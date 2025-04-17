@@ -10,3 +10,5 @@ build/
 .DS_Store
 dist/
 result_*
+*.json
+*.csv

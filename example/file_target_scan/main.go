@@ -35,42 +35,40 @@ func main() {
 
 	// 创建示例目标文件
 	createExampleTargetFile(targetsFile)
-	
+
 	// 设置超时和线程
 	timeout := 5
 	workerCount := 10
-	
-	// 可选：启用调试模式
-	options.Debug = true
+	proxy := ""
 
 	// 执行扫描
 	fmt.Printf("开始从文件扫描目标: %s\n", targetsFile)
 	fmt.Println("--------------------------------------------")
-	
+
 	// 初始化指纹规则库
 	if err := gxx.InitFingerRules(options); err != nil {
 		fmt.Printf("初始化指纹规则库失败: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// 读取目标文件
 	targets, err := readTargetsFromFile(targetsFile)
 	if err != nil {
 		fmt.Printf("读取目标文件失败: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	fmt.Printf("从文件中读取到 %d 个目标\n", len(targets))
 	fmt.Println("开始并发扫描...")
-	
+
 	// 使用并发执行扫描
-	results := scanTargetsWithConcurrency(targets, options.Proxy, timeout, workerCount)
-	
+	results := scanTargetsWithConcurrency(targets, proxy, timeout, workerCount)
+
 	// 输出结果
 	fmt.Println("\n扫描结果:")
-	fmt.Printf("总共扫描: %d 个目标, 成功: %d 个\n", 
+	fmt.Printf("总共扫描: %d 个目标, 成功: %d 个\n",
 		len(targets), len(results))
-	
+
 	// 输出每个目标的扫描结果
 	fmt.Println("\n详细结果:")
 	for target, result := range results {
@@ -80,7 +78,7 @@ func main() {
 		if result.Server != nil {
 			fmt.Printf("  - 服务器: %s\n", result.Server.ServerType)
 		}
-		
+
 		// 输出匹配的指纹
 		matches := gxx.GetFingerMatches(result)
 		if len(matches) > 0 {
@@ -243,7 +241,7 @@ func saveResultsToFile(filePath string, results map[string]*gxx.TargetResult) er
 			escapeCSV(serverInfo),
 			len(matches),
 			escapeCSV(strings.Join(fingerprints, "; ")))
-		
+
 		file.WriteString(line)
 	}
 
@@ -264,4 +262,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-} 
+}

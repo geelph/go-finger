@@ -44,22 +44,22 @@ func main() {
 
 	// 4. 获取基础信息
 	fmt.Printf("\n开始获取目标基础信息: %s\n", target)
-	title, serverInfo, statusCode, _, WappData, err := gxx.GetBaseInfo(target, proxy, timeout)
+	result, err := gxx.GetBaseInfo(target, proxy, timeout)
 	if err != nil {
 		fmt.Printf("获取基础信息失败: %v\n", err)
 	} else {
-		fmt.Printf("状态码: %d\n", statusCode)
-		fmt.Printf("标题: %s\n", title)
-		if serverInfo != nil {
-			fmt.Printf("服务器: %s\n", serverInfo.ServerType)
+		fmt.Printf("状态码: %d\n", result.StatusCode)
+		fmt.Printf("标题: %s\n", result.Title)
+		if result.ServerInfo != nil {
+			fmt.Printf("服务器: %s\n", result.ServerInfo.ServerType)
 		}
-		fmt.Printf("站点技术: %s\n", WappData)
+		fmt.Printf("站点技术: %s\n", result.Wappalyzer)
 	}
 
 	// 5. 执行指纹识别
 	fmt.Printf("\n开始进行指纹识别: %s\n", target)
 	startTime = time.Now()
-	result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
+	res, err := gxx.FingerScan(target, proxy, timeout, workerCount)
 	if err != nil {
 		fmt.Printf("指纹识别失败: %v\n", err)
 		os.Exit(1)
@@ -68,11 +68,11 @@ func main() {
 
 	// 6. 处理识别结果
 	fmt.Printf("\n识别结果:\n")
-	fmt.Printf("URL: %s\n", result.URL)
-	fmt.Printf("状态码: %d\n", result.StatusCode)
-	fmt.Printf("标题: %s\n", result.Title)
-	if result.Server != nil {
-		fmt.Printf("服务器: %s\n", result.Server.ServerType)
+	fmt.Printf("URL: %s\n", res.URL)
+	fmt.Printf("状态码: %d\n", res.StatusCode)
+	fmt.Printf("标题: %s\n", res.Title)
+	if res.Server != nil {
+		fmt.Printf("服务器: %s\n", res.Server.ServerType)
 	}
 
 	// 7. 输出匹配详情（JSON格式）
@@ -85,7 +85,7 @@ func main() {
 	fmt.Printf("指纹 \n%s\n\n", string(jsonData))
 
 	// 8. 处理匹配的指纹（友好格式）
-	matches := gxx.GetFingerMatches(result)
+	matches := gxx.GetFingerMatches(res)
 	if len(matches) > 0 {
 		fmt.Printf("\n匹配的指纹 (%d个):\n", len(matches))
 		for i, match := range matches {
