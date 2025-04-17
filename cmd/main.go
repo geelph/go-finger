@@ -64,7 +64,9 @@ func main() {
 		logger.Error("初始化输出文件失败: %v", err)
 		os.Exit(1)
 	}
-	defer output.Close()
+	defer func() {
+		_ = output.Close()
+	}()
 
 	// 显示开始扫描的信息
 	startTime := time.Now()

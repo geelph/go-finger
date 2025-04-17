@@ -30,8 +30,8 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 	)
 	flagSet.CreateGroup("debug", "调试",
 		flagSet.StringVar(&options.Proxy, "proxy", "", "要使用的http/socks5代理列表（逗号分隔或文件输入）"),
-		flagSet.StringVar(&options.PocYaml, "p", "", "测试单个的yaml文件"),
-		flagSet.StringVar(&options.PocFile, "pf", "", "测试指定目录下面所有的yaml文件"),
+		flagSet.StringVar(&options.PocOptions.PocYaml, "p", "", "测试单个的yaml文件"),
+		flagSet.StringVar(&options.PocOptions.PocFile, "pf", "", "测试指定目录下面所有的yaml文件"),
 		flagSet.IntVar(&options.Timeout, "timeout", 3, "所有请求的超时时间（秒），默认3秒"),
 		flagSet.BoolVar(&options.Debug, "debug", false, "是否开启debug模式，默认关闭"),
 		flagSet.BoolVar(&options.NoFileLog, "no-file-log", false, "禁用文件日志记录，仅输出到控制台"),

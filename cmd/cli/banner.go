@@ -8,7 +8,6 @@
 package cli
 
 import (
-	"os"
 	"strings"
 	"time"
 )
@@ -17,14 +16,6 @@ import (
 var defaultVersion = "1.0.0"
 var defaultAuthor = "zhizhuo"
 var defaultBuildDate = "BUILD_TIME"
-
-// 从环境变量获取值，如果不存在则使用默认值
-func getEnvOrDefault(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists && value != "" {
-		return value
-	}
-	return defaultValue
-}
 
 // Banner 程序启动时显示的横幅
 var Banner = strings.TrimSpace(`
@@ -39,9 +30,9 @@ var Banner = strings.TrimSpace(`
 // getBuildDate 获取构建日期
 func getBuildDate() string {
 	// 如果是默认的 BUILD_TIME 或为空，使用当前日期
-	if defaultBuildDate == "BUILD_TIME" || defaultBuildDate == "" {
+	if defaultBuildDate == "BUILD_TIME" {
 		return time.Now().Format("2006-01-02")
 	}
-	
+
 	return defaultBuildDate
 }

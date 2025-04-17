@@ -1,76 +1,90 @@
 # GXX 指纹识别工具使用示例
 
-本目录包含了 GXX 指纹识别工具的使用示例，帮助您快速上手和了解工具的核心功能。
+本目录包含了 GXX 指纹识别工具的使用示例，帮助您快速上手和了解工具的核心功能。每个示例都放在单独的目录中，并配有详细的说明文档。
 
-## 示例说明
+## 示例目录
 
-### 1. 基本扫描 ([basic_scan.go](basic_scan.go))
+### 1. [基本扫描](basic_scan/)
 
 最基本的扫描示例，展示如何进行单个目标的指纹识别。
 
-```bash
-# 运行示例
-go run basic_scan.go
-```
-
 **主要功能**:
 - 设置单个或多个目标URL
-- 配置调试模式
-- 设置线程数和超时时间
+- 初始化指纹规则库
+- 使用API方式扫描每个目标
+- 展示匹配的指纹信息
 
-### 2. 代理扫描 ([proxy_scan.go](proxy_scan.go))
+### 2. [代理扫描](proxy_scan/)
 
 演示如何通过代理服务器进行扫描，适用于需要匿名扫描或访问特定网络环境的场景。
 
-```bash
-# 运行示例
-go run proxy_scan.go
-```
-
 **主要功能**:
 - 配置HTTP/SOCKS5代理
-- 设置合适的超时时间
-- 配置重试次数
+- 获取目标基础信息
+- 通过代理进行指纹识别
+- 输出详细的识别结果
 
-### 3. 文件目标扫描 ([file_target_scan.go](file_target_scan.go))
+### 3. [文件目标扫描](file_target_scan/)
 
 展示如何从文件中读取目标列表进行批量扫描，适用于大规模扫描任务。
 
-```bash
-# 创建目标文件
-echo "example.com" > targets.txt
-echo "github.com" >> targets.txt
+**主要功能**:
+- 自动创建和读取目标文件
+- 使用并发方式扫描多个目标
+- 汇总展示扫描结果
+- 将结果保存为CSV格式
 
-# 运行示例
-go run file_target_scan.go
-```
+### 4. [API接口扫描百度](api_scan_baidu/)
+
+展示如何使用GXX API接口直接进行指纹识别，目标为百度网站。该示例演示了如何在代码中集成GXX的API功能。
 
 **主要功能**:
-- 从文件读取目标列表
-- 配置输出文件保存结果
-- 设置并发线程数优化性能
+- 直接使用API接口进行扫描
+- 获取目标基础信息
+- 执行指纹识别并处理结果
+- 详细展示匹配的指纹信息
+
+## 运行示例
+
+每个示例目录下都有独立的README文件和main.go文件。要运行特定示例，进入其目录并执行：
+
+```bash
+cd example/<示例目录>
+go run main.go
+```
 
 ## API 使用说明
 
 GXX 提供了简单易用的 API，便于集成到您的项目中：
 
 ```go
-// 创建选项
+// 1. 创建配置选项
 options, err := gxx.NewFingerOptions()
-if err != nil {
-    // 错误处理
-}
 
-// 配置选项
-options.Target = []string{"example.com"}
-options.Threads = 10
-options.Debug = true
+// 2. 初始化指纹规则库(仅需执行一次)
+err := gxx.InitFingerRules(options)
 
-// 执行扫描
-gxx.FingerScan(options)
+// 3. 获取目标基础信息
+title, serverInfo, statusCode, resp, err := gxx.GetBaseInfo(target, proxy, timeout)
+
+// 4. 执行指纹识别
+result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
+
+// 5. 获取匹配结果
+matches := gxx.GetFingerMatches(result)
 ```
 
-### 主要配置选项
+## 主要API函数
+
+| 函数 | 描述 |
+|------|------|
+| `NewFingerOptions()` | 创建新的扫描选项 |
+| `InitFingerRules(options)` | 初始化指纹规则库 |
+| `GetBaseInfo(target, proxy, timeout)` | 获取目标基础信息 |
+| `FingerScan(target, proxy, timeout, workerCount)` | 执行指纹识别 |
+| `GetFingerMatches(result)` | 获取匹配的指纹列表 |
+
+## 主要配置选项
 
 | 选项 | 类型 | 说明 |
 |------|------|------|
@@ -80,22 +94,18 @@ gxx.FingerScan(options)
 | Output | string | 输出文件路径 |
 | Proxy | string | 代理服务器地址 |
 | Timeout | int | 请求超时时间（秒） |
-| Retries | int | 请求失败重试次数 |
 | Debug | bool | 是否开启调试模式 |
 
 ## 使用提示
 
-1. **合理设置线程数**：根据您的网络环境和目标数量调整线程数，过高可能导致IP被封禁
-2. **处理大量目标**：对于大规模扫描，建议使用文件输入并保存结果到输出文件
-3. **使用代理**：对于敏感目标，请考虑使用代理服务器进行扫描
-4. **错误处理**：在实际应用中，确保添加适当的错误处理逻辑
-5. **结果处理**：根据您的需求处理和分析扫描结果
+1. **选择合适的示例**：根据您的需求选择最接近的示例作为起点
+2. **查看示例README**：每个示例目录下都有详细的README文件
+3. **API初始化顺序**：确保先调用`InitFingerRules`再执行指纹识别
+4. **并发与性能**：利用并发特性可以显著提高扫描效率
 
-## 自定义扩展
+## 问题反馈
 
-您可以基于这些示例进行扩展，例如：
+如果您在使用过程中遇到任何问题，或有改进建议，请通过以下方式联系我们：
 
-- 添加更复杂的目标筛选逻辑
-- 自定义结果处理和分析
-- 结合其他工具形成完整的安全评估流程
-- 开发Web界面或其他形式的用户交互 
+- 提交Issue
+- 发送邮件到开发者邮箱 

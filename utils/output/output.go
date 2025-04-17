@@ -2,8 +2,10 @@ package output
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	finger2 "gxx/pkg/finger"
+	"gxx/pkg/wappalyzer"
 	"gxx/types"
 	"gxx/utils/proto"
 	"os"
@@ -21,17 +23,32 @@ var (
 
 // WriteOptions 定义写入选项结构体，用于传递写入参数
 type WriteOptions struct {
-	Output      string            // 输出文件路径
-	Format      string            // 输出格式(csv/txt)
-	Target      string            // 目标URL
-	Fingers     []*finger2.Finger // 指纹列表
-	StatusCode  int32             // 状态码
-	Title       string            // 页面标题
-	ServerInfo  *types.ServerInfo // 服务器信息
-	RespHeaders string            // 响应头
-	Response    *proto.Response   // 完整响应对象(可选)
-	FinalResult bool              // 最终匹配结果
-	Remark      string            // 备注(可选)
+	Output      string                     // 输出文件路径
+	Format      string                     // 输出格式(csv/txt/json)
+	Target      string                     // 目标URL
+	Fingers     []*finger2.Finger          // 指纹列表
+	StatusCode  int32                      // 状态码
+	Title       string                     // 页面标题
+	ServerInfo  *types.ServerInfo          // 服务器信息
+	RespHeaders string                     // 响应头
+	Response    *proto.Response            // 完整响应对象(可选)
+	Wappalyzer  *wappalyzer.TypeWappalyzer //站点使用技术
+	FinalResult bool                       // 最终匹配结果
+	Remark      string                     // 备注(可选)
+}
+
+// JSONOutput JSON格式输出结构体
+type JSONOutput struct {
+	URL         string                     `json:"url"`
+	StatusCode  int32                      `json:"status_code"`
+	Title       string                     `json:"title"`
+	Server      string                     `json:"server"`
+	FingerIDs   []string                   `json:"finger_ids,omitempty"`
+	FingerNames []string                   `json:"finger_names,omitempty"`
+	Headers     string                     `json:"headers,omitempty"`
+	Wappalyzer  *wappalyzer.TypeWappalyzer `json:"wappalyzer,omitempty"`
+	MatchResult bool                       `json:"match_result"`
+	Remark      string                     `json:"remark,omitempty"`
 }
 
 // InitOutput 初始化输出文件，写入表头
@@ -60,6 +77,8 @@ func WriteHeader(format string) error {
 			return fmt.Errorf("写入CSV表头失败: %v", err)
 		}
 		csvWriter.Flush()
+	} else if format == "json" {
+		// JSON格式不需要写表头
 	} else {
 		// 文本格式表头
 		header := fmt.Sprintf("%-40s%-10s%-30s%-20s%-30s%-30s%-50s%-15s%-20s\n",
@@ -175,10 +194,44 @@ func WriteFingerprints(opts *WriteOptions) error {
 	}
 
 	// 格式化响应头为HTTP标准格式
-	headersStr := string(opts.Response.RawHeader)
+	headersStr := ""
+	if opts.Response != nil && opts.Response.RawHeader != nil {
+		headersStr = string(opts.Response.RawHeader)
+	} else if opts.RespHeaders != "" {
+		headersStr = opts.RespHeaders
+	}
 
-	// 写入结果
-	if opts.Format == "csv" {
+	// 根据不同格式写入结果
+	if opts.Format == "json" {
+		// 构建JSON对象
+		jsonOutput := &JSONOutput{
+			URL:         opts.Target,
+			StatusCode:  opts.StatusCode,
+			Title:       opts.Title,
+			Server:      serverInfoStr,
+			FingerIDs:   fingerIDs,
+			FingerNames: fingerNames,
+			Headers:     headersStr,
+			Wappalyzer:  opts.Wappalyzer,
+			MatchResult: opts.FinalResult,
+			Remark:      remark,
+		}
+
+		// 序列化为JSON
+		jsonData, err := json.MarshalIndent(jsonOutput, "", "  ")
+		if err != nil {
+			return fmt.Errorf("JSON序列化失败: %v", err)
+		}
+
+		// 写入JSON数据和换行符
+		if _, err := outputFile.Write(jsonData); err != nil {
+			return fmt.Errorf("写入JSON数据失败: %v", err)
+		}
+		if _, err := outputFile.Write([]byte("\n")); err != nil {
+			return fmt.Errorf("写入换行符失败: %v", err)
+		}
+
+	} else if opts.Format == "csv" {
 		if err := csvWriter.Write([]string{
 			opts.Target,
 			fmt.Sprintf("%d", opts.StatusCode),
@@ -226,6 +279,63 @@ func WriteFingerprints(opts *WriteOptions) error {
 		}
 	}
 
+	return nil
+}
+
+// PrintJSONOutput 将结果直接以JSON格式输出到标准输出
+func PrintJSONOutput(opts *WriteOptions) error {
+	// 收集指纹信息
+	fingersCount := len(opts.Fingers)
+	fingerIDs := make([]string, 0, fingersCount)
+	fingerNames := make([]string, 0, fingersCount)
+
+	for _, f := range opts.Fingers {
+		fingerIDs = append(fingerIDs, f.Id)
+		fingerNames = append(fingerNames, f.Info.Name)
+	}
+
+	// 使用传入的备注或生成默认备注
+	remark := opts.Remark
+	if remark == "" {
+		remark = fmt.Sprintf("发现%d个指纹", fingersCount)
+	}
+
+	// 处理服务器信息
+	serverInfoStr := ""
+	if opts.ServerInfo != nil {
+		serverInfoStr = opts.ServerInfo.ServerType
+	}
+
+	// 格式化响应头
+	headersStr := ""
+	if opts.Response != nil && opts.Response.RawHeader != nil {
+		headersStr = string(opts.Response.RawHeader)
+	} else if opts.RespHeaders != "" {
+		headersStr = opts.RespHeaders
+	}
+
+	// 构建JSON对象
+	jsonOutput := &JSONOutput{
+		URL:         opts.Target,
+		StatusCode:  opts.StatusCode,
+		Title:       opts.Title,
+		Server:      serverInfoStr,
+		FingerIDs:   fingerIDs,
+		FingerNames: fingerNames,
+		Headers:     headersStr,
+		Wappalyzer:  opts.Wappalyzer,
+		MatchResult: opts.FinalResult,
+		Remark:      remark,
+	}
+
+	// 序列化为JSON
+	jsonData, err := json.MarshalIndent(jsonOutput, "", "  ")
+	if err != nil {
+		return fmt.Errorf("JSON序列化失败: %v", err)
+	}
+
+	// 输出到标准输出
+	fmt.Println(string(jsonData))
 	return nil
 }
 
