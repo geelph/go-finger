@@ -8,6 +8,7 @@
 package pkg
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"gxx/pkg/cel"
@@ -69,13 +70,20 @@ func initializeCache(httpResp *http.Response, proxy string) *proto.Response {
 	}
 
 	// 读取响应体
-	respBody, _ := io.ReadAll(httpResp.Body)
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		logger.Debug(fmt.Sprintf("读取响应体出错: %v", err))
+		respBody = []byte{}
+	}
+	// 关闭原始响应体并重置
 	_ = httpResp.Body.Close()
+	// 重要：重置响应体以供后续使用
+	httpResp.Body = io.NopCloser(bytes.NewReader(respBody))
+	
 	utf8RespBody := common.Str2UTF8(string(respBody))
 
 	// 构建响应对象
 	initialResponse := finger2.BuildProtoResponse(httpResp, utf8RespBody, 0, proxy)
-
 	// 初始化请求缓存
 	reqMethod := "GET"
 	reqPath := "/"
@@ -203,7 +211,15 @@ func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, 
 		return title, serverInfo, statusCode, resp, nil, nil
 	}
 
-	data, _ := io.ReadAll(resp.Body)
+	// 读取响应体并重置
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Debug(fmt.Sprintf("读取响应体出错: %v", err))
+		data = []byte{}
+	}
+	// 重置响应体以供后续使用
+	resp.Body = io.NopCloser(bytes.NewReader(data))
+	
 	wappData, err := wapp.GetWappalyzer(resp.Header, data)
 	if err != nil {
 		return title, serverInfo, statusCode, resp, nil, nil
@@ -582,9 +598,6 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 		finger2.IsFuzzSet(fg.Payloads.Payloads, varMap, customLib)
 	}
 
-	resultData.Request = lastRequest
-	resultData.Response = lastResponse
-
 	// 评估规则
 	for _, rule := range fg.Rules {
 		// 优先使用缓存
@@ -599,12 +612,10 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 				continue
 			}
 
-			// 更新变量映射并缓存根路径请求
+			// 更新变量映射并缓存请求
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
-				if rule.Value.Request.Path == "/" {
-					updateCache(varMap)
-				}
+				updateCache(varMap)
 			}
 		}
 
@@ -638,6 +649,19 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 
 	resultData.Result = result.Value().(bool)
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
+
+	// 在返回前设置请求和响应
+	if req, ok := varMap["request"].(*proto.Request); ok {
+		resultData.Request = req
+	} else {
+		resultData.Request = lastRequest
+	}
+	
+	if resp, ok := varMap["response"].(*proto.Response); ok {
+		resultData.Response = resp
+	} else {
+		resultData.Response = lastResponse
+	}
 
 	return resultData, nil
 }

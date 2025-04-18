@@ -10,7 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.icon_hash == "614261556"
+    expression: response.icon_hash == "-338936081"
   r1:
     request:
       method: GET

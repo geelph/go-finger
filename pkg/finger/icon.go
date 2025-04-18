@@ -198,104 +198,122 @@ func GetIconURL(pageURL string, html string) string {
 		basePath = ""
 	}
 
+	// 默认favicon.ico路径
 	faviconURL := baseURL + "favicon.ico"
+
+	// 检查HTML中是否有icon标签
 	htmlLower := strings.ToLower(html)
-	iconIndex := strings.Index(htmlLower, "<link rel=\"icon\"")
-	shortcutIndex := strings.Index(htmlLower, "<link rel=\"shortcut icon\"")
 
-	re := regexp.MustCompile(`href="(.*?)"`)
+	// 查找所有可能的icon标签
+	iconTags := []string{
+		"<link rel=\"icon\"",
+		"<link rel=\"shortcut icon\"",
+		"<link type=\"image/x-icon\"",
+		"<link rel=\"apple-touch-icon\"",
+		"<link rel=\"apple-touch-icon-precomposed\"",
+	}
+
+	var iconIndex = -1
+
+	// 寻找第一个匹配的icon标签
+	for _, tag := range iconTags {
+		index := strings.Index(htmlLower, tag)
+		if index != -1 && (iconIndex == -1 || index < iconIndex) {
+			iconIndex = index
+		}
+	}
+
+	// 如果找到了icon标签
+	if iconIndex != -1 {
+		tagEnd := strings.Index(html[iconIndex:], ">") + iconIndex
+		if tagEnd > iconIndex {
+			linkTag := html[iconIndex:tagEnd]
+
+			// 提取href属性
+			reHref := regexp.MustCompile(`href=["']?([^"'>\s]+)`)
+			hrefMatch := reHref.FindStringSubmatch(linkTag)
+
+			if len(hrefMatch) > 1 {
+				faviconPath := hrefMatch[1]
+				faviconURL = buildAbsoluteURL(parsedURL, baseURL, basePath, faviconPath)
+				logger.Debug(fmt.Sprintf("页面提取到icon url: %s", faviconURL))
+				return normalizeFaviconURL(faviconURL)
+			}
+		}
+	}
+
+	// 如果没有找到标准icon标签，尝试查找所有可能的图标链接
+	re := regexp.MustCompile(`href=["']([^"']+\.(ico|png|jpg|jpeg|gif|svg))["']`)
 	iconList := re.FindAllStringSubmatch(html, -1)
-	var ic []string
-	for _, match := range iconList {
-		if len(match) > 1 && strings.Contains(match[1], ".") {
-			parts := strings.Split(match[1], ".")
-			if len(parts) > 1 {
-				ext := strings.ToLower(parts[len(parts)-1])
-				if ext == "ico" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" || ext == "svg" || ext == "icon" {
-					ic = append(ic, match[1])
-				}
+
+	if len(iconList) > 0 {
+		for _, match := range iconList {
+			if len(match) > 1 {
+				faviconURL = buildAbsoluteURL(parsedURL, baseURL, basePath, match[1])
+				logger.Debug(fmt.Sprintf("发现新icon地址: %s", faviconURL))
+				return normalizeFaviconURL(faviconURL)
 			}
 		}
 	}
 
-	if iconIndex == -1 && shortcutIndex == -1 {
-		if len(ic) > 0 {
-			// 检查是否是完整URL
-			if strings.HasPrefix(ic[0], "http://") || strings.HasPrefix(ic[0], "https://") {
-				faviconURL = ic[0]
-			} else if strings.HasPrefix(ic[0], "//") {
-				// 处理协议相对URL
-				faviconURL = parsedURL.Scheme + ":" + ic[0]
-			} else if strings.HasPrefix(ic[0], "/") {
-				// 绝对路径
-				faviconURL = baseURL + strings.TrimPrefix(ic[0], "/")
-			} else {
-				// 相对路径
-				if basePath == "" || strings.HasSuffix(basePath, "/") {
-					faviconURL = baseURL + strings.TrimPrefix(basePath, "/") + ic[0]
-				} else {
-					// 如果basePath不以/结尾，需要获取目录部分
-					dir := path.Dir(basePath)
-					if dir == "." {
-						dir = ""
-					} else if !strings.HasSuffix(dir, "/") {
-						dir += "/"
-					}
-					faviconURL = baseURL + strings.TrimPrefix(dir, "/") + ic[0]
-				}
+	// 尝试使用基路径+favicon.ico
+	if basePath != "" {
+		faviconPath := basePath
+		if !strings.HasSuffix(faviconPath, "/") {
+			faviconPath = path.Dir(faviconPath)
+			if faviconPath != "." && !strings.HasSuffix(faviconPath, "/") {
+				faviconPath += "/"
 			}
-			logger.Debug(fmt.Sprintf("发现新icon地址：%s", faviconURL))
-		} else if basePath != "" {
-			faviconPath := basePath
-			if !strings.HasSuffix(faviconPath, "/") {
-				faviconPath = path.Dir(faviconPath)
-				if faviconPath != "." && !strings.HasSuffix(faviconPath, "/") {
-					faviconPath += "/"
-				}
-			}
-			faviconURL = baseURL + strings.TrimPrefix(strings.TrimPrefix(faviconPath, "/"), "./") + "favicon.ico"
-			logger.Debug(fmt.Sprintf("使用默认url+path：%s", faviconURL))
 		}
+		faviconURL = baseURL + strings.TrimPrefix(strings.TrimPrefix(faviconPath, "/"), "./") + "favicon.ico"
+		logger.Debug(fmt.Sprintf("使用默认url+path: %s", faviconURL))
+	}
+
+	return normalizeFaviconURL(faviconURL)
+}
+
+// buildAbsoluteURL 构建绝对URL
+func buildAbsoluteURL(parsedURL *url.URL, baseURL, basePath, iconPath string) string {
+	// 已经是完整URL
+	if strings.HasPrefix(iconPath, "http://") || strings.HasPrefix(iconPath, "https://") {
+		return iconPath
+	}
+
+	// 协议相对URL
+	if strings.HasPrefix(iconPath, "//") {
+		return parsedURL.Scheme + ":" + iconPath
+	}
+
+	// 绝对路径
+	if strings.HasPrefix(iconPath, "/") {
+		return baseURL + strings.TrimPrefix(iconPath, "/")
+	}
+
+	// 相对路径
+	if basePath == "" || strings.HasSuffix(basePath, "/") {
+		return baseURL + strings.TrimPrefix(basePath, "/") + iconPath
+	}
+
+	// 基路径不以/结尾，需要获取目录部分
+	dir := path.Dir(basePath)
+	if dir == "." {
+		dir = ""
+	} else if !strings.HasSuffix(dir, "/") {
+		dir += "/"
+	}
+	return baseURL + strings.TrimPrefix(dir, "/") + iconPath
+}
+
+// normalizeFaviconURL 规范化favicon URL
+func normalizeFaviconURL(url string) string {
+	// 修复双斜杠问题，但保留协议中的双斜杠
+	result := url
+	if strings.HasPrefix(result, "http://") {
+		result = "http://" + strings.ReplaceAll(result[10:], "//", "/")
+	} else if strings.HasPrefix(result, "https://") {
+		result = "https://" + strings.ReplaceAll(result[10:], "//", "/")
 	} else {
-		var linkTag string
-		if iconIndex != -1 {
-			linkTag = html[iconIndex : strings.Index(html[iconIndex:], ">")+iconIndex]
-		} else {
-			linkTag = html[shortcutIndex : strings.Index(html[shortcutIndex:], ">")+shortcutIndex]
-		}
-
-		reHref := regexp.MustCompile(`href="([^"]+)"`)
-		faviconPathMatch := reHref.FindStringSubmatch(linkTag)
-		if len(faviconPathMatch) > 1 {
-			faviconPath := faviconPathMatch[1]
-
-			// 检查是否是完整URL
-			if strings.HasPrefix(faviconPath, "http://") || strings.HasPrefix(faviconPath, "https://") {
-				faviconURL = faviconPath
-			} else if strings.HasPrefix(faviconPath, "//") {
-				// 处理协议相对URL
-				faviconURL = parsedURL.Scheme + ":" + faviconPath
-			} else if strings.HasPrefix(faviconPath, "/") {
-				// 绝对路径
-				faviconURL = baseURL + strings.TrimPrefix(faviconPath, "/")
-			} else {
-				// 相对路径
-				if basePath == "" || strings.HasSuffix(basePath, "/") {
-					faviconURL = baseURL + strings.TrimPrefix(basePath, "/") + faviconPath
-				} else {
-					// 如果basePath不以/结尾，需要获取目录部分
-					dir := path.Dir(basePath)
-					if dir == "." {
-						dir = ""
-					} else if !strings.HasSuffix(dir, "/") {
-						dir += "/"
-					}
-					faviconURL = baseURL + strings.TrimPrefix(dir, "/") + faviconPath
-				}
-			}
-			logger.Debug(fmt.Sprintf("页面提取到icon url %s", faviconURL))
-		}
+		result = strings.ReplaceAll(result, "//", "/")
 	}
-
-	return faviconURL
+	return result
 }
