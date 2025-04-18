@@ -9,6 +9,7 @@ package finger
 
 import (
 	"fmt"
+	"gxx/utils/common"
 	"gxx/utils/logger"
 	"io"
 	"net/http"
@@ -29,12 +30,35 @@ func GetTitle(urlStr string, resp *http.Response) string {
 	// 不要忘记恢复响应体以便后续使用
 	resp.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
 
+	// 解析字符集并转换编码
 	bodyText := string(bodyBytes)
-
-	// 检查编码
 	contentType := resp.Header.Get("Content-Type")
-	if strings.Contains(contentType, "charset=utf-8") || strings.Contains(bodyText, "charset=\"utf-8\"") {
-		// 已经使用UTF-8编码，无需更改
+	
+	// 检查和处理编码
+	charsetRegex := regexp.MustCompile(`(?i)charset=["']?([\w-]+)["']?`)
+	charsetMatch := charsetRegex.FindStringSubmatch(contentType)
+	if len(charsetMatch) < 2 {
+		// 如果 HTTP 头中没有指定字符集，尝试从 HTML 内容中查找
+		metaCharsetRegex := regexp.MustCompile(`(?i)<meta\s+.*?charset=["']?([\w-]+)["']?.*?>`)
+		metaMatch := metaCharsetRegex.FindStringSubmatch(bodyText)
+		if len(metaMatch) >= 2 {
+			charsetMatch = metaMatch
+		}
+	}
+
+	// 根据检测到的字符集进行转换
+	if len(charsetMatch) >= 2 {
+		charset := strings.ToLower(charsetMatch[1])
+		logger.Debug("检测到字符集: %s", charset)
+		
+		if charset != "utf-8" && charset != "utf8" {
+			// 使用 common.Str2UTF8 函数转换为 UTF-8
+			bodyText = common.Str2UTF8(bodyText)
+			logger.Debug("已将内容从 %s 转换为 UTF-8", charset)
+		}
+	} else {
+		// 如果无法检测到字符集，尝试转换为 UTF-8
+		bodyText = common.Str2UTF8(bodyText)
 	}
 
 	// 解析URL
@@ -136,8 +160,11 @@ func GetTitle(urlStr string, resp *http.Response) string {
 					continue
 				}
 
+				// 将 JS 文件内容转换为 UTF-8
+				jsContent := common.Str2UTF8(string(bodyBytes))
+				
 				titleRegex := regexp.MustCompile(`"top\.login\.title": "(.*?)",`)
-				titleMatches := titleRegex.FindStringSubmatch(string(bodyBytes))
+				titleMatches := titleRegex.FindStringSubmatch(jsContent)
 				if len(titleMatches) > 1 {
 					logger.Debug("成功从i18n JS文件获取标题数据: %s", titleMatches[1])
 					title = titleMatches[1]
@@ -153,6 +180,9 @@ func GetTitle(urlStr string, resp *http.Response) string {
 
 // cleanTitle 移除空白字符并清理标题字符串
 func cleanTitle(title string) string {
+	// 先确保标题是UTF-8编码
+	title = common.Str2UTF8(title)
+	
 	// 移除制表符、换行符和回车符
 	title = strings.Map(func(r rune) rune {
 		if r == '\r' || r == '\n' || r == '\t' {
