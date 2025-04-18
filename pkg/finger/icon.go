@@ -309,11 +309,11 @@ func normalizeFaviconURL(url string) string {
 	// 修复双斜杠问题，但保留协议中的双斜杠
 	result := url
 	if strings.HasPrefix(result, "http://") {
-		result = "http://" + strings.ReplaceAll(result[10:], "//", "/")
+		result = "http://" + strings.ReplaceAll(result[7:], "//", "/")
 	} else if strings.HasPrefix(result, "https://") {
-		result = "https://" + strings.ReplaceAll(result[10:], "//", "/")
+		result = "https://" + strings.ReplaceAll(result[8:], "//", "/")
 	} else {
-		result = strings.ReplaceAll(result, "//", "/")
+		result = strings.ReplaceAll(result[10:], "//", "/")
 	}
 	return result
 }
