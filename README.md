@@ -9,9 +9,10 @@ GXX是一款强大的指纹识别工具，基于YAML配置的规则进行目标�
 - **多协议支持**：支持HTTP/HTTPS、TCP、UDP协议
 - **代理功能**：支持配置HTTP/SOCKS5代理
 - **批量扫描**：支持从文件读取多个目标进行批量扫描
-- **多格式输出**：支持TXT/CSV等多种输出格式
+- **多格式输出**：支持TXT/CSV/JSON等多种输出格式
 - **自定义规则**：可根据需要自定义指纹识别规则
 - **调试模式**：内置调试功能，便于排查问题
+- **技术栈识别**：内置Wappalyzer引擎，可快速识别网站使用的技术组件
 
 ## 🚀 快速开始
 
@@ -56,7 +57,8 @@ gxx -u https://example.com --no-file-log
 
 ### 输出选项
 - `-o, --output`：输出文件路径
-- `--format`：输出文件格式（支持 txt/csv，默认：txt）
+- `--format`：输出文件格式（支持 txt/csv/json，默认：txt）
+- `--sock-output`：Unix domain socket输出路径（用于实时数据流）
 
 ### 调试选项
 - `--proxy`：HTTP/SOCKS5代理（支持逗号分隔的列表或文件输入）
@@ -65,13 +67,264 @@ gxx -u https://example.com --no-file-log
 - `--debug`：开启调试模式
 - `--no-file-log`：禁用文件日志记录，仅输出日志到控制台
 
+## 🧰 API使用
+
+GXX提供了简单易用的API，便于集成到您的项目中。以下是主要API和使用示例：
+
+### 导入包
+```go
+import (
+    "gxx"
+    "gxx/types"
+)
+```
+
+### 主要数据类型
+
+#### BaseInfoType
+包含目标站点的基本信息，包括标题、服务器信息、状态码和技术栈等：
+
+```go
+type BaseInfoType struct {
+    Target     string                     // 目标URL
+    Title      string                     // 网页标题
+    ServerInfo *ServerInfo                // 服务器信息
+    StatusCode int32                      // HTTP状态码
+    Response   *http.Response             // HTTP原始响应
+    Wappalyzer *TypeWappalyzer            // 技术栈信息
+}
+```
+
+#### ServerInfo
+服务器信息结构体：
+
+```go
+type ServerInfo struct {
+    OriginalServer string                 // 原始Server头信息
+    ServerType     string                 // 服务器类型
+    Version        string                 // 版本信息
+}
+```
+
+#### TargetResult
+包含扫描结果的结构体：
+
+```go
+type TargetResult struct {
+    URL        string                     // 目标URL
+    StatusCode int32                      // HTTP状态码
+    Title      string                     // 网页标题
+    Server     *ServerInfo                // 服务器信息
+    Matches    []*FingerMatch             // 匹配的指纹信息
+    Wappalyzer *TypeWappalyzer            // 技术栈信息
+}
+```
+
+#### TypeWappalyzer
+技术栈信息结构体：
+
+```go
+type TypeWappalyzer struct {
+    WebServers           []string         // Web服务器
+    ReverseProxies       []string         // 反向代理
+    JavaScriptFrameworks []string         // JS框架
+    JavaScriptLibraries  []string         // JS库
+    WebFrameworks        []string         // Web框架
+    ProgrammingLanguages []string         // 编程语言 
+    Caching              []string         // 缓存技术
+    Security             []string         // 安全组件
+    StaticSiteGenerator  []string         // 静态站点生成器
+    HostingPanels        []string         // 主机面板
+    Other                []string         // 其他杂项
+}
+```
+
+### 主要API函数
+
+#### 1. 初始化指纹规则
+```go
+// 创建默认配置选项
+options, err := gxx.NewFingerOptions()
+if err != nil {
+    // 错误处理
+}
+
+// 初始化指纹规则（仅需执行一次）
+err = gxx.InitFingerRules(options)
+if err != nil {
+    // 错误处理
+}
+```
+
+#### 2. 单个URL识别
+```go
+// 扫描单个URL
+target := "https://example.com"
+proxy := "" // 如果需要代理，指定代理地址
+timeout := 5 // 超时时间，单位：秒
+workerCount := 10 // 并发工作线程数
+
+// 执行指纹识别
+result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
+if err != nil {
+    // 错误处理
+}
+```
+
+#### 3. 获取匹配结果
+```go
+// 获取所有匹配的指纹
+matches := gxx.GetFingerMatches(result)
+for _, match := range matches {
+    // 指纹ID: match.Finger.Id
+    // 指纹名称: match.Finger.Info.Name
+    // 匹配结果: match.Result
+    // 请求信息: match.Request
+    // 响应信息: match.Response
+}
+```
+
+#### 4. 获取目标基础信息
+```go
+// 获取目标站点的基础信息
+baseInfo, err := gxx.GetBaseInfo(target, proxy, timeout)
+if err != nil {
+    // 错误处理
+}
+
+// 处理结果
+fmt.Printf("标题: %s\n", baseInfo.Title)
+fmt.Printf("状态码: %d\n", baseInfo.StatusCode)
+if baseInfo.ServerInfo != nil {
+    fmt.Printf("服务器: %s\n", baseInfo.ServerInfo.ServerType)
+}
+if baseInfo.Wappalyzer != nil {
+    fmt.Printf("Web服务器: %v\n", baseInfo.Wappalyzer.WebServers)
+    fmt.Printf("编程语言: %v\n", baseInfo.Wappalyzer.ProgrammingLanguages)
+}
+```
+
+#### 5. 技术栈识别
+```go
+// 单独进行技术栈识别，不执行指纹匹配
+wappResult, err := gxx.WappalyzerScan(target, proxy, timeout)
+if err != nil {
+    // 错误处理
+}
+
+// 处理技术栈分析结果
+if len(wappResult.WebServers) > 0 {
+    fmt.Printf("Web服务器: %v\n", wappResult.WebServers)
+}
+if len(wappResult.ProgrammingLanguages) > 0 {
+    fmt.Printf("编程语言: %v\n", wappResult.ProgrammingLanguages)
+}
+if len(wappResult.JavaScriptFrameworks) > 0 {
+    fmt.Printf("JS框架: %v\n", wappResult.JavaScriptFrameworks)
+}
+```
+
+### 完整使用示例
+
+```go
+package main
+
+import (
+    "fmt"
+    "gxx"
+    "log"
+)
+
+func main() {
+    // 1. 创建配置选项
+    options, err := gxx.NewFingerOptions()
+    if err != nil {
+        log.Fatalf("创建选项错误: %v", err)
+    }
+
+    // 2. 初始化指纹规则库（仅需执行一次）
+    if err := gxx.InitFingerRules(options); err != nil {
+        log.Fatalf("初始化指纹规则错误: %v", err)
+    }
+
+    // 3. 处理单个URL
+    target := "https://example.com"
+    proxy := "" // 如果不需要代理，设为空字符串
+    timeout := 5 // 超时时间，单位：秒
+    workerCount := 10 // 并发工作线程数
+
+    result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
+    if err != nil {
+        log.Printf("处理URL错误: %v", err)
+        return
+    }
+
+    // 4. 输出基本信息
+    fmt.Printf("URL: %s\n", result.URL)
+    fmt.Printf("状态码: %d\n", result.StatusCode)
+    fmt.Printf("标题: %s\n", result.Title)
+    if result.Server != nil {
+        fmt.Printf("服务器: %s\n", result.Server.ServerType)
+    }
+
+    // 5. 处理匹配结果
+    matches := gxx.GetFingerMatches(result)
+    if len(matches) > 0 {
+        fmt.Println("\n匹配的指纹:")
+        for i, match := range matches {
+            fmt.Printf("  %d. %s (ID: %s, 匹配结果: %v)\n", 
+                i+1, match.Finger.Info.Name, match.Finger.Id, match.Result)
+        }
+    } else {
+        fmt.Println("\n未匹配到任何指纹")
+    }
+    
+    // 6. 获取基础信息和技术栈
+    baseInfo, err := gxx.GetBaseInfo(target, proxy, timeout)
+    if err != nil {
+        log.Printf("获取基本信息错误: %v", err)
+        return
+    }
+    
+    if baseInfo.Wappalyzer != nil {
+        fmt.Println("\n技术栈信息:")
+        if len(baseInfo.Wappalyzer.WebServers) > 0 {
+            fmt.Printf("  Web服务器: %v\n", baseInfo.Wappalyzer.WebServers)
+        }
+        if len(baseInfo.Wappalyzer.ProgrammingLanguages) > 0 {
+            fmt.Printf("  编程语言: %v\n", baseInfo.Wappalyzer.ProgrammingLanguages)
+        }
+        if len(baseInfo.Wappalyzer.WebFrameworks) > 0 {
+            fmt.Printf("  Web框架: %v\n", baseInfo.Wappalyzer.WebFrameworks)
+        }
+        if len(baseInfo.Wappalyzer.JavaScriptFrameworks) > 0 {
+            fmt.Printf("  JS框架: %v\n", baseInfo.Wappalyzer.JavaScriptFrameworks)
+        }
+    }
+    
+    // 7. 单独进行技术栈识别
+    wappResult, err := gxx.WappalyzerScan(target, proxy, timeout)
+    if err != nil {
+        log.Printf("技术栈分析错误: %v", err)
+        return
+    }
+    
+    fmt.Println("\n单独技术栈分析结果:")
+    if len(wappResult.WebServers) > 0 {
+        fmt.Printf("  Web服务器: %v\n", wappResult.WebServers)
+    }
+}
+```
+
 ## 🔍 示例代码
 
 查看 [example](example/) 目录获取完整使用示例：
 
-- [基本扫描](example/basic_scan.go)：单目标扫描
-- [代理扫描](example/proxy_scan.go)：使用代理进行扫描
-- [文件目标扫描](example/file_target_scan.go)：批量扫描多个目标
+- [基本扫描](example/basic_scan/)：单目标扫描
+- [代理扫描](example/proxy_scan/)：使用代理进行扫描
+- [文件目标扫描](example/file_target_scan/)：批量扫描多个目标
+- [百度API扫描](example/api_scan_baidu/)：API集成示例
+- [Wappalyzer技术栈识别](example/wappalyzer_scan/)：网站技术栈识别
 
 ## 📂 项目目录结构
 
@@ -86,13 +339,14 @@ gxx/
 │   ├── proto/              # 协议相关代码
 │   ├── cel/                # CEL表达式处理
 │   ├── request/            # 请求处理
-│   └── pkg/                # 可以被外部应用程序使用的库代码
-├── finger/                 # 指纹文件目录
-├── test/                   # 测试目录
+│   └── output/             # 结果输出处理
+├── pkg/                    # 核心功能实现
+│   ├── finger/             # 指纹识别
+│   └── wappalyzer/         # Wappalyzer技术栈识别
+├── types/                  # 类型定义
 ├── logs/                   # 日志输出目录
 ├── example/                # 示例代码
 ├── go.mod                  # Go模块定义
-├── go.sum                  # Go模块依赖校验和
 └── README.md               # 项目说明文档
 ```
 
@@ -134,25 +388,6 @@ chmod +x build.sh
 goreleaser build --snapshot --clean --snapshot
 ```
 
-## 🧰 API使用
-
-GXX提供了简单易用的API，便于集成到您的项目中：
-
-```go
-// 创建新的扫描选项
-options, err := gxx.NewFingerOptions()
-if err != nil {
-    // 错误处理
-}
-
-// 设置目标
-options.Target = []string{"example.com"}
-options.Debug = true
-
-// 执行扫描
-gxx.FingerScan(options)
-```
-
 ## 📝 指纹规则格式
 
 详细的指纹规则格式说明请参考：
@@ -177,10 +412,12 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.bcontains(b"特征字符串")
+    expression: response.status == 200 && response.body.ibcontains(b"特征字符串")
     
 expression: r0()
 ```
+
+***推荐使用ibcontains来进行关键词的匹配识别**
 
 ## 🤝 贡献指南
 
