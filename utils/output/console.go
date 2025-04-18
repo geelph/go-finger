@@ -183,7 +183,7 @@ func CreateWriteOptions(targetResult *TargetResult, outputPath string, format st
 		Title:       targetResult.Title,
 		ServerInfo:  targetResult.ServerInfo,
 		Wappalyzer:  targetResult.Wappalyzer,
-		FinalResult: true,
+		FinalResult: targetResult.IsMatch,
 	}
 
 	// 检查并设置响应头信息

@@ -112,7 +112,7 @@ func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
 	// 发送请求
 	resp, err := network.SendRequestHttp(ctx, "GET", iconURL, "", options)
 	if err != nil {
-		logger.Error(fmt.Sprintf("创建请求失败: %s", err))
+		logger.Debug(fmt.Sprintf("创建请求失败: %s", err))
 		return 0
 	}
 
