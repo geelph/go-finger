@@ -175,7 +175,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	}
 
 	// 处理协议，增加通信协议
-	NewUrlStr, err := network.CheckProtocol(urlStr)
+	NewUrlStr, err := network.CheckProtocol(urlStr, options.Proxy)
 	if err != nil {
 		fmt.Println("检查http通信协议出错，错误信息：", err)
 		if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {

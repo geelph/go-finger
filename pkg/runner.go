@@ -79,7 +79,7 @@ func initializeCache(httpResp *http.Response, proxy string) *proto.Response {
 	_ = httpResp.Body.Close()
 	// 重要：重置响应体以供后续使用
 	httpResp.Body = io.NopCloser(bytes.NewReader(respBody))
-	
+
 	utf8RespBody := common.Str2UTF8(string(respBody))
 
 	// 构建响应对象
@@ -159,16 +159,15 @@ func prepareRequest(target string) (*http.Request, error) {
 
 // GetBaseInfo 获取目标的基础信息（标题和Server信息）并返回完整HTTP响应
 func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, int32, *http.Response, *wappalyzer.TypeWappalyzer, error) {
-	// 准备URL
+	// 检查并规范化URL协议
+	if checkedURL, err := network.CheckProtocol(target, proxy); err == nil && checkedURL != "" {
+		target = checkedURL
+	}
+	logger.Debug(fmt.Sprintf("请求协议修正后url: %s", target))
+	// 二次验证URL
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
 		target = "https://" + target
 	}
-
-	// 检查并规范化URL协议
-	if checkedURL, err := network.CheckProtocol(target); err == nil && checkedURL != "" {
-		target = checkedURL
-	}
-
 	// 设置超时时间
 	timeoutDuration := time.Duration(timeout) * time.Second
 	if timeout <= 0 {
@@ -219,7 +218,7 @@ func GetBaseInfo(target, proxy string, timeout int) (string, *types.ServerInfo, 
 	}
 	// 重置响应体以供后续使用
 	resp.Body = io.NopCloser(bytes.NewReader(data))
-	
+
 	wappData, err := wapp.GetWappalyzer(resp.Header, data)
 	if err != nil {
 		return title, serverInfo, statusCode, resp, nil, nil
@@ -656,7 +655,7 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 	} else {
 		resultData.Request = lastRequest
 	}
-	
+
 	if resp, ok := varMap["response"].(*proto.Response); ok {
 		resultData.Response = resp
 	} else {
