@@ -86,7 +86,7 @@ func TestNewUdpClient(*testing.T) {
 
 func TestNewTHttpClient(t *testing.T) {
 	url := "http://172.22.3.251"
-	res, code, err := simpleRetryHttpGet(url)
+	res, code, err := simpleRetryHttpGet(url, "", 0)
 	if err == nil {
 		fmt.Printf("Http response received: %s\n", string(res))
 	}

@@ -265,19 +265,22 @@ func ReverseGet(target string) ([]byte, error) {
 		return nil, errors.New("目标地址不能为空")
 	}
 
-	body, _, err := simpleRetryHttpGet(target, "")
+	body, _, err := simpleRetryHttpGet(target, "", 0)
 	return body, err
 }
 
 // simpleRetryHttpGet 简化版HTTP GET请求实现
-func simpleRetryHttpGet(target string, proxy string) ([]byte, int, error) {
+func simpleRetryHttpGet(target string, proxy string, timeout int32) ([]byte, int, error) {
 	client := RetryClient
 	if client == nil {
 		initGlobalClient()
 		client = RetryClient
 	}
+	if timeout == 0 {
+		timeout = 3
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, target, nil)
@@ -349,7 +352,7 @@ func CheckProtocol(host string, proxy string) (string, error) {
 }
 
 func checkAndReturnProtocol(url string, proxy string) (string, error) {
-	body, _, err := simpleRetryHttpGet(url, proxy)
+	body, _, err := simpleRetryHttpGet(url, proxy, 0)
 	if err != nil {
 		return "", err
 	}
