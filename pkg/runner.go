@@ -34,18 +34,16 @@ import (
 // AllFinger 全局指纹数据
 var AllFinger []*finger2.Finger
 
-// 缓存的请求和响应数据
-var lastResponse *proto.Response
-var lastRequest *proto.Request
-
 // TargetResult 存储每个目标的扫描结果
 type TargetResult struct {
-	URL        string                     // 目标地址
-	StatusCode int32                      // 状态码
-	Title      string                     // 站点标题
-	Server     *types.ServerInfo          // server信息
-	Matches    []*FingerMatch             // 匹配信息
-	Wappalyzer *wappalyzer.TypeWappalyzer // 站点信息数据
+	URL          string                     // 目标地址
+	StatusCode   int32                      // 状态码
+	Title        string                     // 站点标题
+	Server       *types.ServerInfo          // server信息
+	Matches      []*FingerMatch             // 匹配信息
+	Wappalyzer   *wappalyzer.TypeWappalyzer // 站点信息数据
+	LastRequest  *proto.Request             // 该URL的请求缓存
+	LastResponse *proto.Response            // 该URL的响应缓存
 }
 
 // FingerMatch 存储每个匹配的指纹信息
@@ -64,9 +62,9 @@ type BaseInfo struct {
 }
 
 // initializeCache 初始化请求响应缓存
-func initializeCache(httpResp *http.Response, proxy string) *proto.Response {
+func initializeCache(httpResp *http.Response, proxy string) (*proto.Response, *proto.Request) {
 	if httpResp == nil {
-		return nil
+		return nil, nil
 	}
 
 	// 读取响应体
@@ -84,13 +82,13 @@ func initializeCache(httpResp *http.Response, proxy string) *proto.Response {
 
 	// 构建响应对象
 	initialResponse := finger2.BuildProtoResponse(httpResp, utf8RespBody, 0, proxy)
-	// 初始化请求缓存
+
+	// 构建请求对象
 	reqMethod := "GET"
 	reqPath := "/"
-	lastRequest = finger2.BuildProtoRequest(httpResp, reqMethod, "", reqPath)
-	lastResponse = initialResponse
+	initialRequest := finger2.BuildProtoRequest(httpResp, reqMethod, "", reqPath)
 
-	return initialResponse
+	return initialResponse, initialRequest
 }
 
 // LoadFingerprints 加载指纹规则文件，支持从默认嵌入指纹库、指定目录或单个YAML文件加载
@@ -441,10 +439,18 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 		targetResult.Title = ""
 		targetResult.Server = types.EmptyServerInfo()
 		targetResult.StatusCode = 0
+		return targetResult, nil // 如果无法获取状态码，直接返回
 	}
 
 	// 初始化缓存
-	initializeCache(httpResp, proxy)
+	lastResponse, lastRequest := initializeCache(httpResp, proxy)
+	targetResult.LastResponse = lastResponse
+	targetResult.LastRequest = lastRequest
+
+	// 如果无法获取响应，直接返回
+	if lastResponse == nil {
+		return targetResult, nil
+	}
 
 	// 创建基础信息对象
 	baseInfo := &BaseInfo{
@@ -459,14 +465,14 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	}
 
 	// 执行指纹识别
-	matches := runFingerDetection(target, baseInfo, proxy, timeout, workerCount)
+	matches := runFingerDetection(target, baseInfo, proxy, timeout, workerCount, targetResult)
 	targetResult.Matches = matches
 
 	return targetResult, nil
 }
 
 // runFingerDetection 执行指纹识别，使用工作池模式并发处理多个指纹的识别
-func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int) []*FingerMatch {
+func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int, targetResult *TargetResult) []*FingerMatch {
 	bufferSize := min(len(AllFinger), 1000)
 
 	// 创建任务通道
@@ -494,7 +500,7 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 				customLib.Reset()
 
 				// 执行指纹识别
-				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout)
+				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout, targetResult)
 				if err == nil && result.Result {
 					// 创建匹配结果对象
 					resultMatch := &FingerMatch{
@@ -534,7 +540,7 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 		ServerInfo: targetResult.Server,
 		Matches:    convertFingerMatches(targetResult.Matches),
 		Wappalyzer: targetResult.Wappalyzer,
-	}, options.Output, options.SockOutput, printResult, outputFormat, lastResponse)
+	}, options.Output, options.SockOutput, printResult, outputFormat, targetResult.LastResponse)
 }
 
 // convertFingerMatches 将pkg.FingerMatch切片转换为output.FingerMatch切片
@@ -552,7 +558,7 @@ func convertFingerMatches(matches []*FingerMatch) []*output.FingerMatch {
 }
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则，执行单个指纹的识别逻辑，包括发送请求和规则评估
-func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *BaseInfo, proxy string, customLib *cel.CustomLib, timeout int) (*FingerMatch, error) {
+func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *BaseInfo, proxy string, customLib *cel.CustomLib, timeout int, targetResult *TargetResult) (*FingerMatch, error) {
 	// 初始化变量映射
 	resultData := &FingerMatch{
 		Finger: fg,
@@ -600,9 +606,9 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 	// 评估规则
 	for _, rule := range fg.Rules {
 		// 优先使用缓存
-		if shouldUseCache(rule) {
-			varMap["request"] = lastRequest
-			varMap["response"] = lastResponse
+		if shouldUseCache(rule, targetResult) {
+			varMap["request"] = targetResult.LastRequest
+			varMap["response"] = targetResult.LastResponse
 		} else {
 			// 发送新请求
 			newVarMap, err := finger2.SendRequest(target, rule.Value.Request, rule.Value, varMap, proxy, timeout)
@@ -614,7 +620,7 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 			// 更新变量映射并缓存请求
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
-				updateCache(varMap)
+				updateTargetCache(varMap, targetResult)
 			}
 		}
 
@@ -653,21 +659,21 @@ func evaluateFingerprintWithCache(fg *finger2.Finger, target string, baseInfo *B
 	if req, ok := varMap["request"].(*proto.Request); ok {
 		resultData.Request = req
 	} else {
-		resultData.Request = lastRequest
+		resultData.Request = targetResult.LastRequest
 	}
 
 	if resp, ok := varMap["response"].(*proto.Response); ok {
 		resultData.Response = resp
 	} else {
-		resultData.Response = lastResponse
+		resultData.Response = targetResult.LastResponse
 	}
 
 	return resultData, nil
 }
 
 // shouldUseCache 判断是否应该使用缓存，对于根路径的GET请求，可以重用缓存的请求和响应
-func shouldUseCache(rule finger2.RuleMap) bool {
-	if lastRequest == nil || lastResponse == nil {
+func shouldUseCache(rule finger2.RuleMap, targetResult *TargetResult) bool {
+	if targetResult.LastRequest == nil || targetResult.LastResponse == nil {
 		return false
 	}
 
@@ -679,12 +685,12 @@ func shouldUseCache(rule finger2.RuleMap) bool {
 		(method == "GET" || rule.Value.Request.Method == "")
 }
 
-// updateCache 更新请求响应缓存
-func updateCache(variableMap map[string]any) {
+// updateTargetCache 更新特定目标的请求响应缓存
+func updateTargetCache(variableMap map[string]any, targetResult *TargetResult) {
 	if resp, ok := variableMap["response"].(*proto.Response); ok {
-		lastResponse = resp
+		targetResult.LastResponse = resp
 	}
 	if req, ok := variableMap["request"].(*proto.Request); ok {
-		lastRequest = req
+		targetResult.LastRequest = req
 	}
 }

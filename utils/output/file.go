@@ -220,7 +220,7 @@ func WriteFingerprints(opts *WriteOptions) error {
 		}
 
 		// 序列化为JSON
-		jsonData, err := json.MarshalIndent(jsonOutput, "", "  ")
+		jsonData, err := json.MarshalIndent(jsonOutput, "", "")
 		if err != nil {
 			return fmt.Errorf("JSON序列化失败: %v", err)
 		}
@@ -320,6 +320,6 @@ func CloseFileOutput() error {
 		headerWritten = false
 		return err
 	}
-	
+
 	return nil
 }

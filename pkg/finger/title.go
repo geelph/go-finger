@@ -33,7 +33,7 @@ func GetTitle(urlStr string, resp *http.Response) string {
 	// 解析字符集并转换编码
 	bodyText := string(bodyBytes)
 	contentType := resp.Header.Get("Content-Type")
-	
+
 	// 检查和处理编码
 	charsetRegex := regexp.MustCompile(`(?i)charset=["']?([\w-]+)["']?`)
 	charsetMatch := charsetRegex.FindStringSubmatch(contentType)
@@ -50,7 +50,7 @@ func GetTitle(urlStr string, resp *http.Response) string {
 	if len(charsetMatch) >= 2 {
 		charset := strings.ToLower(charsetMatch[1])
 		logger.Debug("检测到字符集: %s", charset)
-		
+
 		if charset != "utf-8" && charset != "utf8" {
 			// 使用 common.Str2UTF8 函数转换为 UTF-8
 			bodyText = common.Str2UTF8(bodyText)
@@ -98,13 +98,18 @@ func GetTitle(urlStr string, resp *http.Response) string {
 				break
 			}
 		}
-
-		if isInvalid || strings.Contains(strings.ToLower(domTitle), "null") {
-			logger.Debug("DOM标题不符合要求，跳过")
+		if !isInvalid && len(domTitle) > 0 {
+			lowerDomTitle := strings.ToLower(domTitle)
+			if !strings.Contains(lowerDomTitle, "null") && !strings.Contains(lowerDomTitle, "--") && !strings.Contains(title, ".title") && !strings.Contains(title, "document") && len(title)-len(domTitle) > 30 {
+				logger.Debug("DOM标题符合要求，更新标题")
+				title = domTitle
+			} else {
+				logger.Debug("DOM标题不符合要求，跳过")
+			}
 		} else {
-			logger.Debug("DOM标题符合要求，更新标题")
-			title = domTitle
+			logger.Debug("DOM标题不符合要求，跳过")
 		}
+
 	}
 
 	// 查找i18n JavaScript文件
@@ -154,7 +159,7 @@ func GetTitle(urlStr string, resp *http.Response) string {
 
 			if respTitle.StatusCode == 200 {
 				bodyBytes, err := io.ReadAll(respTitle.Body)
-				respTitle.Body.Close()
+				_ = respTitle.Body.Close()
 				if err != nil {
 					logger.Debug("读取i18n JS响应出错: %v", err)
 					continue
@@ -162,7 +167,7 @@ func GetTitle(urlStr string, resp *http.Response) string {
 
 				// 将 JS 文件内容转换为 UTF-8
 				jsContent := common.Str2UTF8(string(bodyBytes))
-				
+
 				titleRegex := regexp.MustCompile(`"top\.login\.title": "(.*?)",`)
 				titleMatches := titleRegex.FindStringSubmatch(jsContent)
 				if len(titleMatches) > 1 {
@@ -182,7 +187,7 @@ func GetTitle(urlStr string, resp *http.Response) string {
 func cleanTitle(title string) string {
 	// 先确保标题是UTF-8编码
 	title = common.Str2UTF8(title)
-	
+
 	// 移除制表符、换行符和回车符
 	title = strings.Map(func(r rune) rune {
 		if r == '\r' || r == '\n' || r == '\t' {
