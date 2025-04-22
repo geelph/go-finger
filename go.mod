@@ -12,6 +12,7 @@ require (
 	github.com/google/cel-go v0.23.2
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/projectdiscovery/goflags v0.1.72
 	github.com/projectdiscovery/rawhttp v0.1.87
 	github.com/projectdiscovery/wappalyzergo v0.2.24

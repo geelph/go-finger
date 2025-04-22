@@ -29,6 +29,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/panjf2000/ants/v2"
 )
 
 // AllFinger 全局指纹数据
@@ -268,9 +270,19 @@ func NewFingerRunner(options *types.CmdOptions) {
 	if urlWorkerCount <= 0 {
 		urlWorkerCount = 10 // 默认10个线程
 	}
-	fingerWorkerCount := 5 * urlWorkerCount
+	fingerWorkerCount := 10 * urlWorkerCount // rule线程是URL线程的10倍
 
-	logger.Info(fmt.Sprintf("开始扫描 %d 个目标，使用 %d 个并发线程...", len(targets), urlWorkerCount))
+	// 配置ants全局参数以提高性能
+	ants.Release()
+	ants.WithOptions(ants.Options{
+		ExpiryDuration:   10 * time.Second,
+		PreAlloc:         true,
+		MaxBlockingTasks: 2000,
+		Nonblocking:      true,
+	})
+
+	logger.Info(fmt.Sprintf("开始扫描 %d 个目标，使用 %d 个URL并发线程, %d 个规则并发线程...",
+		len(targets), urlWorkerCount, fingerWorkerCount))
 
 	// 执行扫描
 	results := runScan(targets, options, urlWorkerCount, fingerWorkerCount, outputFormat)
@@ -279,16 +291,14 @@ func NewFingerRunner(options *types.CmdOptions) {
 	printSummary(targets, results)
 }
 
-// runScan 执行扫描过程，使用工作池模式处理多个目标的并发扫描
+// runScan 执行扫描过程，只使用ants池
 func runScan(targets []string, options *types.CmdOptions, urlWorkerCount, fingerWorkerCount int, outputFormat string) map[string]*TargetResult {
 	results := make(map[string]*TargetResult)
 	var resultsMutex sync.Mutex
 	var outputMutex sync.Mutex
 
-	// 创建URL任务通道和完成通道
-	urlChan := make(chan string, len(targets))
+	// 创建完成通道
 	doneChan := make(chan struct{}, len(targets))
-	var urlWg sync.WaitGroup
 
 	// 创建进度条
 	bar := output.CreateProgressBar(len(targets))
@@ -316,35 +326,36 @@ func runScan(targets []string, options *types.CmdOptions, urlWorkerCount, finger
 		_ = bar.RenderBlank()
 	}
 
-	// 启动URL工作协程
-	for i := 0; i < urlWorkerCount; i++ {
+	// 创建URL处理工作池
+	urlPool, _ := ants.NewPool(urlWorkerCount, ants.WithPreAlloc(true))
+	defer urlPool.Release()
+
+	var urlWg sync.WaitGroup
+
+	// 提交目标到工作池
+	for _, target := range targets {
 		urlWg.Add(1)
-		go func() {
+		target := target // 创建变量副本避免闭包问题
+
+		// 提交任务
+		_ = urlPool.Submit(func() {
 			defer urlWg.Done()
 
-			for target := range urlChan {
-				// 处理单个URL
-				targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, fingerWorkerCount)
+			// 处理单个URL
+			targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, fingerWorkerCount)
 
-				// 将结果写入文件并显示结果
-				handleMatchResults(targetResult, options, saveResult, outputFormat)
+			// 将结果写入文件并显示结果
+			handleMatchResults(targetResult, options, saveResult, outputFormat)
 
-				// 存储结果
-				resultsMutex.Lock()
-				results[target] = targetResult
-				resultsMutex.Unlock()
+			// 存储结果
+			resultsMutex.Lock()
+			results[target] = targetResult
+			resultsMutex.Unlock()
 
-				// 通知完成一个任务
-				doneChan <- struct{}{}
-			}
-		}()
+			// 通知完成一个任务
+			doneChan <- struct{}{}
+		})
 	}
-
-	// 发送URL任务
-	for _, target := range targets {
-		urlChan <- target
-	}
-	close(urlChan)
 
 	// 等待所有URL处理完成
 	urlWg.Wait()
@@ -420,6 +431,7 @@ func printSummary(targets []string, results map[string]*TargetResult) {
 
 // ProcessURL 处理单个URL的所有指纹识别，获取目标基础信息并执行指纹识别
 func ProcessURL(target string, proxy string, timeout int, workerCount int) (*TargetResult, error) {
+
 	// 获取目标基础信息
 	title, serverInfo, statusCode, httpResp, wappData, err := GetBaseInfo(target, proxy, timeout)
 
@@ -471,63 +483,68 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	return targetResult, nil
 }
 
-// runFingerDetection 执行指纹识别，使用工作池模式并发处理多个指纹的识别
+// runFingerDetection 执行指纹识别，使用高性能池模式处理多个指纹的识别
 func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int, targetResult *TargetResult) []*FingerMatch {
-	bufferSize := min(len(AllFinger), 1000)
-
-	// 创建任务通道
-	fingerChan := make(chan *finger2.Finger, bufferSize)
-	var fingerWg sync.WaitGroup
-
 	// 线程安全地存储匹配结果
 	var matches []*FingerMatch
 	var matchesMutex sync.Mutex
 
-	// 预先创建并复用CustomLib实例
-	customLibs := make([]*cel.CustomLib, workerCount)
-	for i := 0; i < workerCount; i++ {
-		customLibs[i] = cel.NewCustomLib()
+	// 创建同步等待组
+	var fingerWg sync.WaitGroup
+
+	// 预先创建并复用CustomLib实例，使用sync.Pool提高性能
+	customLibPool := &sync.Pool{
+		New: func() interface{} {
+			return cel.NewCustomLib()
+		},
 	}
 
-	// 启动工作协程
-	for i := 0; i < workerCount; i++ {
-		fingerWg.Add(1)
-		go func(workerID int) {
-			defer fingerWg.Done()
-			customLib := customLibs[workerID]
+	// 创建指纹工作池
+	fingerPool, _ := ants.NewPoolWithFunc(workerCount, func(data interface{}) {
+		defer fingerWg.Done()
 
-			for fg := range fingerChan {
-				customLib.Reset()
+		// 获取数据
+		task := data.(struct {
+			fg *finger2.Finger
+		})
+		fg := task.fg
 
-				// 执行指纹识别
-				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout, targetResult)
-				if err == nil && result.Result {
-					// 创建匹配结果对象
-					resultMatch := &FingerMatch{
-						Finger:   fg,
-						Result:   true,
-						Request:  result.Request,
-						Response: result.Response,
-					}
+		// 从池中获取CustomLib实例
+		customLib := customLibPool.Get().(*cel.CustomLib)
+		customLib.Reset()
+		defer customLibPool.Put(customLib) // 使用完毕后归还
 
-					// 添加到匹配结果列表
-					matchesMutex.Lock()
-					matches = append(matches, resultMatch)
-					matchesMutex.Unlock()
-				}
+		// 执行指纹识别
+		result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLib, timeout, targetResult)
+		if err == nil && result.Result {
+			// 创建匹配结果对象
+			resultMatch := &FingerMatch{
+				Finger:   fg,
+				Result:   true,
+				Request:  result.Request,
+				Response: result.Response,
 			}
-		}(i)
-	}
 
-	// 发送指纹任务
+			// 添加到匹配结果列表
+			matchesMutex.Lock()
+			matches = append(matches, resultMatch)
+			matchesMutex.Unlock()
+		}
+	}, ants.WithPreAlloc(true))
+	defer fingerPool.Release()
+
+	// 提交所有指纹任务到工作池
 	for _, fg := range AllFinger {
-		fingerChan <- fg
+		fingerWg.Add(1)
+
+		// 提交任务
+		_ = fingerPool.Invoke(struct {
+			fg *finger2.Finger
+		}{fg})
 	}
-	close(fingerChan)
 
 	// 等待所有指纹识别完成
 	fingerWg.Wait()
-
 	return matches
 }
 
