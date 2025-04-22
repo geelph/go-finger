@@ -62,7 +62,6 @@ type TargetResult struct {
 	Matches    []*FingerMatch             // 匹配详细信息
 	Wappalyzer *wappalyzer.TypeWappalyzer // 站点信息数据
 	IsMatch    bool                       // 是否匹配成功
-	Server     *types.ServerInfo
 }
 
 // FingerMatch 存储每个匹配的指纹信息

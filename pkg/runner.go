@@ -412,7 +412,7 @@ func printSummary(targets []string, results map[string]*TargetResult) {
 			URL:        result.URL,
 			StatusCode: result.StatusCode,
 			Title:      result.Title,
-			Server:     result.Server,
+			ServerInfo: result.Server,
 			Matches:    convertFingerMatches(result.Matches),
 			Wappalyzer: result.Wappalyzer,
 		}
@@ -531,7 +531,7 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 		URL:        targetResult.URL,
 		StatusCode: targetResult.StatusCode,
 		Title:      targetResult.Title,
-		Server:     targetResult.Server,
+		ServerInfo: targetResult.Server,
 		Matches:    convertFingerMatches(targetResult.Matches),
 		Wappalyzer: targetResult.Wappalyzer,
 	}, options.Output, options.SockOutput, printResult, outputFormat, lastResponse)
