@@ -257,7 +257,6 @@ func GetIconURL(pageURL string, html string) string {
 	// 尝试使用基路径+favicon.ico
 	if basePath != "" {
 		faviconPath := basePath
-		fmt.Println(faviconPath)
 		if !strings.HasSuffix(faviconPath, "/") {
 			faviconPath = path.Dir(faviconPath)
 			if faviconPath != "." && !strings.HasSuffix(faviconPath, "/") {
