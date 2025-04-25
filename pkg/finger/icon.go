@@ -16,7 +16,6 @@ import (
 	"gxx/utils/common"
 	"gxx/utils/logger"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"path"
@@ -96,7 +95,6 @@ func (g *GetIconHash) hashDataURL(iconURL string) int32 {
 
 // hashHTTPURL 处理 HTTP URL 并计算 hash 值
 func (g *GetIconHash) hashHTTPURL(iconURL string) int32 {
-	iconURL = iconURL + "?time=" + fmt.Sprintf("%d%d", time.Now().Unix(), rand.New(rand.NewSource(time.Now().UnixNano())).Intn(10000))
 	options := network.OptionsRequest{
 		Proxy:              g.proxy,
 		Timeout:            5 * time.Second,
@@ -259,6 +257,7 @@ func GetIconURL(pageURL string, html string) string {
 	// 尝试使用基路径+favicon.ico
 	if basePath != "" {
 		faviconPath := basePath
+		fmt.Println(faviconPath)
 		if !strings.HasSuffix(faviconPath, "/") {
 			faviconPath = path.Dir(faviconPath)
 			if faviconPath != "." && !strings.HasSuffix(faviconPath, "/") {
