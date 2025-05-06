@@ -8,11 +8,11 @@
 package runner
 
 import (
-	"fmt"
 	"gxx/pkg/finger"
 	"gxx/utils/common"
 	"gxx/utils/proto"
 	"strings"
+	"sync"
 )
 
 // CacheRequest 存储请求和响应的缓存条目
@@ -21,8 +21,43 @@ type CacheRequest struct {
 	Response *proto.Response
 }
 
-// 存储请求和响应的缓存，键为"target:method"
-var requestResponseCache = make(map[string]*CacheRequest)
+// CacheShard 缓存分片，每个分片有自己的锁和映射
+type CacheShard struct {
+	items map[string]*CacheRequest
+	mu    sync.RWMutex
+}
+
+const (
+	// ShardCount 分片数量，使用2的幂次方便于位运算
+	ShardCount = 32
+	// ShardMask 分片掩码
+	ShardMask = ShardCount - 1
+)
+
+// 分片缓存，减少锁竞争
+var cacheShards [ShardCount]*CacheShard
+
+// 保护target缓存的互斥锁
+var targetCacheMutex sync.RWMutex
+
+// 初始化分片缓存
+func init() {
+	for i := 0; i < ShardCount; i++ {
+		cacheShards[i] = &CacheShard{
+			items: make(map[string]*CacheRequest, 256), // 预分配空间以减少哈希表扩容
+		}
+	}
+}
+
+// getShard 根据key获取对应的分片
+func getShard(key string) *CacheShard {
+	// 简单的哈希函数，将key映射到分片索引
+	hash := 0
+	for i := 0; i < len(key); i++ {
+		hash = 31*hash + int(key[i])
+	}
+	return cacheShards[hash&ShardMask]
+}
 
 // GenerateCacheKey 生成缓存键
 func GenerateCacheKey(target string, method string) string {
@@ -35,20 +70,25 @@ func ShouldUseCache(rule finger.RuleMap, targetResult *TargetResult) (bool, Cach
 	reqType := strings.ToLower(rule.Value.Request.Type)
 	method := strings.ToUpper(rule.Value.Request.Method)
 	// 只允许GET请求或空body的POST请求使用缓存
-	if !(method == "GET" || (method == "POST" && rule.Value.Request.Body == "")) {
+	if !(method == "GET" || (method == "POST" && rule.Value.Request.Body == "")) && rule.Value.Request.FollowRedirects != false {
 		return false, caches
 	}
 
 	// 确保是HTTP/HTTPS请求
 	if reqType != "" && reqType != common.HttpType {
-		fmt.Println(11)
 		return false, caches
 	}
 
 	// 检查缓存中是否存在对应条目
 	if targetResult.URL != "" {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
-		entry, exists := requestResponseCache[cacheKey]
+		
+		// 获取对应的分片并读取缓存
+		shard := getShard(cacheKey)
+		shard.mu.RLock()
+		entry, exists := shard.items[cacheKey]
+		shard.mu.RUnlock()
+
 		if exists && entry != nil && entry.Request != nil && entry.Response != nil {
 			caches.Request = entry.Request
 			caches.Response = entry.Response
@@ -74,18 +114,24 @@ func UpdateTargetCache(variableMap map[string]any, targetResult *TargetResult) {
 	if req == nil || resp == nil {
 		return
 	}
-	// 更新targetResult的缓存
-	targetResult.LastRequest = req
-	targetResult.LastResponse = resp
+
+	// 只更新结果，不需要更新缓存
+	if targetResult.URL == "" {
+		return
+	}
 
 	// 只缓存GET请求或空body的POST请求
 	method := strings.ToUpper(req.Method)
 	if method == "GET" || (method == "POST" && (req.Body == nil || len(req.Body) == 0)) {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
-		// 将请求响应对存入缓存
-		requestResponseCache[cacheKey] = &CacheRequest{
+		
+		// 获取对应的分片并更新缓存
+		shard := getShard(cacheKey)
+		shard.mu.Lock()
+		shard.items[cacheKey] = &CacheRequest{
 			Request:  req,
 			Response: resp,
 		}
+		shard.mu.Unlock()
 	}
 }

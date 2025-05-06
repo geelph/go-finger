@@ -14,12 +14,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
-
-// 目标缓存的互斥锁
-var targetCacheMutex sync.RWMutex
 
 // initializeCache 初始化请求响应缓存
 func initializeCache(httpResp *http.Response, proxy string) (*proto.Response, *proto.Request) {

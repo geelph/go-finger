@@ -25,7 +25,7 @@ func NewRunner(options *types.CmdOptions) *Runner {
 	if urlWorkerCount <= 0 {
 		urlWorkerCount = 10 // 默认10个线程
 	}
-	fingerWorkerCount := 10 * urlWorkerCount // rule线程是URL线程的10倍
+	fingerWorkerCount := 5 * urlWorkerCount // rule线程是URL线程的5倍
 
 	// 确定输出格式
 	outputFormat := output.GetOutputFormat(options.JSONOutput, options.Output)
@@ -83,11 +83,16 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 
 	// 配置ants全局参数以提高性能
 	ants.Release()
+
+	// 优化参数调整
 	ants.WithOptions(ants.Options{
-		ExpiryDuration:   10 * time.Second,
-		PreAlloc:         true,
-		MaxBlockingTasks: 2000,
-		Nonblocking:      true,
+		ExpiryDuration:   30 * time.Second, // 减少过期时间
+		PreAlloc:         true,             // 预分配内存
+		MaxBlockingTasks: len(targets) * 5, // 根据目标数量调整最大阻塞任务数
+		Nonblocking:      false,            // 使用阻塞模式以避免任务丢失
+		PanicHandler: func(err interface{}) { // 添加panic处理
+			logger.Error(fmt.Sprintf("Worker panic: %v", err))
+		},
 	})
 
 	logger.Info(fmt.Sprintf("开始扫描 %d 个目标，使用 %d 个URL并发线程, %d 个规则并发线程...",
@@ -110,8 +115,16 @@ func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
 		workerCount = 10
 	}
 
+	// 自适应超时设置
+	timeout := r.Config.Timeout
+	if timeout <= 0 {
+		timeout = 10 // 默认10秒
+	} else if timeout > 30 {
+		timeout = 30 // 最大30秒
+	}
+
 	// 处理单个URL
-	result, err := ProcessURL(target, r.Config.Proxy, r.Config.Timeout, workerCount)
+	result, err := ProcessURL(target, r.Config.Proxy, timeout, workerCount)
 	if err != nil {
 		return nil, err
 	}
@@ -150,36 +163,66 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 		_ = bar.RenderBlank()
 	}
 
-	// 计算合适的URL池大小
+	// 计算合适的URL池大小，根据目标数量动态调整
 	poolSize := r.Config.URLWorkerCount
+	if poolSize > len(targets) {
+		poolSize = len(targets)
+	}
+
+	// 增加每批处理的数量，减少调度开销
+	batchSize := 50
+	if len(targets) < 100 {
+		batchSize = 1 // 少量目标不使用批处理
+	}
 
 	// 创建URL处理工作池
 	urlPool, _ := ants.NewPool(poolSize,
 		ants.WithPreAlloc(true),
-		ants.WithNonblocking(false),             // 使用阻塞模式避免过多任务同时执行
-		ants.WithMaxBlockingTasks(len(targets)), // 最大阻塞任务数为目标数量
+		ants.WithNonblocking(false),
+		ants.WithMaxBlockingTasks(len(targets)),
 	)
 	defer urlPool.Release()
 
 	var urlWg sync.WaitGroup
 
-	// 提交目标到工作池
-	for _, target := range targets {
-		urlWg.Add(1)
+	// 分批次提交任务
+	for i := 0; i < len(targets); i += batchSize {
+		end := i + batchSize
+		if end > len(targets) {
+			end = len(targets)
+		}
 
-		// 提交任务
-		_ = urlPool.Submit(func() {
-			defer urlWg.Done()
+		// 对每一批的目标提交任务
+		for j := i; j < end; j++ {
+			target := targets[j]
+			urlWg.Add(1)
 
-			// 扫描单个目标
-			targetResult, _ := r.ScanTarget(target)
+			// 提交任务
+			_ = urlPool.Submit(func() {
+				defer urlWg.Done()
 
-			// 将结果写入文件并显示结果
-			handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
+				// 扫描单个目标
+				targetResult, _ := r.ScanTarget(target)
 
-			// 通知完成一个任务
-			doneChan <- struct{}{}
-		})
+				// 线程安全地存储结果
+				if targetResult != nil {
+					r.mutex.Lock()
+					r.Results[target] = targetResult
+					r.mutex.Unlock()
+				}
+
+				// 将结果写入文件并显示结果
+				handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
+
+				// 通知完成一个任务
+				doneChan <- struct{}{}
+			})
+		}
+
+		// 如果批次较大，给系统一点喘息的机会
+		if batchSize > 5 && i+batchSize < len(targets) {
+			time.Sleep(1 * time.Millisecond)
+		}
 	}
 
 	// 等待所有URL处理完成

@@ -8,11 +8,10 @@
 package cel
 
 import (
-	"context"
 	"fmt"
 	"gxx/utils/logger"
 	"strings"
-	"time"
+	"sync"
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
@@ -22,58 +21,60 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// 全局CEL环境互斥锁，确保每次只有一个goroutine可以配置环境
+var globalCELEnvMutex sync.Mutex
+
 // CustomLib 自定义CEL库结构体
 type CustomLib struct {
 	envOptions     []cel.EnvOption
 	programOptions []cel.ProgramOption
+	mutex          sync.RWMutex // 添加锁来保护并发访问
 }
 
 // CompileOptions 返回环境选项
 func (c *CustomLib) CompileOptions() []cel.EnvOption {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.envOptions
 }
 
 // ProgramOptions 返回程序选项
 func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.programOptions
 }
 
 // Evaluate 执行CEL表达式并返回结果
 func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.Val, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	var (
-		val ref.Val
-		err error
-	)
-	result := make(chan int)
-	go func() {
-		defer close(result)
-		env, err := c.NewCelEnv()
-		if err != nil {
-			result <- 9
-		}
-		val, err = Eval(env, expression, variables)
-		if err != nil {
-			result <- 9
-		}
-		result <- 99
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, fmt.Errorf("表达式执行超时")
-	case v := <-result:
-		if v == 99 {
-			return val, err
-		}
-		return nil, fmt.Errorf("表达式执行错误")
+	// 全局互斥锁保护 cel.NewEnv() 调用，这是数据竞争的根源
+	globalCELEnvMutex.Lock()
+	defer globalCELEnvMutex.Unlock()
+	
+	// 创建一个新环境，在全局锁的保护下
+	c.mutex.RLock()
+	env, err := cel.NewEnv(cel.Lib(c))
+	c.mutex.RUnlock()
+	
+	if err != nil {
+		return nil, fmt.Errorf("创建CEL环境失败: %v", err)
 	}
+	
+	// 复制一份变量映射，避免潜在的并发修改
+	varsCopy := make(map[string]any, len(variables))
+	for k, v := range variables {
+		varsCopy[k] = v
+	}
+	
+	// 编译和评估表达式都在单个线程中完成，不需要额外的并发控制
+	return Eval(env, expression, varsCopy)
 }
 
 // NewCelEnv 创建新的CEL环境并缓存
 func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
-
+	c.mutex.RLock() // 读锁保护对环境选项的访问
+	defer c.mutex.RUnlock()
+	
 	env, err := cel.NewEnv(cel.Lib(c))
 	if err != nil {
 		return nil, err
@@ -83,7 +84,9 @@ func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
 
 // NewCustomLib 创建新的CustomLib实例
 func NewCustomLib() *CustomLib {
-	c := &CustomLib{}
+	c := &CustomLib{
+		mutex: sync.RWMutex{},
+	}
 	reg := types.NewEmptyRegistry()
 	c.envOptions = ReadCompileOptions(reg)
 	c.programOptions = ReadProgramOptions(reg)
@@ -115,6 +118,8 @@ func Eval(env *cel.Env, expression string, params map[string]any) (ref.Val, erro
 
 // WriteRuleSetOptions 从YAML配置中添加变量声明
 func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	for _, v := range args {
 		key := v.Key.(string)
@@ -143,6 +148,8 @@ func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
 
 // WriteRuleFunctionsROptions 注册用于处理r0 || r1规则解析的函数
 func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Function(
 		funcName,
@@ -159,12 +166,16 @@ func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool)
 
 // UpdateCompileOption 添加变量声明到环境选项
 func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(varName, varType)))
 }
 
 // Reset 重置CustomLib实例到初始状态
 func (c *CustomLib) Reset() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	// 只重置字段，不替换整个结构体
 	c.envOptions = nil
@@ -178,6 +189,8 @@ func (c *CustomLib) Reset() {
 
 // WriteRuleIsVulOptions 添加漏洞检测函数声明
 func (c *CustomLib) WriteRuleIsVulOptions(key string, isVul bool) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(key+"()", decls.Bool)))
 }
