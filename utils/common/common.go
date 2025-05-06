@@ -39,11 +39,11 @@ type AddressInfo struct {
 }
 
 const (
-	HTTP_Type = "http"
-	TCP_Type  = "tcp"
-	UDP_Type  = "udp"
-	SSL_Type  = "ssl"
-	GO_Type   = "go"
+	HttpType = "http"
+	TcpType  = "tcp"
+	UdpType  = "udp"
+	SslType  = "ssl"
+	GoType   = "go"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -317,7 +317,7 @@ func RandomString(len int) string {
 
 // DealMultipart 处理multipart的/n问题
 func DealMultipart(contentType string, ruleBody string) (result string, err error) {
-	re := regexp.MustCompile(`(?m)multipart\/form-Data; boundary=(.*)`)
+	re := regexp.MustCompile(`(?m)multipart/form-Data; boundary=(.*)`)
 	match := re.FindStringSubmatch(contentType)
 	if len(match) != 2 {
 		return "", errors.New("no boundary in content-type")
@@ -481,20 +481,45 @@ func RemoveDuplicateURLs(urls []string) []string {
 	urlMap := make(map[string]bool)
 	var result []string
 
-	for _, url := range urls {
+	for _, u := range urls {
 		// 规范化URL，移除前后空格
-		url = strings.TrimSpace(url)
+		u = strings.TrimSpace(u)
 		// 跳过空URL
-		if url == "" {
+		if u == "" {
 			continue
 		}
-		
+
 		// 如果URL不在map中，添加到结果中
-		if !urlMap[url] {
-			urlMap[url] = true
-			result = append(result, url)
+		if !urlMap[u] {
+			urlMap[u] = true
+			result = append(result, u)
 		}
 	}
 
 	return result
+}
+
+// URLDecode 解码URL编码的字符串
+func URLDecode(encodedString string) (string, error) {
+	// 替换+为空格
+	encodedString = strings.Replace(encodedString, "+", " ", -1)
+
+	// 解码URL编码的字符串
+	decodedString, err := url.QueryUnescape(encodedString)
+	if err != nil {
+		return encodedString, err
+	}
+
+	return decodedString, nil
+}
+
+// URLEncode 编码字符串为URL编码格式
+func URLEncode(rawString string) string {
+	// 使用QueryEscape进行URL编码
+	encodedString := url.QueryEscape(rawString)
+
+	// 根据RFC 3986，某些字符在URL的路径部分不需要编码
+	encodedString = strings.Replace(encodedString, "+", "%20", -1)
+
+	return encodedString
 }

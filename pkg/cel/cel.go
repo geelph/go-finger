@@ -28,6 +28,8 @@ type CustomLib struct {
 	envOptions     []cel.EnvOption
 	programOptions []cel.ProgramOption
 	mu             sync.Mutex
+	envCache       *cel.Env
+	envCacheMu     sync.RWMutex
 }
 
 // CompileOptions 返回环境选项
@@ -55,15 +57,33 @@ func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.V
 	}
 	resultCh := make(chan result, 1)
 
+	// 创建变量的深拷贝以避免并发修改
+	varsCopy := make(map[string]any, len(variables))
+	for k, v := range variables {
+		varsCopy[k] = v
+	}
+
 	go func() {
-		// 为每个goroutine创建新的环境
-		env, err := cel.NewEnv(cel.Lib(c))
-		if err != nil {
-			resultCh <- result{nil, fmt.Errorf("创建CEL环境失败: %w", err)}
-			return
+		// 尝试获取缓存的环境
+		var env *cel.Env
+		var err error
+		
+		c.envCacheMu.RLock()
+		if c.envCache != nil {
+			env = c.envCache
+			c.envCacheMu.RUnlock()
+		} else {
+			c.envCacheMu.RUnlock()
+			
+			// 没有缓存，创建新环境并存储
+			env, err = c.createEnv()
+			if err != nil {
+				resultCh <- result{nil, fmt.Errorf("创建CEL环境失败: %w", err)}
+				return
+			}
 		}
 
-		val, err := Eval(env, expression, variables)
+		val, err := Eval(env, expression, varsCopy)
 		resultCh <- result{val, err}
 	}()
 
@@ -73,6 +93,25 @@ func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.V
 	case res := <-resultCh:
 		return res.val, res.err
 	}
+}
+
+// createEnv 创建新的CEL环境并缓存
+func (c *CustomLib) createEnv() (*cel.Env, error) {
+	c.envCacheMu.Lock()
+	defer c.envCacheMu.Unlock()
+	
+	// 双重检查，避免多个goroutine重复创建
+	if c.envCache != nil {
+		return c.envCache, nil
+	}
+	
+	env, err := cel.NewEnv(cel.Lib(c))
+	if err != nil {
+		return nil, err
+	}
+	
+	c.envCache = env
+	return env, nil
 }
 
 // NewCustomLib 创建新的CustomLib实例
@@ -86,7 +125,17 @@ func NewCustomLib() *CustomLib {
 
 // NewCelEnv 创建新的CEL环境
 func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
-	return cel.NewEnv(cel.Lib(c))
+	// 尝试使用缓存的环境
+	c.envCacheMu.RLock()
+	if c.envCache != nil {
+		env := c.envCache
+		c.envCacheMu.RUnlock()
+		return env, nil
+	}
+	c.envCacheMu.RUnlock()
+	
+	// 创建新环境并缓存
+	return c.createEnv()
 }
 
 // Eval 执行CEL表达式
@@ -116,6 +165,11 @@ func Eval(env *cel.Env, expression string, params map[string]any) (ref.Val, erro
 func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	
+	// 更新选项后清除环境缓存
+	c.envCacheMu.Lock()
+	c.envCache = nil
+	c.envCacheMu.Unlock()
 
 	for _, v := range args {
 		key := v.Key.(string)
@@ -146,6 +200,11 @@ func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
 func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	
+	// 更新选项后清除环境缓存
+	c.envCacheMu.Lock()
+	c.envCache = nil
+	c.envCacheMu.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Function(
 		funcName,
@@ -164,6 +223,11 @@ func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool)
 func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	
+	// 更新选项后清除环境缓存
+	c.envCacheMu.Lock()
+	c.envCache = nil
+	c.envCacheMu.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(varName, varType)))
 }
@@ -172,10 +236,16 @@ func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
 func (c *CustomLib) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	
+	// 清除环境缓存
+	c.envCacheMu.Lock()
+	c.envCache = nil
+	c.envCacheMu.Unlock()
+	
 	// 只重置字段，不替换整个结构体
 	c.envOptions = nil
 	c.programOptions = nil
-	
+
 	// 重新初始化为默认值
 	reg := types.NewEmptyRegistry()
 	c.envOptions = ReadCompileOptions(reg)
@@ -186,6 +256,11 @@ func (c *CustomLib) Reset() {
 func (c *CustomLib) WriteRuleIsVulOptions(key string, isVul bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	
+	// 更新选项后清除环境缓存
+	c.envCacheMu.Lock()
+	c.envCache = nil
+	c.envCacheMu.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(key+"()", decls.Bool)))
 }

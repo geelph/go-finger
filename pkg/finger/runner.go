@@ -72,9 +72,9 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 
 	// 判断请求方式
 	reqType := strings.ToLower(rule.Request.Type)
-	if len(reqType) > 0 && reqType != common.HTTP_Type {
+	if len(reqType) > 0 && reqType != common.HttpType {
 		switch reqType {
-		case common.TCP_Type:
+		case common.TcpType:
 			rule.Request.Host = SetVariableMap(rule.Request.Host, variableMap)
 			info, err := common.ParseAddress(rule.Request.Host)
 			if err != nil {
@@ -116,7 +116,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 				logger.Debug(fmt.Sprintf("tcp or udp parse error：%s", err.Error()))
 			}
 			return variableMap, nil
-		case common.UDP_Type:
+		case common.UdpType:
 			rule.Request.Host = SetVariableMap(rule.Request.Host, variableMap)
 			info, err := common.ParseAddress(rule.Request.Host)
 			if err != nil {
@@ -157,7 +157,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 				fmt.Println("udp or udp parse error:", err.Error())
 			}
 			return variableMap, nil
-		case common.GO_Type:
+		case common.GoType:
 			fmt.Println("执行go模块调用发送请求，当前模块未完成")
 			return nil, fmt.Errorf("go module not implemented")
 		}
@@ -177,7 +177,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	// 处理协议，增加通信协议
 	NewUrlStr, err := network.CheckProtocol(urlStr, options.Proxy)
 	if err != nil {
-		fmt.Println("检查http通信协议出错，错误信息：", err)
+		logger.Debug(fmt.Sprintf("检查http通信协议出错，错误信息：%s", err))
 		if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
 			NewUrlStr = "http://" + target
 		}
@@ -203,7 +203,7 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	reader := io.LimitReader(resp.Body, maxDefaultBody)
 	body, err := io.ReadAll(reader)
 	if err != nil {
-		fmt.Println("读取响应体出错:", err)
+		logger.Debug(fmt.Sprintf("读取响应体出错：%s", err))
 		// 即使读取响应体出错，也继续处理，使用空响应体
 		body = []byte{}
 	}

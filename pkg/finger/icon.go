@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -205,81 +206,186 @@ func GetIconURL(pageURL string, html string) string {
 	// 查找所有可能的icon标签
 	iconTags := []string{
 		"<link rel=\"icon\"",
+		"<link rel=icon",
 		"<link rel=\"shortcut icon\"",
+		"<link rel=shortcut icon",
 		"<link type=\"image/x-icon\"",
+		"<link type=image/x-icon",
 		"<link rel=\"apple-touch-icon\"",
 		"<link rel=\"apple-touch-icon-precomposed\"",
+		"<link id=\"favicon\"",
+		"<link id=favicon",
+		"<link rel=\"fluid-icon\"",
+		"<link rel=\"mask-icon\"",
+		"<link rel=\"alternate icon\"",
+		"<link rel=\"apple-touch-startup-image\"",
+		"<link rel=\"apple-touch-icon-image\"",
+		"<link rel=\"icon shortcut\"",
+		"<link rel=icon shortcut",
+		"<link rel=\"msapplication-TileImage\"",
+		"<link rel=\"msapplication-square70x70logo\"",
+		"<link rel=\"msapplication-square150x150logo\"",
+		"<link rel=\"msapplication-wide310x150logo\"",
+		"<link rel=\"msapplication-square310x310logo\"",
+		"<link rel=\"msapplication-config\"",
+		"<link rel=\"shortcut\"",
+		"<link rel=\"manifest\"",
+		"<meta name=\"msapplication-TileImage\"",
+		"<meta property=\"og:image\"",
+		"<meta itemprop=\"image\"",
+		"<meta itemprop=image",
 	}
 
-	var iconIndex = -1
+	// 按照优先级排序的icon路径
+	var candidateIcons []string
 
-	// 寻找第一个匹配的icon标签
+	// 寻找所有匹配的icon标签
 	for _, tag := range iconTags {
-		index := strings.Index(htmlLower, tag)
-		if index != -1 && (iconIndex == -1 || index < iconIndex) {
-			iconIndex = index
+		startPos := 0
+		for {
+			index := strings.Index(htmlLower[startPos:], tag)
+			if index == -1 {
+				break
+			}
+
+			tagStartIndex := startPos + index
+			tagEnd := strings.Index(html[tagStartIndex:], ">") + tagStartIndex
+			if tagEnd > tagStartIndex {
+				linkTag := html[tagStartIndex:tagEnd]
+
+				// 提取href或content属性
+				reAttr := regexp.MustCompile(`(?:href|content)=["']?([^"'>\s]+)`)
+				attrMatch := reAttr.FindStringSubmatch(linkTag)
+				if len(attrMatch) > 1 {
+					iconPath := attrMatch[1]
+
+					// 检查是否为常见图片格式或包含关键词
+					if isImagePath(iconPath) ||
+						(strings.Contains(linkTag, "icon") ||
+							strings.Contains(linkTag, "favicon") ||
+							strings.Contains(linkTag, "logo") ||
+							strings.Contains(linkTag, "image")) {
+						candidateIcons = append(candidateIcons, iconPath)
+					}
+				}
+			}
+			startPos = tagStartIndex + 1
+			if startPos >= len(htmlLower) {
+				break
+			}
 		}
 	}
 
-	// 如果找到了icon标签
-	if iconIndex != -1 {
-		tagEnd := strings.Index(html[iconIndex:], ">") + iconIndex
-		if tagEnd > iconIndex {
-			linkTag := html[iconIndex:tagEnd]
-
-			// 提取href属性
-			reHref := regexp.MustCompile(`href=["']?([^"'>\s]+)`)
-			hrefMatch := reHref.FindStringSubmatch(linkTag)
-
-			if len(hrefMatch) > 1 {
-				faviconPath := hrefMatch[1]
-				faviconURL = buildAbsoluteURL(parsedURL, baseURL, basePath, faviconPath)
-				logger.Debug(fmt.Sprintf("页面提取到icon url: %s", faviconURL))
-				return normalizeFaviconURL(faviconURL)
-			}
+	// 查找所有图片标签中可能的favicon
+	reImg := regexp.MustCompile(`<img[^>]+src=["']([^"']+(?:favicon|icon)[^"']*)["'][^>]*>`)
+	imgMatches := reImg.FindAllStringSubmatch(html, -1)
+	for _, match := range imgMatches {
+		if len(match) > 1 {
+			candidateIcons = append(candidateIcons, match[1])
 		}
 	}
 
 	// 如果没有找到标准icon标签，尝试查找所有可能的图标链接
-	re := regexp.MustCompile(`href=["']([^"']+\.(ico|png|jpg|jpeg|gif|svg))["']`)
-	iconList := re.FindAllStringSubmatch(html, -1)
+	if len(candidateIcons) == 0 {
+		re := regexp.MustCompile(`href=["']([^"']+\.(ico|png|jpg|jpeg|gif|svg|webp))["']`)
+		iconList := re.FindAllStringSubmatch(html, -1)
 
-	if len(iconList) > 0 {
 		for _, match := range iconList {
 			if len(match) > 1 {
-				faviconURL = buildAbsoluteURL(parsedURL, baseURL, basePath, match[1])
-				logger.Debug(fmt.Sprintf("发现新icon地址: %s", faviconURL))
-				return normalizeFaviconURL(faviconURL)
+				candidateIcons = append(candidateIcons, match[1])
 			}
 		}
 	}
 
-	// 尝试使用基路径+favicon.ico
-	if basePath != "" {
-		faviconPath := basePath
-		if !strings.HasSuffix(faviconPath, "/") {
-			faviconPath = path.Dir(faviconPath)
-			if faviconPath != "." && !strings.HasSuffix(faviconPath, "/") {
-				faviconPath += "/"
-			}
+	// 优化：直接使用map存储清理后的URL和原始URL的对应关系
+	iconMap := make(map[string]string)
+	for _, icon := range candidateIcons {
+		// 使用url包处理URL
+		cleaned := icon
+		if parsedURL, err := url.Parse(icon); err == nil {
+			// 清除查询参数
+			parsedURL.RawQuery = ""
+			// 重新构建URL字符串
+			cleaned = parsedURL.String()
 		}
-		faviconURL = baseURL + strings.TrimPrefix(strings.TrimPrefix(faviconPath, "/"), "./") + "favicon.ico"
-		logger.Debug(fmt.Sprintf("使用默认url+path: %s", faviconURL))
+
+		// 如果已经存在相同的清理后URL，保留原始URL
+		if _, exists := iconMap[cleaned]; !exists {
+			iconMap[cleaned] = icon
+		}
 	}
 
-	return normalizeFaviconURL(faviconURL)
+	// 将map转换为切片以便排序
+	var sortedIcons []string
+	for cleaned := range iconMap {
+		sortedIcons = append(sortedIcons, cleaned)
+	}
+
+	// 对清理后的URL进行排序
+	sort.Slice(sortedIcons, func(i, j int) bool {
+		iIsIco := strings.HasSuffix(strings.ToLower(sortedIcons[i]), ".ico")
+		jIsIco := strings.HasSuffix(strings.ToLower(sortedIcons[j]), ".ico")
+
+		// 如果一个是.ico而另一个不是，.ico的排在前面
+		if iIsIco != jIsIco {
+			return iIsIco
+		}
+
+		// 如果都是.ico或都不是.ico，保持原有顺序
+		return i < j
+	})
+
+	// 将排序后的原始URL重新放回candidateIcons
+	candidateIcons = candidateIcons[:0] // 清空切片但保留容量
+	for _, cleaned := range sortedIcons {
+		candidateIcons = append(candidateIcons, iconMap[cleaned])
+	}
+
+	for _, iconPath := range candidateIcons {
+		absoluteURL := buildAbsoluteURL(parsedURL, baseURL, basePath, iconPath)
+		if absoluteURL != "" {
+			normalized := normalizeFaviconURL(absoluteURL)
+			logger.Debug(fmt.Sprintf("找到可能的icon url: %s", normalized))
+			return normalized
+
+		}
+	}
+
+	// 如果没有找到有效的图标，返回默认favicon
+	defaultURL := normalizeFaviconURL(faviconURL)
+
+	return defaultURL
 }
 
 // buildAbsoluteURL 构建绝对URL
 func buildAbsoluteURL(parsedURL *url.URL, baseURL, basePath, iconPath string) string {
+	// 跳过空路径
+	if iconPath == "" {
+		return ""
+	}
+
 	// 已经是完整URL
 	if strings.HasPrefix(iconPath, "http://") || strings.HasPrefix(iconPath, "https://") {
+		return iconPath
+	}
+
+	// 跳过data:URL
+	if strings.HasPrefix(iconPath, "data:") {
 		return iconPath
 	}
 
 	// 协议相对URL
 	if strings.HasPrefix(iconPath, "//") {
 		return parsedURL.Scheme + ":" + iconPath
+	}
+
+	// 尝试使用标准库解析相对URL
+	relURL, err := url.Parse(iconPath)
+	if err == nil {
+		absURL := parsedURL.ResolveReference(relURL)
+		if absURL.String() != "" {
+			return absURL.String()
+		}
 	}
 
 	// 绝对路径
@@ -304,14 +410,61 @@ func buildAbsoluteURL(parsedURL *url.URL, baseURL, basePath, iconPath string) st
 
 // normalizeFaviconURL 规范化favicon URL
 func normalizeFaviconURL(url string) string {
+	if url == "" {
+		return ""
+	}
+
+	// 处理URL编码问题
+	decodedURL, err := common.URLDecode(url)
+	if err == nil && decodedURL != url {
+		url = decodedURL
+	}
+
 	// 修复双斜杠问题，但保留协议中的双斜杠
 	result := url
 	if strings.HasPrefix(result, "http://") {
 		result = "http://" + strings.ReplaceAll(result[7:], "//", "/")
 	} else if strings.HasPrefix(result, "https://") {
 		result = "https://" + strings.ReplaceAll(result[8:], "//", "/")
-	} else {
-		result = strings.ReplaceAll(result[10:], "//", "/")
 	}
+
+	// 处理特殊字符 - 一次性替换所有字符
+	replacer := strings.NewReplacer(
+		" ", "%20",
+		"\"", "%22",
+		"'", "%27",
+		"<", "%3C",
+		">", "%3E",
+	)
+	result = replacer.Replace(result)
+
+	// 移除URL中的锚点
+	if idx := strings.Index(result, "#"); idx != -1 {
+		result = result[:idx]
+	}
+
+	// 确保URL格式正确
+	if !strings.HasPrefix(result, "http://") && !strings.HasPrefix(result, "https://") && !strings.HasPrefix(result, "data:") {
+		// 尝试添加协议
+		if strings.HasPrefix(result, "//") {
+			result = "https:" + result
+		} else {
+			result = "https://" + result
+		}
+	}
+
 	return result
+}
+
+// isImagePath 检查路径是否为图片格式
+func isImagePath(path string) bool {
+	lowerPath := strings.ToLower(path)
+	extensions := []string{".ico", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+
+	for _, ext := range extensions {
+		if strings.HasSuffix(lowerPath, ext) {
+			return true
+		}
+	}
+	return false
 }

@@ -8,11 +8,16 @@
 package cli
 
 import (
-	"gxx/pkg"
+	"gxx/pkg/runner"
 	"gxx/types"
 )
 
 // Run 执行指纹识别
 func Run(options *types.CmdOptions) {
-	pkg.NewFingerRunner(options)
+	r := runner.NewRunner(options)
+	// 运行扫描
+	if err := r.Run(options); err != nil {
+		// 错误已在Run函数内部记录，这里无需额外处理
+		return
+	}
 }

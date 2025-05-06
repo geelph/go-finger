@@ -1,10 +1,10 @@
 id: web-3C环境自动监测监控系统
 info:
   name: 3C环境自动监测监控系统
-  author: zhizhuo
+  author: archer
   verified: true
-  description: 识别特定Web应用
-  created: 2025/04/15
+  description: 检测到3C环境自动监测监控系统系统或组件的特征
+  created: 2025/04/16
 rules:
   r0:
     request:
