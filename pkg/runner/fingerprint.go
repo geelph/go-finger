@@ -2,7 +2,7 @@ package runner
 
 import (
 	"fmt"
-	"gxx/pkg/cel"
+	cel2 "gxx/pkg/cel"
 	"gxx/pkg/finger"
 	"gxx/pkg/network"
 	"gxx/types"
@@ -12,7 +12,6 @@ import (
 	"gxx/utils/proto"
 	"os"
 	"path/filepath"
-	"sync"
 )
 
 // AllFinger 全局指纹数据
@@ -70,7 +69,8 @@ func LoadFingerprints(options types.YamlFingerType) error {
 }
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则，执行单个指纹的识别逻辑，包括发送请求和规则评估
-func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *BaseInfo, proxy string, customLibPool *sync.Pool, timeout int, targetResult *TargetResult) (*FingerMatch, error) {
+func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *BaseInfo, proxy string, timeout int, targetResult *TargetResult) (*FingerMatch, error) {
+	customLib := cel2.NewCustomLib()
 	// 初始化变量映射
 	resultData := &FingerMatch{
 		Finger: fg,
@@ -78,11 +78,6 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 	varMap := make(map[string]any)
 
 	logger.Debug(fmt.Sprintf("获取指纹ID：%s", fg.Id))
-
-	// 从池中获取CustomLib实例
-	customLib := customLibPool.Get().(*cel.CustomLib)
-	customLib.Reset()                  // 重置状态
-	defer customLibPool.Put(customLib) // 使用完后归还池
 
 	// 准备基础请求
 	req, err := prepareRequest(target)
@@ -128,17 +123,15 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 
 		// 安全地获取缓存
 		targetCacheMutex.RLock()
-		if shouldUseCache(rule, targetResult) {
-			// 创建深度拷贝以避免并发修改
-			if targetResult.LastRequest != nil {
-				lastRequest = proto.CloneRequest(targetResult.LastRequest)
-				varMap["request"] = lastRequest
-			}
+		isCache, cache := ShouldUseCache(rule, targetResult)
+		if isCache {
+			lastRequest = cache.Request
+			varMap["request"] = lastRequest
+			targetResult.LastRequest = cache.Request
 
-			if targetResult.LastResponse != nil {
-				lastResponse = proto.CloneResponse(targetResult.LastResponse)
-				varMap["response"] = lastResponse
-			}
+			lastResponse = cache.Response
+			varMap["response"] = lastResponse
+			targetResult.LastResponse = cache.Response
 		}
 		targetCacheMutex.RUnlock()
 
@@ -153,16 +146,13 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 			// 更新变量映射并缓存请求
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
-
-				// 安全地更新缓存
-				targetCacheMutex.Lock()
 				if req, ok := varMap["request"].(*proto.Request); ok {
-					targetResult.LastRequest = proto.CloneRequest(req)
+					targetResult.LastRequest = req
 				}
 				if resp, ok := varMap["response"].(*proto.Response); ok {
-					targetResult.LastResponse = proto.CloneResponse(resp)
+					targetResult.LastResponse = resp
 				}
-				targetCacheMutex.Unlock()
+				UpdateTargetCache(varMap, targetResult)
 			}
 		}
 
@@ -193,29 +183,25 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 	if err != nil {
 		return nil, fmt.Errorf("最终表达式解析错误：%v", err)
 	}
-
+	customLib.Reset()
 	resultData.Result = result.Value().(bool)
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
 
 	// 在返回前设置请求和响应
 	if req, ok := varMap["request"].(*proto.Request); ok {
-		resultData.Request = proto.CloneRequest(req)
+		resultData.Request = req
 	} else {
-		targetCacheMutex.RLock()
 		if targetResult.LastRequest != nil {
-			resultData.Request = proto.CloneRequest(targetResult.LastRequest)
+			resultData.Request = targetResult.LastRequest
 		}
-		targetCacheMutex.RUnlock()
 	}
 
 	if resp, ok := varMap["response"].(*proto.Response); ok {
-		resultData.Response = proto.CloneResponse(resp)
+		resultData.Response = resp
 	} else {
-		targetCacheMutex.RLock()
 		if targetResult.LastResponse != nil {
-			resultData.Response = proto.CloneResponse(targetResult.LastResponse)
+			resultData.Response = targetResult.LastResponse
 		}
-		targetCacheMutex.RUnlock()
 	}
 
 	return resultData, nil

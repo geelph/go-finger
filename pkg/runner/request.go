@@ -65,7 +65,6 @@ func prepareRequest(target string) (*http.Request, error) {
 }
 
 // GetBaseInfo 获取目标的基础信息并返回 BaseInfoResponse 结构体
-// GetBaseInfo 获取目标的基础信息并返回 BaseInfoResponse 结构体
 func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoResponse, error) {
 	// 检查并规范化URL协议
 	if checkedURL, err := network.CheckProtocol(target, proxy); err == nil && checkedURL != "" {
@@ -158,35 +157,4 @@ func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoResponse, error) {
 		Response:   resp,
 		Wappalyzer: wappData,
 	}, nil
-}
-
-// shouldUseCache 判断是否应该使用缓存，对于根路径的GET请求，可以重用缓存的请求和响应
-func shouldUseCache(rule finger.RuleMap, targetResult *TargetResult) bool {
-	targetCacheMutex.RLock()
-	defer targetCacheMutex.RUnlock()
-	
-	if targetResult.LastRequest == nil || targetResult.LastResponse == nil {
-		return false
-	}
-
-	reqType := strings.ToLower(rule.Value.Request.Type)
-	method := strings.ToUpper(rule.Value.Request.Method)
-
-	return rule.Value.Request.Path == "/" &&
-		(reqType == "" || reqType == common.HttpType) &&
-		(method == "GET" || rule.Value.Request.Method == "") &&
-		rule.Value.Request.FollowRedirects == false
-}
-
-// updateTargetCache 更新特定目标的请求响应缓存
-func updateTargetCache(variableMap map[string]any, targetResult *TargetResult) {
-	targetCacheMutex.Lock()
-	defer targetCacheMutex.Unlock()
-	
-	if resp, ok := variableMap["response"].(*proto.Response); ok {
-		targetResult.LastResponse = resp
-	}
-	if req, ok := variableMap["request"].(*proto.Request); ok {
-		targetResult.LastRequest = req
-	}
 }

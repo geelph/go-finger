@@ -116,11 +116,6 @@ func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
 		return nil, err
 	}
 
-	// 线程安全地存储结果
-	r.mutex.Lock()
-	r.Results[target] = result
-	r.mutex.Unlock()
-
 	return result, nil
 }
 
@@ -157,10 +152,6 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 
 	// 计算合适的URL池大小
 	poolSize := r.Config.URLWorkerCount
-	if poolSize > 20 {
-		// 限制并发大小，降低资源竞争
-		poolSize = 20
-	}
 
 	// 创建URL处理工作池
 	urlPool, _ := ants.NewPool(poolSize,
@@ -175,7 +166,6 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	// 提交目标到工作池
 	for _, target := range targets {
 		urlWg.Add(1)
-		target := target // 创建变量副本避免闭包问题
 
 		// 提交任务
 		_ = urlPool.Submit(func() {

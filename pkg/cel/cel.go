@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"gxx/utils/logger"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -27,22 +26,15 @@ import (
 type CustomLib struct {
 	envOptions     []cel.EnvOption
 	programOptions []cel.ProgramOption
-	mu             sync.Mutex
-	envCache       *cel.Env
-	envCacheMu     sync.RWMutex
 }
 
 // CompileOptions 返回环境选项
 func (c *CustomLib) CompileOptions() []cel.EnvOption {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	return c.envOptions
 }
 
 // ProgramOptions 返回程序选项
 func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	return c.programOptions
 }
 
@@ -50,67 +42,42 @@ func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
 func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.Val, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-
-	type result struct {
+	var (
 		val ref.Val
 		err error
-	}
-	resultCh := make(chan result, 1)
-
-	// 创建变量的深拷贝以避免并发修改
-	varsCopy := make(map[string]any, len(variables))
-	for k, v := range variables {
-		varsCopy[k] = v
-	}
-
+	)
+	result := make(chan int)
 	go func() {
-		// 尝试获取缓存的环境
-		var env *cel.Env
-		var err error
-		
-		c.envCacheMu.RLock()
-		if c.envCache != nil {
-			env = c.envCache
-			c.envCacheMu.RUnlock()
-		} else {
-			c.envCacheMu.RUnlock()
-			
-			// 没有缓存，创建新环境并存储
-			env, err = c.createEnv()
-			if err != nil {
-				resultCh <- result{nil, fmt.Errorf("创建CEL环境失败: %w", err)}
-				return
-			}
+		defer close(result)
+		env, err := c.NewCelEnv()
+		if err != nil {
+			result <- 9
 		}
-
-		val, err := Eval(env, expression, varsCopy)
-		resultCh <- result{val, err}
+		val, err = Eval(env, expression, variables)
+		if err != nil {
+			result <- 9
+		}
+		result <- 99
 	}()
 
 	select {
 	case <-ctx.Done():
 		return nil, fmt.Errorf("表达式执行超时")
-	case res := <-resultCh:
-		return res.val, res.err
+	case v := <-result:
+		if v == 99 {
+			return val, err
+		}
+		return nil, fmt.Errorf("表达式执行错误")
 	}
 }
 
-// createEnv 创建新的CEL环境并缓存
-func (c *CustomLib) createEnv() (*cel.Env, error) {
-	c.envCacheMu.Lock()
-	defer c.envCacheMu.Unlock()
-	
-	// 双重检查，避免多个goroutine重复创建
-	if c.envCache != nil {
-		return c.envCache, nil
-	}
-	
+// NewCelEnv 创建新的CEL环境并缓存
+func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
+
 	env, err := cel.NewEnv(cel.Lib(c))
 	if err != nil {
 		return nil, err
 	}
-	
-	c.envCache = env
 	return env, nil
 }
 
@@ -121,21 +88,6 @@ func NewCustomLib() *CustomLib {
 	c.envOptions = ReadCompileOptions(reg)
 	c.programOptions = ReadProgramOptions(reg)
 	return c
-}
-
-// NewCelEnv 创建新的CEL环境
-func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
-	// 尝试使用缓存的环境
-	c.envCacheMu.RLock()
-	if c.envCache != nil {
-		env := c.envCache
-		c.envCacheMu.RUnlock()
-		return env, nil
-	}
-	c.envCacheMu.RUnlock()
-	
-	// 创建新环境并缓存
-	return c.createEnv()
 }
 
 // Eval 执行CEL表达式
@@ -163,13 +115,6 @@ func Eval(env *cel.Env, expression string, params map[string]any) (ref.Val, erro
 
 // WriteRuleSetOptions 从YAML配置中添加变量声明
 func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	
-	// 更新选项后清除环境缓存
-	c.envCacheMu.Lock()
-	c.envCache = nil
-	c.envCacheMu.Unlock()
 
 	for _, v := range args {
 		key := v.Key.(string)
@@ -198,13 +143,6 @@ func (c *CustomLib) WriteRuleSetOptions(args yaml.MapSlice) {
 
 // WriteRuleFunctionsROptions 注册用于处理r0 || r1规则解析的函数
 func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	
-	// 更新选项后清除环境缓存
-	c.envCacheMu.Lock()
-	c.envCache = nil
-	c.envCacheMu.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Function(
 		funcName,
@@ -221,27 +159,13 @@ func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool)
 
 // UpdateCompileOption 添加变量声明到环境选项
 func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	
-	// 更新选项后清除环境缓存
-	c.envCacheMu.Lock()
-	c.envCache = nil
-	c.envCacheMu.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(varName, varType)))
 }
 
 // Reset 重置CustomLib实例到初始状态
 func (c *CustomLib) Reset() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	
-	// 清除环境缓存
-	c.envCacheMu.Lock()
-	c.envCache = nil
-	c.envCacheMu.Unlock()
-	
+
 	// 只重置字段，不替换整个结构体
 	c.envOptions = nil
 	c.programOptions = nil
@@ -254,13 +178,6 @@ func (c *CustomLib) Reset() {
 
 // WriteRuleIsVulOptions 添加漏洞检测函数声明
 func (c *CustomLib) WriteRuleIsVulOptions(key string, isVul bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	
-	// 更新选项后清除环境缓存
-	c.envCacheMu.Lock()
-	c.envCache = nil
-	c.envCacheMu.Unlock()
 
 	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(key+"()", decls.Bool)))
 }

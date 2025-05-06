@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-	"gxx/pkg/cel"
 	"gxx/pkg/finger"
 	"gxx/types"
 	"gxx/utils/common"
@@ -52,6 +51,7 @@ func getTargets(options *types.CmdOptions) []string {
 
 // ProcessURL 处理单个URL的所有指纹识别，获取目标基础信息并执行指纹识别
 func ProcessURL(target string, proxy string, timeout int, workerCount int) (*TargetResult, error) {
+	var variableMap = make(map[string]any)
 	// 获取目标基础信息
 	baseInfoResp, err := GetBaseInfo(target, proxy, timeout)
 
@@ -80,8 +80,9 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 
 	// 初始化缓存
 	lastResponse, lastRequest := initializeCache(baseInfoResp.Response, proxy)
-	targetResult.LastResponse = lastResponse
-	targetResult.LastRequest = lastRequest
+	variableMap["request"] = lastRequest
+	variableMap["response"] = lastResponse
+	UpdateTargetCache(variableMap, targetResult)
 
 	// 如果无法获取响应，直接返回
 	if lastResponse == nil {
@@ -116,13 +117,6 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 	// 创建同步等待组
 	var fingerWg sync.WaitGroup
 
-	// 预先创建并复用CustomLib实例，使用sync.Pool提高性能
-	customLibPool := &sync.Pool{
-		New: func() interface{} {
-			return cel.NewCustomLib()
-		},
-	}
-
 	// 创建指纹工作池
 	fingerPool, _ := ants.NewPoolWithFunc(workerCount, func(data interface{}) {
 		defer fingerWg.Done()
@@ -134,7 +128,7 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 		fg := task.fg
 
 		// 执行指纹识别 - 直接传递整个pool而不是单个实例
-		result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, customLibPool, timeout, targetResult)
+		result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, timeout, targetResult)
 		if err == nil && result.Result {
 			// 创建匹配结果对象
 			resultMatch := &FingerMatch{

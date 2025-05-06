@@ -30,5 +30,10 @@ rules:
       method: GET
       path: /{{num}}.php
     expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
+  r3:
+    request:
+      method: GET
+      path: /{{num}}.php
+    expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
 
-expression: r0() || r1() || r2()
+expression: r0() || r1() || r2() || r3()
