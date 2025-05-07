@@ -112,7 +112,6 @@ func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
 // runScan 执行扫描过程
 func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	var outputMutex sync.Mutex
-
 	// 创建完成通道
 	doneChan := make(chan struct{}, len(targets))
 
@@ -142,56 +141,53 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 		_ = bar.RenderBlank()
 	}
 
-	// 创建URL处理工作池，使用固定大小的线程池，确保始终保持规定的线程数
-	urlPool, _ := ants.NewPool(r.Config.URLWorkerCount,
-		ants.WithPreAlloc(true),
-		ants.WithExpiryDuration(10*time.Minute),
-		ants.WithNonblocking(false), // 改为阻塞模式，确保任务按需执行
-	)
-	defer urlPool.Release()
-
-	// 创建任务通道，用于控制并发任务的提交
-	taskChan := make(chan string, r.Config.URLWorkerCount*2) // 缓冲区大小为线程数的2倍
+	// 定义任务结构体
+	type scanTask struct {
+		target string
+	}
 
 	var urlWg sync.WaitGroup
 
-	// 启动固定数量的消费者协程，确保始终有urlWorkerCount个线程在工作
-	for i := 0; i < r.Config.URLWorkerCount; i++ {
-		urlWg.Add(1)
-		go func() {
+	// 创建URL处理工作池，使用PoolWithFunc
+	urlPool, _ := ants.NewPoolWithFunc(r.Config.URLWorkerCount, 
+		func(i interface{}) {
 			defer urlWg.Done()
-			for target := range taskChan {
-				// 处理单个URL
-				targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, r.Config.FingerWorkerCount)
+			task := i.(scanTask)
+			target := task.target
 
-				// 将结果写入文件并显示结果
-				handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
+			// 处理单个URL
+			targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, r.Config.FingerWorkerCount)
+			// 将结果写入文件并显示结果
+			handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
+			
+			// 存储结果
+			r.mutex.Lock()
+			r.Results[target] = targetResult
+			r.mutex.Unlock()
+			
+			// 通知完成一个任务
+			doneChan <- struct{}{}
+		},
+		ants.WithPreAlloc(true),
+		ants.WithExpiryDuration(3*time.Minute),
+		ants.WithNonblocking(false), // 使用阻塞模式，确保任务按需执行
+	)
+	defer urlPool.Release()
 
-				// 存储结果
-				r.mutex.Lock()
-				r.Results[target] = targetResult
-				r.mutex.Unlock()
-
-				// 通知完成一个任务
-				doneChan <- struct{}{}
-			}
-		}()
-	}
-
-	// 提交所有目标到任务通道
+	// 提交所有目标到线程池
 	for _, target := range targets {
-		taskChan <- target
+		urlWg.Add(1)
+		_ = urlPool.Invoke(scanTask{
+			target: target,
+		})
 	}
-	close(taskChan)
 
 	// 等待所有URL处理完成
 	urlWg.Wait()
 	close(doneChan)
 
 	// 确保最终完成100%进度
-	outputMutex.Lock()
 	_ = bar.Finish()
-	outputMutex.Unlock()
 
 	// 显示扫描耗时信息
 	elapsedTime := time.Since(startTime)
@@ -200,5 +196,4 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %.2f it/s)",
 		len(targets), len(targets), itemsPerSecond)
 	fmt.Println(maxProgress)
-
 }

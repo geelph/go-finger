@@ -10,6 +10,9 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/panjf2000/ants/v2"
 )
 
 // getTargets 从命令行参数或文件中读取目标，并进行去重处理
@@ -112,49 +115,53 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 	var matches []*FingerMatch
 	var matchesMutex sync.Mutex
 
-	// 创建指纹识别任务通道
-	taskChan := make(chan *finger2.Finger, workerCount*2)
+	// 创建同步等待组，用于等待所有任务完成
+	var wg sync.WaitGroup
 
-	// 创建同步等待组
-	var fingerWg sync.WaitGroup
+	// 定义任务处理函数
+	type fingerTask struct {
+		fg *finger2.Finger
+	}
 
-	// 启动固定数量的消费者协程，确保始终有workerCount个线程在工作
-	for i := 0; i < workerCount; i++ {
-		fingerWg.Add(1)
-		go func() {
-			defer fingerWg.Done()
+	// 创建ants线程池，使用NewPoolWithFunc预定义处理函数
+	fingerPool, _ := ants.NewPoolWithFunc(workerCount, func(i interface{}) {
+		defer wg.Done()
+		task := i.(fingerTask)
+		fingerFg := task.fg
 
-			for fg := range taskChan {
+		// 执行指纹识别
+		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout, targetResult)
 
-				// 执行指纹识别
-				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, timeout, targetResult)
-
-				if err == nil && result.Result {
-					// 创建匹配结果对象
-					resultMatch := &FingerMatch{
-						Finger:   fg,
-						Result:   true,
-						Request:  result.Request,
-						Response: result.Response,
-					}
-
-					// 添加到匹配结果列表
-					matchesMutex.Lock()
-					matches = append(matches, resultMatch)
-					matchesMutex.Unlock()
-				}
+		if err == nil && result.Result {
+			// 创建匹配结果对象
+			resultMatch := &FingerMatch{
+				Finger:   fingerFg,
+				Result:   true,
+				Request:  result.Request,
+				Response: result.Response,
 			}
-		}()
-	}
 
-	// 提交所有指纹任务到任务通道
+			// 添加到匹配结果列表
+			matchesMutex.Lock()
+			matches = append(matches, resultMatch)
+			matchesMutex.Unlock()
+		}
+	},
+		ants.WithPreAlloc(true),
+		ants.WithExpiryDuration(3*time.Minute),
+		ants.WithNonblocking(false), // 使用阻塞模式确保任务按需执行
+	)
+	defer fingerPool.Release()
+
+	// 提交所有指纹任务到线程池
 	for _, fg := range AllFinger {
-		taskChan <- fg
+		wg.Add(1)
+		// 提交任务到线程池
+		_ = fingerPool.Invoke(fingerTask{fg: fg})
 	}
-	close(taskChan)
 
 	// 等待所有指纹识别完成
-	fingerWg.Wait()
+	wg.Wait()
 	return matches
 }
 
