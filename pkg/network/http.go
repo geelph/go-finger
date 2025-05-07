@@ -32,6 +32,7 @@ var (
 	RetryClient    *retryablehttp.Client // 可处理重定向的客户端
 	tlsConfig      *tls.Config           // tls配置
 	clientInitOnce sync.Once             // 确保客户端只初始化一次
+	transportCache sync.Map              // 缓存Transport对象，避免重复创建
 )
 
 // 全局客户端配置
@@ -56,6 +57,9 @@ type OptionsRequest struct {
 // 初始化全局客户端实例
 func init() {
 	clientInitOnce.Do(initGlobalClient)
+	
+	// 启动定期清理transport缓存的协程
+	go cleanupTransportCache()
 }
 
 // initGlobalClient 初始化全局客户端实例
@@ -178,34 +182,46 @@ func configureHeaders(req *retryablehttp.Request, options OptionsRequest) {
 
 // createTransport 创建传输层
 func createTransport(proxyURL string) (*http.Transport, error) {
+	// 检查缓存中是否已存在相同配置的transport
+	if cachedTransport, found := transportCache.Load(proxyURL); found {
+		return cachedTransport.(*http.Transport), nil
+	}
+
+	var transport *http.Transport
+	
 	if proxyURL == "" {
-		return &http.Transport{
+		transport = &http.Transport{
 			TLSClientConfig:     tlsConfig,
 			MaxIdleConns:        100,
 			MaxIdleConnsPerHost: 10,
 			IdleConnTimeout:     90 * time.Second,
 			DisableKeepAlives:   true, // 禁用连接复用，避免"Unsolicited response"错误
-		}, nil
+		}
+	} else {
+		proxy, err := url.Parse(proxyURL)
+		if err != nil {
+			return nil, fmt.Errorf("代理地址解析失败: %v", err)
+		}
+
+		dialer, err := proxyclient.NewClient(proxy)
+		if err != nil {
+			return nil, fmt.Errorf("创建代理客户端失败: %v", err)
+		}
+
+		transport = &http.Transport{
+			DialContext:         dialer.DialContext,
+			TLSClientConfig:     tlsConfig,
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     90 * time.Second,
+			DisableKeepAlives:   true, // 禁用连接复用，避免"Unsolicited response"错误
+		}
 	}
 
-	proxy, err := url.Parse(proxyURL)
-	if err != nil {
-		return nil, fmt.Errorf("代理地址解析失败: %v", err)
-	}
-
-	dialer, err := proxyclient.NewClient(proxy)
-	if err != nil {
-		return nil, fmt.Errorf("创建代理客户端失败: %v", err)
-	}
-
-	return &http.Transport{
-		DialContext:         dialer.DialContext,
-		TLSClientConfig:     tlsConfig,
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 10,
-		IdleConnTimeout:     90 * time.Second,
-		DisableKeepAlives:   true, // 禁用连接复用，避免"Unsolicited response"错误
-	}, nil
+	// 存入缓存
+	transportCache.Store(proxyURL, transport)
+	
+	return transport, nil
 }
 
 // configureClient 配置HTTP客户端参数
@@ -215,15 +231,12 @@ func configureClient(options OptionsRequest) *retryablehttp.Client {
 		initGlobalClient() // 初始化并恢复执行
 	}
 
-	// 克隆客户端以避免修改全局设置
-	client := RetryClient
-	client.HTTPClient.Timeout = options.Timeout
-	client.HTTPClient2.Timeout = options.Timeout
+	// 创建新的客户端实例以避免修改全局设置
+	opts := retryablehttp.DefaultOptionsSingle
+	opts.Timeout = options.Timeout
 
-	// 配置重定向策略
-	redirectPolicy := createRedirectPolicy(options.FollowRedirects)
-	client.HTTPClient.CheckRedirect = redirectPolicy
-	client.HTTPClient2.CheckRedirect = redirectPolicy
+	// 创建新的客户端
+	client := retryablehttp.NewClient(opts)
 
 	// 配置传输层
 	transport, err := createTransport(options.Proxy)
@@ -233,6 +246,15 @@ func configureClient(options OptionsRequest) *retryablehttp.Client {
 		client.HTTPClient.Transport = transport
 		client.HTTPClient2.Transport = transport
 	}
+
+	// 配置超时
+	client.HTTPClient.Timeout = options.Timeout
+	client.HTTPClient2.Timeout = options.Timeout
+
+	// 配置重定向策略
+	redirectPolicy := createRedirectPolicy(options.FollowRedirects)
+	client.HTTPClient.CheckRedirect = redirectPolicy
+	client.HTTPClient2.CheckRedirect = redirectPolicy
 
 	return client
 }
@@ -411,4 +433,36 @@ func ParseRequest(oReq *http.Request) (*proto.Request, error) {
 	}
 
 	return req, nil
+}
+
+// cleanupTransportCache 定期清理transport缓存
+func cleanupTransportCache() {
+	ticker := time.NewTicker(30 * time.Minute)
+	defer ticker.Stop()
+	
+	for range ticker.C {
+		// 遍历所有缓存的transport并关闭空闲连接
+		transportCache.Range(func(key, value interface{}) bool {
+			if transport, ok := value.(*http.Transport); ok {
+				transport.CloseIdleConnections()
+			}
+			return true
+		})
+		
+		// 记录清理日志
+		logger.Debug("已清理transport缓存中的空闲连接")
+		
+		// 如果缓存过大，可以考虑完全重置
+		var count int
+		transportCache.Range(func(_, _ interface{}) bool {
+			count++
+			return true
+		})
+		
+		// 如果缓存项超过100个，重置缓存
+		if count > 100 {
+			transportCache = sync.Map{}
+			logger.Debug("transport缓存过大，已重置")
+		}
+	}
 }
