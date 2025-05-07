@@ -27,8 +27,9 @@ rules:
     expression: response.raw_header.ibcontains(b'AWS') || response.icon_hash == "1236214049"
   r2:
     request:
-      method: GET
+      method: POST
       path: /{{num}}.php
+      follow_redirects: true # 是否禁用自动重定向跟随
     expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
   r3:
     request:

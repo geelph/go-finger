@@ -87,8 +87,8 @@ func initGlobalClient() {
 	opts.Timeout = defaultTimeout
 
 	transport := &http.Transport{
-		TLSClientConfig:    tlsConfig,
-		DisableKeepAlives:  true, // 禁用连接复用，避免"Unsolicited response"错误
+		TLSClientConfig:   tlsConfig,
+		DisableKeepAlives: true, // 禁用连接复用，避免"Unsolicited response"错误
 	}
 
 	RetryClient = retryablehttp.NewClient(opts)
@@ -128,10 +128,7 @@ func SendRequestHttp(ctx context.Context, Method string, UrlStr string, Body str
 		return nil, err
 	}
 	configureHeaders(req, options)
-	
-	// 添加连接关闭头，确保每次请求后不保持连接
-	req.Header.Set("Connection", "close")
-	
+
 	client := configureClient(options)
 
 	return client.Do(req)

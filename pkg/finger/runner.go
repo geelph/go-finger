@@ -194,9 +194,10 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(resp.Body)
-
+	newURL, err := url.Parse(NewUrlStr)
+	resp.Request.URL = newURL
 	// 处理请求的raw
-	protoReq := buildProtoRequest(resp, rule.Request.Method, rule.Request.Body, rule.Request.Path)
+	protoReq := buildProtoRequest(resp, rule.Request)
 	variableMap["request"] = protoReq
 
 	// 读取响应体

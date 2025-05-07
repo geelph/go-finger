@@ -46,12 +46,12 @@ func formatBody(body, contentType string, variableMap map[string]any) string {
 }
 
 // buildProtoRequest 构造proto.Request结构体
-func buildProtoRequest(resp *http.Response, method, body, path string) *proto.Request {
+func buildProtoRequest(resp *http.Response, req RuleRequest) *proto.Request {
 	protoReq := &proto.Request{
-		Method:      method,
+		Method:      req.Method,
 		Url:         network.Url2ProtoUrl(resp.Request.URL),
 		ContentType: resp.Request.Header.Get("Content-Type"),
-		Body:        []byte(body),
+		Body:        []byte(req.Body),
 	}
 
 	headers := make(map[string]string)
@@ -65,7 +65,7 @@ func buildProtoRequest(resp *http.Response, method, body, path string) *proto.Re
 	}
 
 	protoReq.Headers = headers
-	protoReq.Raw = []byte(fmt.Sprintf("%s %s %s\nHost: %s\n%s\n\n%s", resp.Request.Method, path, resp.Request.Proto, resp.Request.URL.Host, strings.Trim(rawReqHeaderBuilder.String(), "\n"), body))
+	protoReq.Raw = []byte(fmt.Sprintf("%s %s %s\nHost: %s\n%s\n\n%s", req.Method, resp.Request.URL.Path, resp.Request.Proto, resp.Request.URL.Host, strings.Trim(rawReqHeaderBuilder.String(), "\n"), req.Body))
 	protoReq.RawHeader = []byte(strings.Trim(rawReqHeaderBuilder.String(), "\n"))
 
 	return protoReq
@@ -107,7 +107,11 @@ func buildProtoResponse(resp *http.Response, utf8RespBody string, latency int64,
 
 // BuildProtoRequest 构造proto.Request结构体 (公开版本)
 func BuildProtoRequest(resp *http.Response, method, body, path string) *proto.Request {
-	return buildProtoRequest(resp, method, body, path)
+	var req RuleRequest
+	req.Method = method
+	req.Body = body
+	req.Path = path
+	return buildProtoRequest(resp, req)
 }
 
 // BuildProtoResponse 构造proto.Response结构体 (公开版本)

@@ -117,42 +117,38 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 
 	// 评估规则
 	for _, rule := range fg.Rules {
-		// 优先使用缓存
-		var lastRequest *proto.Request
-		var lastResponse *proto.Response
-
-		// 安全地获取缓存 - 避免频繁加锁解锁
 		isCache, cache := ShouldUseCache(rule, targetResult)
 		if isCache {
-			lastRequest = cache.Request
-			lastResponse = cache.Response
-
-			if lastRequest != nil {
-				varMap["request"] = lastRequest
+			if cache.Request != nil {
+				varMap["request"] = cache.Request
 			}
-			if lastResponse != nil {
-				varMap["response"] = lastResponse
+			if cache.Response != nil {
+				varMap["response"] = cache.Response
 			}
 		}
 
-		if lastRequest == nil || lastResponse == nil {
+		if cache.Request == nil || cache.Response == nil {
 			// 发送新请求
 			newVarMap, err := finger.SendRequest(target, rule.Value.Request, rule.Value, varMap, proxy, timeout)
 			if err != nil {
 				customLib.WriteRuleFunctionsROptions(rule.Key, false)
 				continue
 			}
-
 			// 更新变量映射
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
-				if rule.Value.Request.FollowRedirects != false {
+				if rule.Value.Request.FollowRedirects != true && (rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0) {
+					// 使用互斥锁保护共享资源访问
+					targetResult.mutex.Lock()
 					if req, ok := varMap["request"].(*proto.Request); ok {
 						targetResult.LastRequest = req
+						//fmt.Println(string(req.Raw))
 					}
 					if resp, ok := varMap["response"].(*proto.Response); ok {
 						targetResult.LastResponse = resp
 					}
+					targetResult.mutex.Unlock()
+
 					// 使用线程安全的UpdateTargetCache函数
 					UpdateTargetCache(varMap, targetResult)
 				}
@@ -189,8 +185,12 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 
 	customLib.Reset()
 	resultData.Result = result.Value().(bool)
+
+	// 使用互斥锁保护共享资源读取
+	targetResult.mutex.Lock()
 	resultData.Request = targetResult.LastRequest
 	resultData.Response = targetResult.LastResponse
+	targetResult.mutex.Unlock()
 
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
 

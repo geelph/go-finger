@@ -42,24 +42,6 @@ func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
 	return c.programOptions
 }
 
-// PreInit 预初始化CEL环境，减少后续评估时的初始化开销
-func (c *CustomLib) PreInit() {
-	// 如果已经初始化，直接返回
-	if c.initialized {
-		return
-	}
-
-	// 创建一个新环境并缓存
-	env, err := cel.NewEnv(cel.Lib(c))
-	if err != nil {
-		logger.Debug(fmt.Sprintf("预初始化CEL环境失败: %v", err))
-		return
-	}
-
-	c.env = env
-	c.initialized = true
-}
-
 // Evaluate 执行CEL表达式并返回结果
 func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.Val, error) {
 	var env *cel.Env

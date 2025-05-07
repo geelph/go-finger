@@ -73,7 +73,7 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	}
 
 	// 更新目标结果对象
-	targetResult.StatusCode = baseInfoResp.StatusCode
+	targetResult.StatusCode = int32(baseInfoResp.StatusCode)
 	targetResult.Title = baseInfoResp.Title
 	targetResult.Server = baseInfoResp.Server
 	targetResult.Wappalyzer = baseInfoResp.Wappalyzer
@@ -83,6 +83,13 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	lastResponse, lastRequest := initializeCache(baseInfoResp.Response, proxy)
 	variableMap["request"] = lastRequest
 	variableMap["response"] = lastResponse
+
+	// 使用互斥锁保护共享资源访问
+	targetResult.mutex.Lock()
+	targetResult.LastRequest = lastRequest
+	targetResult.LastResponse = lastResponse
+	targetResult.mutex.Unlock()
+
 	UpdateTargetCache(variableMap, targetResult)
 
 	// 如果无法获取响应，直接返回
@@ -167,6 +174,11 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 
 // handleMatchResults 处理匹配结果，将结果输出到终端和文件
 func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, printResult func(string), outputFormat string) {
+	// 使用互斥锁保护LastResponse的访问
+	targetResult.mutex.Lock()
+	lastResponse := targetResult.LastResponse
+	targetResult.mutex.Unlock()
+
 	output.HandleMatchResults(&output.TargetResult{
 		URL:        targetResult.URL,
 		StatusCode: targetResult.StatusCode,
@@ -174,7 +186,7 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 		ServerInfo: targetResult.Server,
 		Matches:    convertFingerMatches(targetResult.Matches),
 		Wappalyzer: targetResult.Wappalyzer,
-	}, options.Output, options.SockOutput, printResult, outputFormat, targetResult.LastResponse)
+	}, options.Output, options.SockOutput, printResult, outputFormat, lastResponse)
 }
 
 // convertFingerMatches 将pkg.FingerMatch切片转换为output.FingerMatch切片

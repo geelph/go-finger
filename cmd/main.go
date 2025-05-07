@@ -69,7 +69,7 @@ func main() {
 		logger.Error("初始化输出文件失败: %v", err)
 		os.Exit(1)
 	}
-	
+
 	// 初始化socket文件输出（如果启用）
 	if options.SockOutput != "" {
 		if err := output.InitSockOutput(options.SockOutput); err != nil {
@@ -78,7 +78,7 @@ func main() {
 		}
 		logger.Info(fmt.Sprintf("Socket输出文件：%s", options.SockOutput))
 	}
-	
+
 	defer func() {
 		_ = output.Close()
 	}()
@@ -102,6 +102,6 @@ func main() {
 	fmt.Println(color.CyanString("─────────────────────────────────────────────────────"))
 
 	// 确保所有日志都被写入
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	logger.Success("扫描完成")
 }

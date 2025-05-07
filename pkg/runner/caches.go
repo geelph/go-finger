@@ -12,6 +12,7 @@ import (
 	"gxx/utils/common"
 	"gxx/utils/proto"
 	"strings"
+	"sync"
 )
 
 // CacheRequest 存储请求和响应的缓存条目
@@ -20,8 +21,11 @@ type CacheRequest struct {
 	Response *proto.Response
 }
 
-// 全局缓存映射
-var cacheMap = make(map[string]*CacheRequest, 1024) // 预分配更大空间以减少哈希表扩容
+// 全局缓存映射和保护它的互斥锁
+var (
+	cacheMap    = make(map[string]*CacheRequest, 1024) // 预分配更大空间以减少哈希表扩容
+	cacheMapMux sync.RWMutex                           // 读写锁保护缓存映射
+)
 
 // GenerateCacheKey 生成缓存键
 func GenerateCacheKey(target string, method string) string {
@@ -33,13 +37,19 @@ func ShouldUseCache(rule finger.RuleMap, targetResult *TargetResult) (bool, Cach
 	var caches CacheRequest
 	reqType := strings.ToLower(rule.Value.Request.Type)
 	method := strings.ToUpper(rule.Value.Request.Method)
-	// 只允许GET请求或空body的POST请求使用缓存
-	if !(method == "GET" || (method == "POST" && rule.Value.Request.Body == "")) && rule.Value.Request.FollowRedirects != false {
-		return false, caches
-	}
 
 	// 确保是HTTP/HTTPS请求
 	if reqType != "" && reqType != common.HttpType {
+		return false, caches
+	}
+
+	// 只允许GET或POST请求且path为"/"或空、header为空、body为空时使用缓存
+	isEmptyPath := rule.Value.Request.Path == "/" || rule.Value.Request.Path == ""
+	isEmptyHeaders := rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0
+	isEmptyBody := rule.Value.Request.Body == ""
+	isGetOrPost := method == "GET" || method == "POST"
+
+	if !(isEmptyPath && isEmptyHeaders && isEmptyBody && isGetOrPost) || rule.Value.Request.FollowRedirects != false {
 		return false, caches
 	}
 
@@ -47,8 +57,10 @@ func ShouldUseCache(rule finger.RuleMap, targetResult *TargetResult) (bool, Cach
 	if targetResult.URL != "" {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
 
-		// 直接从缓存映射中读取
+		// 加读锁访问缓存
+		cacheMapMux.RLock()
 		entry, exists := cacheMap[cacheKey]
+		cacheMapMux.RUnlock()
 
 		if exists && entry != nil && entry.Request != nil && entry.Response != nil {
 			caches.Request = entry.Request
@@ -81,15 +93,20 @@ func UpdateTargetCache(variableMap map[string]any, targetResult *TargetResult) {
 		return
 	}
 
-	// 只缓存GET请求或空body的POST请求
+	// 只缓存path为"/"或空、header为空、body也为空的GET或POST请求
 	method := strings.ToUpper(req.Method)
-	if method == "GET" || (method == "POST" && (req.Body == nil || len(req.Body) == 0)) {
-		cacheKey := GenerateCacheKey(targetResult.URL, method)
+	isEmptyPath := req.Url.Path == "/" || len(req.Url.Path) == 0
+	isEmptyBody := req.Body == nil || len(req.Body) == 0
+	isGetOrPost := method == "GET" || method == "POST"
 
-		// 直接更新缓存映射
+	if isEmptyPath && isEmptyBody && isGetOrPost {
+		cacheKey := GenerateCacheKey(targetResult.URL, method)
+		// 加写锁更新缓存
+		cacheMapMux.Lock()
 		cacheMap[cacheKey] = &CacheRequest{
 			Request:  req,
 			Response: resp,
 		}
+		cacheMapMux.Unlock()
 	}
 }
