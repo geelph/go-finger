@@ -20,39 +20,8 @@ type CacheRequest struct {
 	Response *proto.Response
 }
 
-// CacheShard 缓存分片，每个分片有自己的锁和映射
-type CacheShard struct {
-	items map[string]*CacheRequest
-}
-
-const (
-	// ShardCount 分片数量，使用2的幂次方便于位运算
-	ShardCount = 32
-	// ShardMask 分片掩码
-	ShardMask = ShardCount - 1
-)
-
-// 分片缓存，减少锁竞争
-var cacheShards [ShardCount]*CacheShard
-
-// 初始化分片缓存
-func init() {
-	for i := 0; i < ShardCount; i++ {
-		cacheShards[i] = &CacheShard{
-			items: make(map[string]*CacheRequest, 256), // 预分配空间以减少哈希表扩容
-		}
-	}
-}
-
-// getShard 根据key获取对应的分片
-func getShard(key string) *CacheShard {
-	// 简单的哈希函数，将key映射到分片索引
-	hash := 0
-	for i := 0; i < len(key); i++ {
-		hash = 31*hash + int(key[i])
-	}
-	return cacheShards[hash&ShardMask]
-}
+// 全局缓存映射
+var cacheMap = make(map[string]*CacheRequest, 1024) // 预分配更大空间以减少哈希表扩容
 
 // GenerateCacheKey 生成缓存键
 func GenerateCacheKey(target string, method string) string {
@@ -78,9 +47,8 @@ func ShouldUseCache(rule finger.RuleMap, targetResult *TargetResult) (bool, Cach
 	if targetResult.URL != "" {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
 
-		// 获取对应的分片并读取缓存
-		shard := getShard(cacheKey)
-		entry, exists := shard.items[cacheKey]
+		// 直接从缓存映射中读取
+		entry, exists := cacheMap[cacheKey]
 
 		if exists && entry != nil && entry.Request != nil && entry.Response != nil {
 			caches.Request = entry.Request
@@ -118,9 +86,8 @@ func UpdateTargetCache(variableMap map[string]any, targetResult *TargetResult) {
 	if method == "GET" || (method == "POST" && (req.Body == nil || len(req.Body) == 0)) {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
 
-		// 获取对应的分片并更新缓存
-		shard := getShard(cacheKey)
-		shard.items[cacheKey] = &CacheRequest{
+		// 直接更新缓存映射
+		cacheMap[cacheKey] = &CacheRequest{
 			Request:  req,
 			Response: resp,
 		}
