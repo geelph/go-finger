@@ -12,21 +12,10 @@ import (
 	"gxx/utils/proto"
 	"os"
 	"path/filepath"
-	"sync"
-	"time"
 )
 
 // AllFinger 全局指纹数据
 var AllFinger []*finger.Finger
-
-// 缓存指纹评估结果，key是"指纹ID:规则Key:URL"
-var fingerResultCache = &sync.Map{}
-
-// 缓存的指纹结果
-type CachedFingerResult struct {
-	Result bool
-	Time   time.Time
-}
 
 // LoadFingerprints 加载指纹规则文件，支持从默认嵌入指纹库、指定目录或单个YAML文件加载
 func LoadFingerprints(options types.YamlFingerType) error {
@@ -81,21 +70,6 @@ func LoadFingerprints(options types.YamlFingerType) error {
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则，执行单个指纹的识别逻辑，包括发送请求和规则评估
 func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *BaseInfo, proxy string, timeout int, targetResult *TargetResult) (*FingerMatch, error) {
-	// 检查是否有缓存的指纹结果（10分钟有效期）
-	cacheKey := fg.Id + ":" + target
-	if cachedVal, found := fingerResultCache.Load(cacheKey); found {
-		cachedResult := cachedVal.(*CachedFingerResult)
-		if time.Since(cachedResult.Time) < 10*time.Minute {
-			// 使用缓存结果避免重复计算
-			if !cachedResult.Result {
-				return &FingerMatch{Finger: fg, Result: false}, nil
-			}
-		} else {
-			// 缓存过期，移除
-			fingerResultCache.Delete(cacheKey)
-		}
-	}
-	
 	customLib := cel2.NewCustomLib()
 	// 初始化变量映射
 	resultData := &FingerMatch{
@@ -152,8 +126,7 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 		if isCache {
 			lastRequest = cache.Request
 			lastResponse = cache.Response
-			
-			// 复制而不直接赋值，减少锁的影响
+
 			if lastRequest != nil {
 				varMap["request"] = lastRequest
 			}
@@ -173,32 +146,13 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 			// 更新变量映射
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
-				
-				// 批量更新目标结果
-				var needUpdateCache bool
-				var updatedReq *proto.Request
-				var updatedResp *proto.Response
-				
-				if req, ok := varMap["request"].(*proto.Request); ok {
-					updatedReq = req
-					needUpdateCache = true
-				}
-				if resp, ok := varMap["response"].(*proto.Response); ok {
-					updatedResp = resp
-					needUpdateCache = true
-				}
-				
-				// 如果有更新则一次性加锁处理
-				if needUpdateCache {
-					targetCacheMutex.Lock()
-					if updatedReq != nil {
-						targetResult.LastRequest = updatedReq
+				if rule.Value.Request.FollowRedirects != false {
+					if req, ok := varMap["request"].(*proto.Request); ok {
+						targetResult.LastRequest = req
 					}
-					if updatedResp != nil {
-						targetResult.LastResponse = updatedResp
+					if resp, ok := varMap["response"].(*proto.Response); ok {
+						targetResult.LastResponse = resp
 					}
-					targetCacheMutex.Unlock()
-					
 					// 使用线程安全的UpdateTargetCache函数
 					UpdateTargetCache(varMap, targetResult)
 				}
@@ -230,37 +184,15 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 	// 执行最终评估
 	result, err := customLib.Evaluate(fg.Expression, varMap)
 	if err != nil {
-		// 缓存失败结果
-		fingerResultCache.Store(cacheKey, &CachedFingerResult{
-			Result: false,
-			Time:   time.Now(),
-		})
 		return nil, fmt.Errorf("最终表达式解析错误：%v", err)
 	}
-	
+
 	customLib.Reset()
 	resultData.Result = result.Value().(bool)
-	
-	// 缓存指纹结果
-	fingerResultCache.Store(cacheKey, &CachedFingerResult{
-		Result: resultData.Result,
-		Time:   time.Now(),
-	})
-	
+	resultData.Request = targetResult.LastRequest
+	resultData.Response = targetResult.LastResponse
+
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
-
-	// 在返回前设置请求和响应
-	if req, ok := varMap["request"].(*proto.Request); ok {
-		resultData.Request = req
-	} else if targetResult.LastRequest != nil {
-		resultData.Request = targetResult.LastRequest
-	}
-
-	if resp, ok := varMap["response"].(*proto.Response); ok {
-		resultData.Response = resp
-	} else if targetResult.LastResponse != nil {
-		resultData.Response = targetResult.LastResponse
-	}
 
 	return resultData, nil
 }

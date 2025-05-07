@@ -2,13 +2,12 @@ package runner
 
 import (
 	"fmt"
+	"github.com/panjf2000/ants/v2"
 	"gxx/types"
 	"gxx/utils/logger"
 	"gxx/utils/output"
 	"sync"
 	"time"
-
-	"github.com/panjf2000/ants/v2"
 )
 
 // Runner 指纹识别运行器
@@ -42,11 +41,13 @@ func NewRunner(options *types.CmdOptions) *Runner {
 	}
 
 	// 创建Runner实例
-	return &Runner{
+	runner := &Runner{
 		Config:  config,
 		Results: make(map[string]*TargetResult),
 		mutex:   sync.RWMutex{},
 	}
+
+	return runner
 }
 
 // Run 执行扫描
@@ -81,20 +82,6 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 		logger.Info(fmt.Sprintf("Socket输出文件：%s", r.Config.SockOutputFile))
 	}
 
-	// 配置ants全局参数以提高性能
-	ants.Release()
-
-	// 优化参数调整
-	ants.WithOptions(ants.Options{
-		ExpiryDuration:   30 * time.Second, // 减少过期时间
-		PreAlloc:         true,             // 预分配内存
-		MaxBlockingTasks: len(targets) * 5, // 根据目标数量调整最大阻塞任务数
-		Nonblocking:      false,            // 使用阻塞模式以避免任务丢失
-		PanicHandler: func(err interface{}) { // 添加panic处理
-			logger.Error(fmt.Sprintf("Worker panic: %v", err))
-		},
-	})
-
 	logger.Info(fmt.Sprintf("开始扫描 %d 个目标，使用 %d 个URL并发线程, %d 个规则并发线程...",
 		len(targets), r.Config.URLWorkerCount, r.Config.FingerWorkerCount))
 
@@ -109,19 +96,9 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 
 // ScanTarget 扫描单个目标URL
 func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
-	// 设置独立的worker数量以避免全局竞争
-	workerCount := r.Config.FingerWorkerCount / 2
-	if workerCount <= 0 {
-		workerCount = 10
-	}
-
-	// 自适应超时设置
+	// 使用目标特定的worker数量
+	workerCount := r.Config.FingerWorkerCount
 	timeout := r.Config.Timeout
-	if timeout <= 0 {
-		timeout = 10 // 默认10秒
-	} else if timeout > 30 {
-		timeout = 30 // 最大30秒
-	}
 
 	// 处理单个URL
 	result, err := ProcessURL(target, r.Config.Proxy, timeout, workerCount)
@@ -136,8 +113,10 @@ func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
 func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	var outputMutex sync.Mutex
 
-	// 创建完成通道和进度条
+	// 创建完成通道
 	doneChan := make(chan struct{}, len(targets))
+
+	// 创建进度条
 	bar := output.CreateProgressBar(len(targets))
 
 	// 启动进度条更新协程
@@ -163,67 +142,47 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 		_ = bar.RenderBlank()
 	}
 
-	// 计算合适的URL池大小，根据目标数量动态调整
-	poolSize := r.Config.URLWorkerCount
-	if poolSize > len(targets) {
-		poolSize = len(targets)
-	}
-
-	// 增加每批处理的数量，减少调度开销
-	batchSize := 50
-	if len(targets) < 100 {
-		batchSize = 1 // 少量目标不使用批处理
-	}
-
-	// 创建URL处理工作池
-	urlPool, _ := ants.NewPool(poolSize,
+	// 创建URL处理工作池，使用固定大小的线程池，确保始终保持规定的线程数
+	urlPool, _ := ants.NewPool(r.Config.URLWorkerCount,
 		ants.WithPreAlloc(true),
-		ants.WithNonblocking(false),
-		ants.WithMaxBlockingTasks(len(targets)),
+		ants.WithExpiryDuration(10*time.Minute),
+		ants.WithNonblocking(false), // 改为阻塞模式，确保任务按需执行
 	)
 	defer urlPool.Release()
 
+	// 创建任务通道，用于控制并发任务的提交
+	taskChan := make(chan string, r.Config.URLWorkerCount*2) // 缓冲区大小为线程数的2倍
+
 	var urlWg sync.WaitGroup
 
-	// 分批次提交任务
-	for i := 0; i < len(targets); i += batchSize {
-		end := i + batchSize
-		if end > len(targets) {
-			end = len(targets)
-		}
-
-		// 对每一批的目标提交任务
-		for j := i; j < end; j++ {
-			target := targets[j]
-			urlWg.Add(1)
-
-			// 提交任务
-			_ = urlPool.Submit(func() {
-				defer urlWg.Done()
-
-				// 扫描单个目标
-				targetResult, _ := r.ScanTarget(target)
-
-				// 线程安全地存储结果
-				if targetResult != nil {
-					r.mutex.Lock()
-					r.Results[target] = targetResult
-					r.mutex.Unlock()
-				}
+	// 启动固定数量的消费者协程，确保始终有urlWorkerCount个线程在工作
+	for i := 0; i < r.Config.URLWorkerCount; i++ {
+		urlWg.Add(1)
+		go func() {
+			defer urlWg.Done()
+			for target := range taskChan {
+				// 处理单个URL
+				targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, r.Config.FingerWorkerCount)
 
 				// 将结果写入文件并显示结果
 				handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
 
+				// 存储结果
+				r.mutex.Lock()
+				r.Results[target] = targetResult
+				r.mutex.Unlock()
+
 				// 通知完成一个任务
 				doneChan <- struct{}{}
-			})
-		}
-
-		// 如果批次较大，给系统一点喘息的机会
-		if batchSize > 5 && i+batchSize < len(targets) {
-			time.Sleep(1 * time.Millisecond)
-		}
+			}
+		}()
 	}
+
+	// 提交所有目标到任务通道
+	for _, target := range targets {
+		taskChan <- target
+	}
+	close(taskChan)
 
 	// 等待所有URL处理完成
 	urlWg.Wait()
@@ -241,4 +200,5 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %.2f it/s)",
 		len(targets), len(targets), itemsPerSecond)
 	fmt.Println(maxProgress)
+
 }

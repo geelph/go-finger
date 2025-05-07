@@ -2,7 +2,7 @@ package runner
 
 import (
 	"fmt"
-	"gxx/pkg/finger"
+	finger2 "gxx/pkg/finger"
 	"gxx/types"
 	"gxx/utils/common"
 	"gxx/utils/logger"
@@ -10,8 +10,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-
-	"github.com/panjf2000/ants/v2"
 )
 
 // getTargets 从命令行参数或文件中读取目标，并进行去重处理
@@ -114,91 +112,49 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 	var matches []*FingerMatch
 	var matchesMutex sync.Mutex
 
+	// 创建指纹识别任务通道
+	taskChan := make(chan *finger2.Finger, workerCount*2)
+
 	// 创建同步等待组
 	var fingerWg sync.WaitGroup
 
-	// 使用ants池替代通道，移除workerCount限制
-	pool, _ := ants.NewPool(len(AllFinger),  // 使用指纹总数作为池大小，实现最大并发
-		ants.WithPreAlloc(true),              // 预分配内存以减少GC压力
-		ants.WithNonblocking(false),          // 阻塞模式确保不丢失任务
-		ants.WithMaxBlockingTasks(len(AllFinger) * 2), // 足够大的任务队列
-	)
-	defer pool.Release()
-
-	// 使用对象池复用TargetResult对象，减少内存分配
-	targetResultPool := sync.Pool{
-		New: func() interface{} {
-			return &TargetResult{
-				URL:        targetResult.URL,
-				StatusCode: targetResult.StatusCode,
-				Title:      targetResult.Title,
-				Server:     targetResult.Server,
-				Matches:    make([]*FingerMatch, 0, 10),
-				Wappalyzer: targetResult.Wappalyzer,
-			}
-		},
-	}
-
-	// 创建批量提交处理任务的函数
-	submitFingerTask := func(fg *finger.Finger) {
+	// 启动固定数量的消费者协程，确保始终有workerCount个线程在工作
+	for i := 0; i < workerCount; i++ {
 		fingerWg.Add(1)
-		_ = pool.Submit(func() {
+		go func() {
 			defer fingerWg.Done()
 
-			// 从对象池获取TargetResult
-			localTargetResult := targetResultPool.Get().(*TargetResult)
+			for fg := range taskChan {
 
-			// 安全地获取最新的请求和响应
-			targetCacheMutex.RLock()
-			localTargetResult.LastRequest = targetResult.LastRequest
-			localTargetResult.LastResponse = targetResult.LastResponse
-			targetCacheMutex.RUnlock()
+				// 执行指纹识别
+				result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, timeout, targetResult)
 
-			// 执行指纹识别
-			result, err := evaluateFingerprintWithCache(fg, target, baseInfo, proxy, timeout, localTargetResult)
-			if err == nil && result != nil && result.Result {
-				// 创建匹配结果对象
-				resultMatch := &FingerMatch{
-					Finger:   fg,
-					Result:   true,
-					Request:  result.Request,
-					Response: result.Response,
+				if err == nil && result.Result {
+					// 创建匹配结果对象
+					resultMatch := &FingerMatch{
+						Finger:   fg,
+						Result:   true,
+						Request:  result.Request,
+						Response: result.Response,
+					}
+
+					// 添加到匹配结果列表
+					matchesMutex.Lock()
+					matches = append(matches, resultMatch)
+					matchesMutex.Unlock()
 				}
-
-				// 添加到匹配结果列表
-				matchesMutex.Lock()
-				matches = append(matches, resultMatch)
-				matchesMutex.Unlock()
 			}
-
-			// 更新全局目标结果
-			if localTargetResult.LastRequest != nil || localTargetResult.LastResponse != nil {
-				targetCacheMutex.Lock()
-				if localTargetResult.LastRequest != nil {
-					targetResult.LastRequest = localTargetResult.LastRequest
-				}
-				if localTargetResult.LastResponse != nil {
-					targetResult.LastResponse = localTargetResult.LastResponse
-				}
-				targetCacheMutex.Unlock()
-			}
-
-			// 重置和归还TargetResult到对象池
-			localTargetResult.LastRequest = nil
-			localTargetResult.LastResponse = nil
-			localTargetResult.Matches = localTargetResult.Matches[:0]
-			targetResultPool.Put(localTargetResult)
-		})
+		}()
 	}
 
-	// 批量提交任务以减少调度开销
+	// 提交所有指纹任务到任务通道
 	for _, fg := range AllFinger {
-		submitFingerTask(fg)
+		taskChan <- fg
 	}
+	close(taskChan)
 
-	// 等待所有任务完成
+	// 等待所有指纹识别完成
 	fingerWg.Wait()
-
 	return matches
 }
 

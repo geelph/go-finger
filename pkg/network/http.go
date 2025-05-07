@@ -87,7 +87,8 @@ func initGlobalClient() {
 	opts.Timeout = defaultTimeout
 
 	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
+		TLSClientConfig:    tlsConfig,
+		DisableKeepAlives:  true, // 禁用连接复用，避免"Unsolicited response"错误
 	}
 
 	RetryClient = retryablehttp.NewClient(opts)
@@ -127,6 +128,10 @@ func SendRequestHttp(ctx context.Context, Method string, UrlStr string, Body str
 		return nil, err
 	}
 	configureHeaders(req, options)
+	
+	// 添加连接关闭头，确保每次请求后不保持连接
+	req.Header.Set("Connection", "close")
+	
 	client := configureClient(options)
 
 	return client.Do(req)
@@ -156,6 +161,7 @@ func configureHeaders(req *retryablehttp.Request, options OptionsRequest) {
 		"Pragma":          "no-cache",
 		"Cookie":          "cookie=" + common.RandomString(15),
 		"Cache-Control":   "no-cache",
+		"Connection":      "close", // 确保每次请求后不保持连接
 	}
 
 	for k, v := range headers {
@@ -181,6 +187,7 @@ func createTransport(proxyURL string) (*http.Transport, error) {
 			MaxIdleConns:        100,
 			MaxIdleConnsPerHost: 10,
 			IdleConnTimeout:     90 * time.Second,
+			DisableKeepAlives:   true, // 禁用连接复用，避免"Unsolicited response"错误
 		}, nil
 	}
 
@@ -200,6 +207,7 @@ func createTransport(proxyURL string) (*http.Transport, error) {
 		MaxIdleConns:        100,
 		MaxIdleConnsPerHost: 10,
 		IdleConnTimeout:     90 * time.Second,
+		DisableKeepAlives:   true, // 禁用连接复用，避免"Unsolicited response"错误
 	}, nil
 }
 
@@ -299,6 +307,9 @@ func simpleRetryHttpGet(target string, proxy string, timeout int32) ([]byte, int
 	if err == nil {
 		client.HTTPClient.Transport = transport
 	}
+
+	// 添加连接关闭头，确保每次请求后不保持连接
+	req.Header.Set("Connection", "close")
 
 	resp, err := client.Do(req)
 	if err != nil {

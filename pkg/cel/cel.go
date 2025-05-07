@@ -29,6 +29,8 @@ type CustomLib struct {
 	envOptions     []cel.EnvOption
 	programOptions []cel.ProgramOption
 	mutex          sync.RWMutex // 添加锁来保护并发访问
+	env            *cel.Env     // 缓存的CEL环境
+	initialized    bool         // 标记是否已初始化
 }
 
 // CompileOptions 返回环境选项
@@ -45,19 +47,48 @@ func (c *CustomLib) ProgramOptions() []cel.ProgramOption {
 	return c.programOptions
 }
 
+// PreInit 预初始化CEL环境，减少后续评估时的初始化开销
+func (c *CustomLib) PreInit() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	
+	// 如果已经初始化，直接返回
+	if c.initialized {
+		return
+	}
+	
+	// 创建一个新环境并缓存
+	env, err := cel.NewEnv(cel.Lib(c))
+	if err != nil {
+		logger.Debug(fmt.Sprintf("预初始化CEL环境失败: %v", err))
+		return
+	}
+	
+	c.env = env
+	c.initialized = true
+}
+
 // Evaluate 执行CEL表达式并返回结果
 func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.Val, error) {
-	// 全局互斥锁保护 cel.NewEnv() 调用，这是数据竞争的根源
-	globalCELEnvMutex.Lock()
-	defer globalCELEnvMutex.Unlock()
+	var env *cel.Env
+	var err error
 	
-	// 创建一个新环境，在全局锁的保护下
+	// 首先尝试使用预初始化的环境
 	c.mutex.RLock()
-	env, err := cel.NewEnv(cel.Lib(c))
-	c.mutex.RUnlock()
-	
-	if err != nil {
-		return nil, fmt.Errorf("创建CEL环境失败: %v", err)
+	if c.initialized && c.env != nil {
+		env = c.env
+		c.mutex.RUnlock()
+	} else {
+		c.mutex.RUnlock()
+		
+		// 如果没有预初始化环境，创建一个新环境
+		globalCELEnvMutex.Lock()
+		env, err = cel.NewEnv(cel.Lib(c))
+		globalCELEnvMutex.Unlock()
+		
+		if err != nil {
+			return nil, fmt.Errorf("创建CEL环境失败: %v", err)
+		}
 	}
 	
 	// 复制一份变量映射，避免潜在的并发修改
@@ -66,19 +97,34 @@ func (c *CustomLib) Evaluate(expression string, variables map[string]any) (ref.V
 		varsCopy[k] = v
 	}
 	
-	// 编译和评估表达式都在单个线程中完成，不需要额外的并发控制
+	// 编译和评估表达式
 	return Eval(env, expression, varsCopy)
 }
 
 // NewCelEnv 创建新的CEL环境并缓存
 func (c *CustomLib) NewCelEnv() (*cel.Env, error) {
-	c.mutex.RLock() // 读锁保护对环境选项的访问
-	defer c.mutex.RUnlock()
+	// 首先检查是否有预初始化的环境
+	c.mutex.RLock()
+	if c.initialized && c.env != nil {
+		env := c.env
+		c.mutex.RUnlock()
+		return env, nil
+	}
+	c.mutex.RUnlock()
+	
+	// 如果没有，创建一个新环境
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	
 	env, err := cel.NewEnv(cel.Lib(c))
 	if err != nil {
 		return nil, err
 	}
+	
+	// 缓存创建的环境
+	c.env = env
+	c.initialized = true
+	
 	return env, nil
 }
 
@@ -164,27 +210,50 @@ func (c *CustomLib) WriteRuleFunctionsROptions(funcName string, returnBool bool)
 	))
 }
 
-// UpdateCompileOption 添加变量声明到环境选项
-func (c *CustomLib) UpdateCompileOption(varName string, varType *exprpb.Type) {
+// BatchUpdateCompileOptions 批量更新编译选项，减少锁竞争
+func (c *CustomLib) BatchUpdateCompileOptions(declarations map[string]*exprpb.Decl) {
+	if len(declarations) == 0 {
+		return
+	}
+	
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(varName, varType)))
+	
+	// 将所有声明合并为一个环境选项
+	allDecls := make([]*exprpb.Decl, 0, len(declarations))
+	for _, decl := range declarations {
+		allDecls = append(allDecls, decl)
+	}
+	
+	// 一次性添加所有声明
+	c.envOptions = append(c.envOptions, cel.Declarations(allDecls...))
+	
+	// 重置环境缓存，强制下次使用时重新创建
+	c.env = nil
+	c.initialized = false
 }
 
-// Reset 重置CustomLib实例到初始状态
+// UpdateCompileOption 更新单个编译选项
+func (c *CustomLib) UpdateCompileOption(name string, t *exprpb.Type) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	
+	// 添加单个声明
+	c.envOptions = append(c.envOptions, cel.Declarations(decls.NewVar(name, t)))
+	
+	// 重置环境缓存
+	c.env = nil
+	c.initialized = false
+}
+
+// Reset 重置CEL库状态，释放资源
 func (c *CustomLib) Reset() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	// 只重置字段，不替换整个结构体
-	c.envOptions = nil
-	c.programOptions = nil
-
-	// 重新初始化为默认值
-	reg := types.NewEmptyRegistry()
-	c.envOptions = ReadCompileOptions(reg)
-	c.programOptions = ReadProgramOptions(reg)
+	
+	// 释放环境，让GC回收资源
+	c.env = nil
+	c.initialized = false
 }
 
 // WriteRuleIsVulOptions 添加漏洞检测函数声明

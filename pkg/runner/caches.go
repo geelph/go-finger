@@ -12,7 +12,6 @@ import (
 	"gxx/utils/common"
 	"gxx/utils/proto"
 	"strings"
-	"sync"
 )
 
 // CacheRequest 存储请求和响应的缓存条目
@@ -24,7 +23,6 @@ type CacheRequest struct {
 // CacheShard 缓存分片，每个分片有自己的锁和映射
 type CacheShard struct {
 	items map[string]*CacheRequest
-	mu    sync.RWMutex
 }
 
 const (
@@ -36,9 +34,6 @@ const (
 
 // 分片缓存，减少锁竞争
 var cacheShards [ShardCount]*CacheShard
-
-// 保护target缓存的互斥锁
-var targetCacheMutex sync.RWMutex
 
 // 初始化分片缓存
 func init() {
@@ -82,12 +77,10 @@ func ShouldUseCache(rule finger.RuleMap, targetResult *TargetResult) (bool, Cach
 	// 检查缓存中是否存在对应条目
 	if targetResult.URL != "" {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
-		
+
 		// 获取对应的分片并读取缓存
 		shard := getShard(cacheKey)
-		shard.mu.RLock()
 		entry, exists := shard.items[cacheKey]
-		shard.mu.RUnlock()
 
 		if exists && entry != nil && entry.Request != nil && entry.Response != nil {
 			caches.Request = entry.Request
@@ -124,14 +117,12 @@ func UpdateTargetCache(variableMap map[string]any, targetResult *TargetResult) {
 	method := strings.ToUpper(req.Method)
 	if method == "GET" || (method == "POST" && (req.Body == nil || len(req.Body) == 0)) {
 		cacheKey := GenerateCacheKey(targetResult.URL, method)
-		
+
 		// 获取对应的分片并更新缓存
 		shard := getShard(cacheKey)
-		shard.mu.Lock()
 		shard.items[cacheKey] = &CacheRequest{
 			Request:  req,
 			Response: resp,
 		}
-		shard.mu.Unlock()
 	}
 }

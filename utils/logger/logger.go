@@ -74,8 +74,8 @@ type Logger struct {
 	terminalLogger *logrus.Logger
 	fileLogger     *logrus.Logger
 	logLevel       logrus.Level
-	originalOutput io.Writer    // 保存原始的终端输出
-	outputMutex    sync.Mutex   // 保护输出切换的互斥锁
+	originalOutput io.Writer  // 保存原始的终端输出
+	outputMutex    sync.Mutex // 保护输出切换的互斥锁
 }
 
 var (
@@ -126,8 +126,8 @@ func NewLogger(logDir string, maxFiles int, logLevel int, noFileLog ...bool) *Lo
 		logFile := &lumberjack.Logger{
 			Filename:   logDir + "/" + time.Now().Format("2006-01-02") + ".log",
 			MaxBackups: maxFiles,
-			MaxSize:    10,
-			MaxAge:     30,
+			MaxSize:    50, //日志最大大小为50MB
+			MaxAge:     10, //保存10天
 			Compress:   true,
 		}
 		fileLogger.SetOutput(logFile)
