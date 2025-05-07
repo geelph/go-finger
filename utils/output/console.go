@@ -40,6 +40,31 @@ func CreateProgressBar(total int) *progressbar.ProgressBar {
 	)
 }
 
+// CreateProgressBarWithOptions 创建带有自定义选项的进度条
+func CreateProgressBarWithOptions(total int, options ...progressbar.Option) *progressbar.ProgressBar {
+	// 基础选项
+	baseOptions := []progressbar.Option{
+		progressbar.OptionSetWidth(50),
+		progressbar.OptionShowCount(),
+		progressbar.OptionShowIts(),
+		progressbar.OptionSetWriter(os.Stdout),
+		progressbar.OptionSetDescription("指纹识别"),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+		progressbar.OptionClearOnFinish(),
+	}
+	
+	// 将自定义选项添加到基础选项后面，这样可以覆盖基础选项
+	allOptions := append(baseOptions, options...)
+	
+	return progressbar.NewOptions64(int64(total), allOptions...)
+}
+
 // GetOutputFormat 确定输出格式
 func GetOutputFormat(jsonOutput bool, outputPath string) string {
 	// 优先判断是否启用JSON输出
