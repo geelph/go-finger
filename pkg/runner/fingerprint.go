@@ -138,16 +138,23 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
 				if rule.Value.Request.FollowRedirects != true && (rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0) {
-					// 使用互斥锁保护共享资源访问
-					targetResult.mutex.Lock()
-					if req, ok := varMap["request"].(*proto.Request); ok {
+					// 提取请求和响应数据
+					var req *proto.Request
+					var resp *proto.Response
+					if r, ok := varMap["request"].(*proto.Request); ok {
+						req = r
+					}
+					if r, ok := varMap["response"].(*proto.Response); ok {
+						resp = r
+					}
+					
+					if req != nil && resp != nil {
+						// 使用互斥锁保护共享资源访问，一次性更新两个字段
+						targetResult.mutex.Lock()
 						targetResult.LastRequest = req
-						//fmt.Println(string(req.Raw))
-					}
-					if resp, ok := varMap["response"].(*proto.Response); ok {
 						targetResult.LastResponse = resp
+						targetResult.mutex.Unlock()
 					}
-					targetResult.mutex.Unlock()
 
 					// 使用线程安全的UpdateTargetCache函数
 					UpdateTargetCache(varMap, targetResult)

@@ -14,7 +14,7 @@ import (
 type Runner struct {
 	Config  *ScanConfig              // 配置参数
 	Results map[string]*TargetResult // 扫描结果
-	mutex   sync.RWMutex             // 保护Results的读写锁
+	mutex   sync.Mutex               // 保护Results的读写锁
 }
 
 // NewRunner 创建一个新的扫描运行器
@@ -48,7 +48,7 @@ func NewRunner(options *types.CmdOptions) *Runner {
 	runner := &Runner{
 		Config:  config,
 		Results: make(map[string]*TargetResult),
-		mutex:   sync.RWMutex{},
+		mutex:   sync.Mutex{},
 	}
 
 	return runner
@@ -224,7 +224,9 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	close(stopRefreshChan)
 
 	// 确保最终完成100%进度
+	outputMutex.Lock()
 	err := bar.Finish()
+	outputMutex.Unlock()
 	if err != nil {
 		logger.Debug(fmt.Sprintf("完成进度条出错: %v", err))
 	}

@@ -52,7 +52,6 @@ func getTargets(options *types.CmdOptions) []string {
 
 // ProcessURL 处理单个URL的所有指纹识别，获取目标基础信息并执行指纹识别
 func ProcessURL(target string, proxy string, timeout int, workerCount int) (*TargetResult, error) {
-	var variableMap = make(map[string]any)
 	// 获取目标基础信息
 	baseInfoResp, err := GetBaseInfo(target, proxy, timeout)
 
@@ -79,23 +78,24 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	targetResult.Wappalyzer = baseInfoResp.Wappalyzer
 	targetResult.URL = baseInfoResp.Url
 
-	// 初始化缓存
+	// 初始化缓存和变量映射
+	var variableMap = make(map[string]any)
 	lastResponse, lastRequest := initializeCache(baseInfoResp.Response, proxy)
+	if lastResponse == nil {
+		// 如果无法获取响应，直接返回
+		return targetResult, nil
+	}
+	
 	variableMap["request"] = lastRequest
 	variableMap["response"] = lastResponse
-
-	// 使用互斥锁保护共享资源访问
+	
+	// 使用互斥锁保护共享资源访问，一次性更新
 	targetResult.mutex.Lock()
 	targetResult.LastRequest = lastRequest
 	targetResult.LastResponse = lastResponse
 	targetResult.mutex.Unlock()
 
 	UpdateTargetCache(variableMap, targetResult)
-
-	// 如果无法获取响应，直接返回
-	if lastResponse == nil {
-		return targetResult, nil
-	}
 
 	// 创建基础信息对象
 	baseInfo := &BaseInfo{
