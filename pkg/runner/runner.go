@@ -22,11 +22,15 @@ func NewRunner(options *types.CmdOptions) *Runner {
 	// 设置并发参数
 	urlWorkerCount := options.Threads
 	if urlWorkerCount <= 0 {
-		urlWorkerCount = 10 // 默认10个线程
+		urlWorkerCount = 10
 	}
-	fingerWorkerCount := 5 * urlWorkerCount // rule线程是URL线程的5倍
-	if fingerWorkerCount > 1000 {
-		// 限制最大为1000
+
+	fingerWorkerCount := 5 * urlWorkerCount
+
+	// 限制范围在 500 到 1000
+	if fingerWorkerCount < 500 {
+		fingerWorkerCount = 500
+	} else if fingerWorkerCount > 1000 {
 		fingerWorkerCount = 1000
 	}
 
@@ -126,7 +130,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	bar := output.CreateProgressBar(len(targets))
 
 	// 添加定时刷新进度条的功能
-	refreshTicker := time.NewTicker(100 * time.Millisecond)
+	refreshTicker := time.NewTicker(500 * time.Millisecond)
 	go func() {
 		defer refreshTicker.Stop()
 		for {

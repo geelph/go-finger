@@ -12,6 +12,7 @@ import (
 	"gxx/utils/proto"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // AllFinger 全局指纹数据
@@ -117,7 +118,12 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 
 	// 评估规则
 	for _, rule := range fg.Rules {
-		isCache, cache := ShouldUseCache(rule, targetResult)
+		// 提前处理path
+		rule.Value.Request.Path = finger.SetVariableMap(strings.TrimSpace(rule.Value.Request.Path), varMap)
+		urlStr := common.ParseTarget(target, rule.Value.Request.Path)
+
+		isCache, cache := ShouldUseCache(rule, urlStr)
+		logger.Debug(fmt.Sprintf("%s 是否使用缓存：%t", target, isCache))
 		if isCache {
 			if cache.Request != nil {
 				varMap["request"] = cache.Request
@@ -137,27 +143,27 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 			// 更新变量映射
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
-				if rule.Value.Request.FollowRedirects != true && (rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0) {
+				if rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0 {
 					// 提取请求和响应数据
-					var req *proto.Request
+					var reqs *proto.Request
 					var resp *proto.Response
 					if r, ok := varMap["request"].(*proto.Request); ok {
-						req = r
+						reqs = r
 					}
 					if r, ok := varMap["response"].(*proto.Response); ok {
 						resp = r
 					}
-					
-					if req != nil && resp != nil {
+
+					if reqs != nil && resp != nil {
 						// 使用互斥锁保护共享资源访问，一次性更新两个字段
 						targetResult.mutex.Lock()
-						targetResult.LastRequest = req
+						targetResult.LastRequest = reqs
 						targetResult.LastResponse = resp
 						targetResult.mutex.Unlock()
 					}
 
 					// 使用线程安全的UpdateTargetCache函数
-					UpdateTargetCache(varMap, targetResult)
+					UpdateTargetCache(varMap, urlStr, rule.Value.Request.FollowRedirects)
 				}
 			}
 		}
@@ -192,12 +198,6 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 
 	customLib.Reset()
 	resultData.Result = result.Value().(bool)
-
-	// 使用互斥锁保护共享资源读取
-	targetResult.mutex.Lock()
-	resultData.Request = targetResult.LastRequest
-	resultData.Response = targetResult.LastResponse
-	targetResult.mutex.Unlock()
 
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
 

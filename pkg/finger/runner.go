@@ -56,7 +56,6 @@ func SendRequest(target string, req RuleRequest, rule Rule, variableMap map[stri
 	}
 
 	// 处理path
-	rule.Request.Path = SetVariableMap(strings.TrimSpace(rule.Request.Path), variableMap)
 	newPath := formatPath(rule.Request.Path)
 
 	// 处理url

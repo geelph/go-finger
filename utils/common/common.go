@@ -9,7 +9,11 @@ package common
 
 import (
 	"bytes"
+	"crypto/md5"
 	rand2 "crypto/rand"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -520,4 +524,36 @@ func URLEncode(rawString string) string {
 	encodedString = strings.Replace(encodedString, "+", "%20", -1)
 
 	return encodedString
+}
+
+// MD5Hash 生成字符串的 MD5 哈希值
+func MD5Hash(input string) string {
+	hash := md5.Sum([]byte(input))
+	return hex.EncodeToString(hash[:])
+}
+
+// SHA1Hash 生成字符串的 SHA-1 哈希值
+func SHA1Hash(input string) string {
+	hash := sha1.Sum([]byte(input))
+	return hex.EncodeToString(hash[:])
+}
+
+// SHA256Hash 生成字符串的 SHA-256 哈希值
+func SHA256Hash(input string) string {
+	hash := sha256.Sum256([]byte(input))
+	return hex.EncodeToString(hash[:])
+}
+
+// SHA512Hash 生成字符串的 SHA-512 哈希值
+func SHA512Hash(input string) string {
+	hash := sha512.Sum512([]byte(input))
+	return hex.EncodeToString(hash[:])
+}
+
+// RemoveTrailingSlash 删除URL中的最后一个/
+func RemoveTrailingSlash(url string) string {
+	if strings.HasSuffix(url, "/") {
+		return strings.TrimSuffix(url, "/")
+	}
+	return url
 }

@@ -13,6 +13,7 @@ import (
 	"gxx/utils/proto"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -106,6 +107,8 @@ func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoResponse, error) {
 	statusCode := int32(resp.StatusCode)
 	title := finger.GetTitle(target, resp)
 	serverInfo := finger.GetServerInfoFromResponse(resp)
+	newURL, err := url.Parse(target)
+	resp.Request.URL = newURL
 
 	// 获取站点技术信息
 	wapp, err := wappalyzer.NewWappalyzer()
@@ -120,7 +123,6 @@ func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoResponse, error) {
 			Wappalyzer: nil,
 		}, nil
 	}
-
 	// 读取响应体并重置
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

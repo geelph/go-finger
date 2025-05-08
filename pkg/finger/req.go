@@ -53,7 +53,6 @@ func buildProtoRequest(resp *http.Response, req RuleRequest) *proto.Request {
 		ContentType: resp.Request.Header.Get("Content-Type"),
 		Body:        []byte(req.Body),
 	}
-
 	headers := make(map[string]string)
 	rawReqHeaderBuilder := strings.Builder{}
 	for k := range resp.Request.Header {
@@ -65,7 +64,7 @@ func buildProtoRequest(resp *http.Response, req RuleRequest) *proto.Request {
 	}
 
 	protoReq.Headers = headers
-	protoReq.Raw = []byte(fmt.Sprintf("%s %s %s\nHost: %s\n%s\n\n%s", req.Method, resp.Request.URL.Path, resp.Request.Proto, resp.Request.URL.Host, strings.Trim(rawReqHeaderBuilder.String(), "\n"), req.Body))
+	protoReq.Raw = []byte(fmt.Sprintf("%s %s %s\nHost: %s\n%s\n\n%s", req.Method, resp.Request.URL.Path, resp.Proto, resp.Request.URL.Host, strings.Trim(rawReqHeaderBuilder.String(), "\n"), req.Body))
 	protoReq.RawHeader = []byte(strings.Trim(rawReqHeaderBuilder.String(), "\n"))
 
 	return protoReq

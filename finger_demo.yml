@@ -36,5 +36,22 @@ rules:
       method: GET
       path: /{{num}}.php
     expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
+  r4:
+    request:
+      method: POST
+      path: /{{num}}.php
+      follow_redirects: true # 是否禁用自动重定向跟随
+    expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
+  r5:
+    request:
+      method: POST
+      path: /{{num}}.php
+      follow_redirects: true # 是否禁用自动重定向跟随
+    expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
+  r6:
+    request:
+      method: GET
+      path: /{{num}}.php
+    expression: response.body.bcontains(b'的页面不') || response.icon_hash == "1236214049"
 
 expression: r0() || r1() || r2() || r3()

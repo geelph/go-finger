@@ -72,12 +72,12 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	}
 
 	// 更新目标结果对象
-	targetResult.StatusCode = int32(baseInfoResp.StatusCode)
+	targetResult.StatusCode = baseInfoResp.StatusCode
 	targetResult.Title = baseInfoResp.Title
 	targetResult.Server = baseInfoResp.Server
 	targetResult.Wappalyzer = baseInfoResp.Wappalyzer
 	targetResult.URL = baseInfoResp.Url
-
+	logger.Debug(fmt.Sprintf("初始URL：%s", targetResult.URL))
 	// 初始化缓存和变量映射
 	var variableMap = make(map[string]any)
 	lastResponse, lastRequest := initializeCache(baseInfoResp.Response, proxy)
@@ -85,17 +85,17 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 		// 如果无法获取响应，直接返回
 		return targetResult, nil
 	}
-	
+
 	variableMap["request"] = lastRequest
 	variableMap["response"] = lastResponse
-	
+
 	// 使用互斥锁保护共享资源访问，一次性更新
 	targetResult.mutex.Lock()
 	targetResult.LastRequest = lastRequest
 	targetResult.LastResponse = lastResponse
 	targetResult.mutex.Unlock()
 
-	UpdateTargetCache(variableMap, targetResult)
+	UpdateTargetCache(variableMap, targetResult.URL, false)
 
 	// 创建基础信息对象
 	baseInfo := &BaseInfo{
@@ -135,9 +135,9 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 		defer wg.Done()
 		task := i.(fingerTask)
 		fingerFg := task.fg
-
+		tar := targetResult
 		// 执行指纹识别
-		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout, targetResult)
+		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout, tar)
 
 		if err == nil && result.Result {
 			// 创建匹配结果对象
