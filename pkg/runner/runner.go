@@ -96,7 +96,12 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 	// 执行扫描
 	r.runScan(targets, options)
 
-	// 输出统计信息
+	r.mutex.Lock()
+	resultsCopy := make(map[string]*TargetResult)
+	for k, v := range r.Results {
+		resultsCopy[k] = v
+	}
+	r.mutex.Unlock()
 	printSummary(targets, r.Results)
 
 	return nil
@@ -119,15 +124,18 @@ func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
 
 // runScan 执行扫描过程
 func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
-	var outputMutex sync.Mutex
-	// 创建完成通道
-	doneChan := make(chan struct{}, len(targets))
-
-	// 创建停止通道，用于停止刷新协程
-	stopRefreshChan := make(chan struct{})
+	// 使用通道替代互斥锁来收集结果
+	resultChan := make(chan struct {
+		target string
+		result *TargetResult
+	}, 50)
 
 	// 创建进度条
 	bar := output.CreateProgressBar(len(targets))
+
+	// 创建上下文用于控制goroutine
+	doneChan := make(chan struct{}, len(targets))
+	stopRefreshChan := make(chan struct{})
 
 	// 添加定时刷新进度条的功能
 	refreshTicker := time.NewTicker(500 * time.Millisecond)
@@ -137,12 +145,10 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 			select {
 			case <-refreshTicker.C:
 				// 定时刷新进度条显示
-				outputMutex.Lock()
 				err := bar.RenderBlank()
 				if err != nil {
 					logger.Debug(fmt.Sprintf("刷新进度条出错: %v", err))
 				}
-				outputMutex.Unlock()
 			case <-stopRefreshChan:
 				// 收到停止信号时退出
 				return
@@ -154,20 +160,24 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	startTime := time.Now()
 	go func() {
 		for range doneChan {
-			outputMutex.Lock()
 			err := bar.Add(1)
 			if err != nil {
 				logger.Debug(fmt.Sprintf("更新进度条出错: %v", err))
 			}
-			outputMutex.Unlock()
 		}
 	}()
 
-	// 存储输出的结果
-	saveResult := func(msg string) {
-		outputMutex.Lock()
-		defer outputMutex.Unlock()
+	// 收集结果的协程
+	go func() {
+		for data := range resultChan {
+			r.mutex.Lock()
+			r.Results[data.target] = data.result
+			r.mutex.Unlock()
+		}
+	}()
 
+	// 存储输出的结果 - 无需互斥锁
+	saveResult := func(msg string) {
 		// 暂时清除进度条并输出结果
 		fmt.Print("\033[2K\r")
 		fmt.Println(msg)
@@ -186,7 +196,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 
 	var urlWg sync.WaitGroup
 
-	// 创建URL处理工作池，使用PoolWithFunc
+	// 创建URL处理工作池，使用PoolWithFunc预定义处理函数
 	urlPool, _ := ants.NewPoolWithFunc(r.Config.URLWorkerCount,
 		func(i interface{}) {
 			defer urlWg.Done()
@@ -195,20 +205,22 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 
 			// 处理单个URL
 			targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, r.Config.FingerWorkerCount)
+
 			// 将结果写入文件并显示结果
 			handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
 
-			// 存储结果
-			r.mutex.Lock()
-			r.Results[target] = targetResult
-			r.mutex.Unlock()
+			// 通过通道发送结果
+			resultChan <- struct {
+				target string
+				result *TargetResult
+			}{target, targetResult}
 
 			// 通知完成一个任务
 			doneChan <- struct{}{}
 		},
 		ants.WithPreAlloc(true),
 		ants.WithExpiryDuration(3*time.Minute),
-		ants.WithNonblocking(false), // 使用阻塞模式，确保任务按需执行
+		ants.WithNonblocking(true), // 使用非阻塞模式提高并发性能
 	)
 	defer urlPool.Release()
 
@@ -222,15 +234,14 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 
 	// 等待所有URL处理完成
 	urlWg.Wait()
+	close(resultChan)
 	close(doneChan)
 
 	// 停止刷新进度条
 	close(stopRefreshChan)
 
 	// 确保最终完成100%进度
-	outputMutex.Lock()
 	err := bar.Finish()
-	outputMutex.Unlock()
 	if err != nil {
 		logger.Debug(fmt.Sprintf("完成进度条出错: %v", err))
 	}
