@@ -70,7 +70,7 @@ func LoadFingerprints(options types.YamlFingerType) error {
 }
 
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则，执行单个指纹的识别逻辑，包括发送请求和规则评估
-func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *BaseInfo, proxy string, timeout int, targetResult *TargetResult) (*FingerMatch, error) {
+func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *BaseInfo, proxy string, timeout int) (*FingerMatch, error) {
 	customLib := cel2.NewCustomLib()
 	// 初始化变量映射
 	resultData := &FingerMatch{
@@ -144,24 +144,6 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
 				if rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0 {
-					// 提取请求和响应数据
-					var reqs *proto.Request
-					var resp *proto.Response
-					if r, ok := varMap["request"].(*proto.Request); ok {
-						reqs = r
-					}
-					if r, ok := varMap["response"].(*proto.Response); ok {
-						resp = r
-					}
-
-					if reqs != nil && resp != nil {
-						// 使用互斥锁保护共享资源访问，一次性更新两个字段
-						targetResult.mutex.Lock()
-						targetResult.LastRequest = reqs
-						targetResult.LastResponse = resp
-						targetResult.mutex.Unlock()
-					}
-
 					// 使用线程安全的UpdateTargetCache函数
 					UpdateTargetCache(varMap, urlStr, rule.Value.Request.FollowRedirects)
 				}

@@ -89,11 +89,8 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	variableMap["request"] = lastRequest
 	variableMap["response"] = lastResponse
 
-	// 使用互斥锁保护共享资源访问，一次性更新
-	targetResult.mutex.Lock()
 	targetResult.LastRequest = lastRequest
 	targetResult.LastResponse = lastResponse
-	targetResult.mutex.Unlock()
 
 	UpdateTargetCache(variableMap, targetResult.URL, false)
 
@@ -110,14 +107,14 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	}
 
 	// 执行指纹识别
-	matches := runFingerDetection(baseInfoResp.Url, baseInfo, proxy, timeout, workerCount, targetResult)
+	matches := runFingerDetection(baseInfoResp.Url, baseInfo, proxy, timeout, workerCount)
 	targetResult.Matches = matches
 
 	return targetResult, nil
 }
 
 // runFingerDetection 执行指纹识别，使用高性能池模式处理多个指纹的识别
-func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int, targetResult *TargetResult) []*FingerMatch {
+func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int) []*FingerMatch {
 	// 线程安全地存储匹配结果
 	var matches []*FingerMatch
 	var matchesMutex sync.Mutex
@@ -135,9 +132,8 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 		defer wg.Done()
 		task := i.(fingerTask)
 		fingerFg := task.fg
-		tar := targetResult
 		// 执行指纹识别
-		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout, tar)
+		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout)
 
 		if err == nil && result.Result {
 			// 创建匹配结果对象
@@ -174,11 +170,6 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 
 // handleMatchResults 处理匹配结果，将结果输出到终端和文件
 func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, printResult func(string), outputFormat string) {
-	// 使用互斥锁保护LastResponse的访问
-	targetResult.mutex.Lock()
-	lastResponse := targetResult.LastResponse
-	targetResult.mutex.Unlock()
-
 	output.HandleMatchResults(&output.TargetResult{
 		URL:        targetResult.URL,
 		StatusCode: targetResult.StatusCode,
@@ -186,7 +177,7 @@ func handleMatchResults(targetResult *TargetResult, options *types.CmdOptions, p
 		ServerInfo: targetResult.Server,
 		Matches:    convertFingerMatches(targetResult.Matches),
 		Wappalyzer: targetResult.Wappalyzer,
-	}, options.Output, options.SockOutput, printResult, outputFormat, lastResponse)
+	}, options.Output, options.SockOutput, printResult, outputFormat, targetResult.LastResponse)
 }
 
 // convertFingerMatches 将pkg.FingerMatch切片转换为output.FingerMatch切片

@@ -10,7 +10,6 @@ import (
 	"gxx/types"
 	"gxx/utils/proto"
 	"net/http"
-	"sync"
 )
 
 // BaseInfoResponse 包含目标基础信息和HTTP响应
@@ -33,7 +32,6 @@ type TargetResult struct {
 	Wappalyzer   *wappalyzer.TypeWappalyzer // 站点信息数据
 	LastRequest  *proto.Request             // 该URL的请求缓存
 	LastResponse *proto.Response            // 该URL的响应缓存
-	mutex        sync.Mutex                 // 保护LastRequest和LastResponse字段的互斥锁
 }
 
 // FingerMatch 存储每个匹配的指纹信息
