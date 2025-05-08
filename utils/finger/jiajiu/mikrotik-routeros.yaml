@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"mikrotik.com") && response.body.ibcontains(b"RouterOS")
-      && response.body.ibcontains(b"configuration")
+    expression: response.body.ibcontains(b"mikrotik.com") && response.body.ibcontains(b"RouterOS") && response.body.ibcontains(b"configuration")
 expression: r0()

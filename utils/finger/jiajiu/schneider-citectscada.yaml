@@ -10,14 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0;
-      url=/citectscada\">")
+    expression: response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0; url=/citectscada\">")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"start services, start group,
-      the start group, automation, industrial, software engineering, scada, plc, rtu,
-      rockwell, rockwell automation, allen-bradley, allen bradley, allenbradley, citect,
-      citectscada, kingfisher")
+    expression: response.body.ibcontains(b"content=\"start services, start group, the start group, automation, industrial, software engineering, scada, plc, rtu, rockwell, rockwell automation, allen-bradley, allen bradley, allenbradley, citect, citectscada, kingfisher")
 expression: r0() || r1()

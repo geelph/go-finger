@@ -10,7 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location:
-      index.php?app=main&func=passport&action=login") && response.raw_header.ibcontains(b"Set-Cookie:
-      CNOAOASESSID=")'
+    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location: index.php?app=main&func=passport&action=login") && response.raw_header.ibcontains(b"Set-Cookie: CNOAOASESSID=")'
 expression: r0()

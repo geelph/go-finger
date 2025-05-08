@@ -10,7 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 200 && response.body.ibcontains(b"{\"success\":false,\"msg\":\"Verification
-      failure\"}") && response.raw_header.ibcontains(b"Content-Type: application/json")
-      && response.raw_header.ibcontains(b"Content-Length: 46")'
+    expression: 'response.status == 200 && response.body.ibcontains(b"{\"success\":false,\"msg\":\"Verification failure\"}") && response.raw_header.ibcontains(b"Content-Type: application/json") && response.raw_header.ibcontains(b"Content-Length: 46")'
 expression: r0()

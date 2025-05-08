@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"<span>shopsn全网开源<a style=\"padding: 0px\"
-      href=\"http://www.shopsn.net")'
+    expression: 'response.body.ibcontains(b"<span>shopsn全网开源<a style=\"padding: 0px\" href=\"http://www.shopsn.net")'
 expression: r0() || r1() || r2()

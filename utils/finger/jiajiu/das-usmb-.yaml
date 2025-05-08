@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var pagefunc968535468893538dasdaweqwertion
-      = \"timeout\";")
+    expression: response.body.ibcontains(b"var pagefunc968535468893538dasdaweqwertion = \"timeout\";")
   r1:
     request:
       method: GET

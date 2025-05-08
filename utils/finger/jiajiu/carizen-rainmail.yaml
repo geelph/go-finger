@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"href=\"/resources/rainmailvpninstaller.exe")
-      && response.body.ibcontains(b".: <b>rainmail intranet login </b> :.</div>")'
+    expression: 'response.body.ibcontains(b"href=\"/resources/rainmailvpninstaller.exe") && response.body.ibcontains(b".: <b>rainmail intranet login </b> :.</div>")'
 expression: r0()

@@ -10,18 +10,15 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<h1>Index of
-      /") && response.body.ibcontains(b"<title>Index of /")
+    expression: response.status == 200 && response.body.ibcontains(b"<h1>Index of /") && response.body.ibcontains(b"<title>Index of /")
   r1:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<title>Index
-      of /</title>")
+    expression: response.status == 200 && response.body.ibcontains(b"<title>Index of /</title>")
   r2:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<title>Directory
-      listing for /") && response.body.ibcontains(b"<h1>Directory listing for /")
+    expression: response.status == 200 && response.body.ibcontains(b"<title>Directory listing for /") && response.body.ibcontains(b"<h1>Directory listing for /")
 expression: r0() || r1() || r2()

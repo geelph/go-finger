@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"/catalogue/opensearch\" title=\"geonode
-      search")
+    expression: response.body.ibcontains(b"href=\"/catalogue/opensearch\" title=\"geonode search")
 expression: r0() || r1()

@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"onclick=\"document.loginform.register.value=0;
-      document.loginform.lostpassword.value=0")
+    expression: response.body.ibcontains(b"onclick=\"document.loginform.register.value=0; document.loginform.lostpassword.value=0")
   r2:
     request:
       method: GET

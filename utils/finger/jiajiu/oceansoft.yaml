@@ -25,8 +25,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"aspx/casecenter/acasecenter.aspx?pagetype=sxcx&casetype=sscs&casename=")
-      && response.body.ibcontains(b"href=\"/e/action/listinfo/?")
+    expression: response.body.ibcontains(b"aspx/casecenter/acasecenter.aspx?pagetype=sxcx&casetype=sscs&casename=") && response.body.ibcontains(b"href=\"/e/action/listinfo/?")
   r4:
     request:
       method: GET

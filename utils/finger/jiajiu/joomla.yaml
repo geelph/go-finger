@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta name=\"keywords\" content=\"joomla,
-      Joomla\" />")
+    expression: response.body.ibcontains(b"<meta name=\"keywords\" content=\"joomla, Joomla\" />")
   r1:
     request:
       method: GET

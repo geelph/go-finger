@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"adimoney.com mobile advertisement
-      network. ")
+    expression: response.body.ibcontains(b"content=\"adimoney.com mobile advertisement network. ")
 expression: r0() || r1()

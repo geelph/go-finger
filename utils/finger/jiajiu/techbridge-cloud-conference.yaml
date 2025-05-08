@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"http://www.techbridge-inc.com/\"
-      target=\"_blank\"></a></span>")
+    expression: response.body.ibcontains(b"href=\"http://www.techbridge-inc.com/\" target=\"_blank\"></a></span>")
   r1:
     request:
       method: GET

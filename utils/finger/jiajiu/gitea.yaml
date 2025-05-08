@@ -10,7 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 200 && response.body.ibcontains(b"content=\"Gitea
-      - Git with a cup of tea\"") && response.raw_header.ibcontains(b"Set-Cookie:
-      i_like_gitea")'
+    expression: 'response.status == 200 && response.body.ibcontains(b"content=\"Gitea - Git with a cup of tea\"") && response.raw_header.ibcontains(b"Set-Cookie: i_like_gitea")'
 expression: r0()

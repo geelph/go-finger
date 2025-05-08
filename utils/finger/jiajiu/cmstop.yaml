@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a class=\"poweredby\" href=\"http://www.cmstop.com\"")
-      && response.body.ibcontains(b"cmstop-list-text.css")
+    expression: response.body.ibcontains(b"<a class=\"poweredby\" href=\"http://www.cmstop.com\"") && response.body.ibcontains(b"cmstop-list-text.css")
 expression: r0() || r1() || r2()

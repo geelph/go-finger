@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.cdrbp.cn\">微信数字投票")
-      && response.body.ibcontains(b"content=\"微平台投票管理系统")
+    expression: response.body.ibcontains(b"<a href=\"http://www.cdrbp.cn\">微信数字投票") && response.body.ibcontains(b"content=\"微平台投票管理系统")
 expression: r0() || r1()

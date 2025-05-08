@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 200 && response.raw_header.ibcontains(b"X-Powered-By:
-      ThinkCMF")'
+    expression: 'response.status == 200 && response.raw_header.ibcontains(b"X-Powered-By: ThinkCMF")'
   r1:
     request:
       method: GET
@@ -26,8 +25,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"made by <a href=\"http://www.thinkcmf.com\"
-      target=\"_blank\">thinkcmf</a>")
+    expression: response.body.ibcontains(b"made by <a href=\"http://www.thinkcmf.com\" target=\"_blank\">thinkcmf</a>")
   r4:
     request:
       method: GET

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<title>Apache
-      Flink Web Dashboard</title>")
+    expression: response.status == 200 && response.body.ibcontains(b"<title>Apache Flink Web Dashboard</title>")
   r1:
     request:
       method: GET

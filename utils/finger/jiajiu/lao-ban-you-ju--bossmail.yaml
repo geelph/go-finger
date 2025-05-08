@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"http://apps.microsoft.com/windows/zh-cn/app/bossmail/24f4bdb3-1bca-467e-9dd9-15a5d278aec6")
-      && response.body.ibcontains(b"<span class=\"footer_t\">powered by bossmail</span>")
+    expression: response.body.ibcontains(b"href=\"http://apps.microsoft.com/windows/zh-cn/app/bossmail/24f4bdb3-1bca-467e-9dd9-15a5d278aec6") && response.body.ibcontains(b"<span class=\"footer_t\">powered by bossmail</span>")
 expression: r0()

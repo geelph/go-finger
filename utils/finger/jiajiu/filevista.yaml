@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.gleamtech.com/products/filevista/web-file-manager")
-      && response.body.ibcontains(b"welcome to filevista")
+    expression: response.body.ibcontains(b"<a href=\"http://www.gleamtech.com/products/filevista/web-file-manager") && response.body.ibcontains(b"welcome to filevista")
 expression: r0()

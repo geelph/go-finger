@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<p>this site is powered by <a href=\"http://status.net/\">statusnet</a>
-      version")
+    expression: response.body.ibcontains(b"<p>this site is powered by <a href=\"http://status.net/\">statusnet</a> version")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"it runs the <a href=\"http://status.net/\">statusnet</a>
-      microblogging software, version ")
+    expression: response.body.ibcontains(b"it runs the <a href=\"http://status.net/\">statusnet</a> microblogging software, version ")
 expression: r0() || r1()

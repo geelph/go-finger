@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<tr><td><a href=\"http://www.stardot.com\"
-      target=\"_blank\"><img src=\"logo.gif\" alt=\"\" width=\"227\" height=\"45\"></a></td>")
+    expression: response.body.ibcontains(b"<tr><td><a href=\"http://www.stardot.com\" target=\"_blank\"><img src=\"logo.gif\" alt=\"\" width=\"227\" height=\"45\"></a></td>")
 expression: r0()

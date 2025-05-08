@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- if you have your own stylesheet for
-      html elements, you can remove the cerberus-html.css link")
+    expression: response.body.ibcontains(b"<!-- if you have your own stylesheet for html elements, you can remove the cerberus-html.css link")
 expression: r0()

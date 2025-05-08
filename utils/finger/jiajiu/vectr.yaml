@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location:
-      /sra-purpletools-webui/app")'
+    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location: /sra-purpletools-webui/app")'
 expression: r0()

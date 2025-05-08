@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"this object on the apc management web server
-      is protected")
+    expression: response.body.ibcontains(b"this object on the apc management web server is protected")
 expression: r0()

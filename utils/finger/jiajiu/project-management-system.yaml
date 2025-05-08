@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"window.top.location = \"login.aspx?url=\"
-      + right\"")
+    expression: response.body.ibcontains(b"window.top.location = \"login.aspx?url=\" + right\"")
 expression: r0() || r1()

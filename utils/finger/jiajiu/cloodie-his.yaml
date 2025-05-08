@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"/design/common/his.logo.white.svg\"
-      alt=\"his logo")
+    expression: response.body.ibcontains(b"src=\"/design/common/his.logo.white.svg\" alt=\"his logo")
   r1:
     request:
       method: GET

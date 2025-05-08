@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"images/ccsg logo.gif") && response.body.ibcontains(b"raritan
-      cc-sg")
+    expression: response.body.ibcontains(b"src=\"images/ccsg logo.gif") && response.body.ibcontains(b"raritan cc-sg")
 expression: r0()

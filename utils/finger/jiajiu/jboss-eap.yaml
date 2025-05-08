@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<h3>your jboss enterprise application platform
-      is running.</h3>")
+    expression: response.body.ibcontains(b"<h3>your jboss enterprise application platform is running.</h3>")
   r1:
     request:
       method: GET

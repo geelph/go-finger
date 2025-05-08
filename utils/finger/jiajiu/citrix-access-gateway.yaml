@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 302 && response.body.ibcontains(b"\"/vpn/resources/{lang}\"")
-      && response.raw_header.ibcontains(b"Location: /vpn/index.html")'
+    expression: 'response.status == 302 && response.body.ibcontains(b"\"/vpn/resources/{lang}\"") && response.raw_header.ibcontains(b"Location: /vpn/index.html")'
   r1:
     request:
       method: GET

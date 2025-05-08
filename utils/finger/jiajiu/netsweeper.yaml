@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"http://www.poweredbynetsweeper.com\"><img
-      ")
+    expression: response.body.ibcontains(b"href=\"http://www.poweredbynetsweeper.com\"><img ")
   r2:
     request:
       method: GET

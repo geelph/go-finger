@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<meta http-equiv=\"refresh\"
-      content=\"1;url=kylin\">")
+    expression: response.status == 200 && response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"1;url=kylin\">")
   r1:
     request:
       method: GET

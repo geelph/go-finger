@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"tomcat monitor uses wadl to describe services
-      it can offer")
+    expression: response.body.ibcontains(b"tomcat monitor uses wadl to describe services it can offer")
 expression: r0()

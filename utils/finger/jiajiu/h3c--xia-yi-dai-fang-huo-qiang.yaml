@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/php/common/checknum_creat.php?module=config_authnum")
-      && response.body.ibcontains(b"class=\"dl_margin0\" align=\"left\">web网管用户登录</div>")
+    expression: response.body.ibcontains(b"/php/common/checknum_creat.php?module=config_authnum") && response.body.ibcontains(b"class=\"dl_margin0\" align=\"left\">web网管用户登录</div>")
 expression: r0()

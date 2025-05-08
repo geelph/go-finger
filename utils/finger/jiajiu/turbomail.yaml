@@ -15,14 +15,12 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by turbomail") && response.body.ibcontains(b"wzcon1
-      clearfix")
+    expression: response.body.ibcontains(b"powered by turbomail") && response.body.ibcontains(b"wzcon1 clearfix")
   r2:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.turbomail.org\">powered
-      by turbomail</a>")
+    expression: response.body.ibcontains(b"<a href=\"http://www.turbomail.org\">powered by turbomail</a>")
   r3:
     request:
       method: GET

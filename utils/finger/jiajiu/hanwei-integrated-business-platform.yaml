@@ -25,8 +25,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"microsoft visual studio .net
-      7.1\"")
+    expression: response.body.ibcontains(b"content=\"microsoft visual studio .net 7.1\"")
   r4:
     request:
       method: GET

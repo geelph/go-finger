@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"copyright 2015 shenri habiliment co.,ltd.
-      all rights reserved")
+    expression: response.body.ibcontains(b"copyright 2015 shenri habiliment co.,ltd. all rights reserved")
 expression: r0() || r1() || r2()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"Jamf Pro Login") && response.body.ibcontains(b"Jamf
-      Cloud Node")
+    expression: response.body.ibcontains(b"Jamf Pro Login") && response.body.ibcontains(b"Jamf Cloud Node")
 expression: r0()

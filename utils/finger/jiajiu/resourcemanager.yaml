@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"this is standby rm. redirecting to the
-      current active rm")
+    expression: response.body.ibcontains(b"this is standby rm. redirecting to the current active rm")
 expression: r0()

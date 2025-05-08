@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"wuzhicms") && response.body.ibcontains(b"powered
-      by wuzhicms")
+    expression: response.body.ibcontains(b"content=\"wuzhicms") && response.body.ibcontains(b"powered by wuzhicms")
 expression: r0() || r1()

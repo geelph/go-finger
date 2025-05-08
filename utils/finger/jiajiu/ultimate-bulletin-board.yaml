@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.groupee.com/landing/goto.php?a=ubb.classic\">powered
-      by ubb.classic&trade")
+    expression: response.body.ibcontains(b"<a href=\"http://www.groupee.com/landing/goto.php?a=ubb.classic\">powered by ubb.classic&trade")
 expression: r0() || r1()

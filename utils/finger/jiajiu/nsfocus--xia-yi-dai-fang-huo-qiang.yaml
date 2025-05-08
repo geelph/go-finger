@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/login_logo_nf_zh_cn.png") && response.body.ibcontains(b"nsfocus
-      nf")
+    expression: response.body.ibcontains(b"/login_logo_nf_zh_cn.png") && response.body.ibcontains(b"nsfocus nf")
 expression: r0()

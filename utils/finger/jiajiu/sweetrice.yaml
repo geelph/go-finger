@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by <a href=\"http://www.basic-cms.org\">basic
-      cms sweetrice</a>")
+    expression: response.body.ibcontains(b"powered by <a href=\"http://www.basic-cms.org\">basic cms sweetrice</a>")
 expression: r0() || r1()

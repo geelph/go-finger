@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href='http://www.thinkcloud.cn' target='_blank'>thinkcloud</a>.all
-      right reserved</div>")
+    expression: response.body.ibcontains(b"href='http://www.thinkcloud.cn' target='_blank'>thinkcloud</a>.all right reserved</div>")
   r1:
     request:
       method: GET

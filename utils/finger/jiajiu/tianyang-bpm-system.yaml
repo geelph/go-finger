@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"value=\"sinopec.ad\" readonly=\"readonly\"
-      id=\"ddldomains2\"")
+    expression: response.body.ibcontains(b"value=\"sinopec.ad\" readonly=\"readonly\" id=\"ddldomains2\"")
 expression: r0()

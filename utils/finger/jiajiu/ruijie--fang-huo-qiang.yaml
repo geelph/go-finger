@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"ssl_index_next.html") && response.body.ibcontains(b"4008
-      111 000")
+    expression: response.body.ibcontains(b"ssl_index_next.html") && response.body.ibcontains(b"4008 111 000")
 expression: r0()

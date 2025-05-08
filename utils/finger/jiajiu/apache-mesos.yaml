@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"/static/img/mesos_logo.png\"
-      alt=\"apache mesos\">")
+    expression: response.body.ibcontains(b"<img src=\"/static/img/mesos_logo.png\" alt=\"apache mesos\">")
 expression: r0()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"haovuytkjlnvxpuhsecmbljplpvjz = function(str,
-      key) ")
+    expression: response.body.ibcontains(b"haovuytkjlnvxpuhsecmbljplpvjz = function(str, key) ")
 expression: r0()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"quiz system") && response.body.ibcontains(b"<title>|
-      Online Quiz System |</title>")
+    expression: response.body.ibcontains(b"quiz system") && response.body.ibcontains(b"<title>| Online Quiz System |</title>")
 expression: r0()

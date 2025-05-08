@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"login") && response.body.ibcontains(b"安全系统")
-      && response.body.ibcontains(b"网御星云")
+    expression: response.body.ibcontains(b"login") && response.body.ibcontains(b"安全系统") && response.body.ibcontains(b"网御星云")
 expression: r0()

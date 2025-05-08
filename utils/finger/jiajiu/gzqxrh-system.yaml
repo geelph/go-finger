@@ -20,8 +20,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"style=\"vertical-align: middle; cursor:
-      pointer")'
+    expression: 'response.body.ibcontains(b"style=\"vertical-align: middle; cursor: pointer")'
   r3:
     request:
       method: GET

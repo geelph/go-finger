@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<title>Welcome to CentOS</title>") && response.body.ibcontains(b"centos.org")
-      && response.body.ibcontains(b"img/centos-logo.png")
+    expression: response.body.ibcontains(b"<title>Welcome to CentOS</title>") && response.body.ibcontains(b"centos.org") && response.body.ibcontains(b"img/centos-logo.png")
 expression: r0()

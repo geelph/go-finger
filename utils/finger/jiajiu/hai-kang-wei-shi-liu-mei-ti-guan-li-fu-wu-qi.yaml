@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"MSHTML") && response.body.ibcontains(b"login")
-      && response.body.ibcontains(b"流媒体管理服务器")
+    expression: response.body.ibcontains(b"MSHTML") && response.body.ibcontains(b"login") && response.body.ibcontains(b"流媒体管理服务器")
 expression: r0()

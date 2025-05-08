@@ -10,19 +10,15 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"<div style=\"font-family: tahoma, verdana,
-      arial, helvetica, sans-serif; font-size:11px;\">version")'
+    expression: 'response.body.ibcontains(b"<div style=\"font-family: tahoma, verdana, arial, helvetica, sans-serif; font-size:11px;\">version")'
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/portal/about.jsp") && response.body.ibcontains(b"<!--
-      now, if it is ie on windows platform, we check to see which version of jws is
-      installed -->")
+    expression: response.body.ibcontains(b"/portal/about.jsp") && response.body.ibcontains(b"<!-- now, if it is ie on windows platform, we check to see which version of jws is installed -->")
   r2:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<tr><td align=\"left\" style=\"font-family:arial;
-      font-size:18pt\"><b>symantec endpoint protection manager<br>web access</b></td></tr>")
+    expression: response.body.ibcontains(b"<tr><td align=\"left\" style=\"font-family:arial; font-size:18pt\"><b>symantec endpoint protection manager<br>web access</b></td></tr>")
 expression: r0() || r1() || r2()

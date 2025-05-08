@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<td><font size=\"-1\">&nbsp;</font><p><b><font
-      size=\"-1\">faq admin area</font></b></td>")
+    expression: response.body.ibcontains(b"<td><font size=\"-1\">&nbsp;</font><p><b><font size=\"-1\">faq admin area</font></b></td>")
   r1:
     request:
       method: GET

@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"title=\"screwturn wiki\" target=\"_blank\">screwturn
-      wiki")
+    expression: response.body.ibcontains(b"title=\"screwturn wiki\" target=\"_blank\">screwturn wiki")
 expression: r0() || r1()

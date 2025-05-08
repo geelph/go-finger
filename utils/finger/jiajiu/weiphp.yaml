@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"本系统由<a href=\"http://www.weiphp.cn\"
-      target=\"_blank\">weiphp</a>强力驱动")
+    expression: response.status == 200 && response.body.ibcontains(b"本系统由<a href=\"http://www.weiphp.cn\" target=\"_blank\">weiphp</a>强力驱动")
   r1:
     request:
       method: GET

@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.tomatocms.com\" title=\"powered
-      by tomatocms\" target=\"_blank\">")
+    expression: response.body.ibcontains(b"<a href=\"http://www.tomatocms.com\" title=\"powered by tomatocms\" target=\"_blank\">")
 expression: r0() || r1()

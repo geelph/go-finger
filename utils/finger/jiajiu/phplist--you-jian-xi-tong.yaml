@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"phplist version") && response.body.ibcontains(b"content=\"michiel
-      dethmers - http://www.phplist.com")
+    expression: response.body.ibcontains(b"content=\"phplist version") && response.body.ibcontains(b"content=\"michiel dethmers - http://www.phplist.com")
 expression: r0()

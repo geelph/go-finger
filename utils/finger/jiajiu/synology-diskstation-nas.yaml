@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<meta name=\"application-name\"
-      content=\"Synology DiskStation")
+    expression: response.status == 200 && response.body.ibcontains(b"<meta name=\"application-name\" content=\"Synology DiskStation")
   r1:
     request:
       method: GET

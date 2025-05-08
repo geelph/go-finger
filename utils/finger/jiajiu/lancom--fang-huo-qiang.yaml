@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"firewall") && response.body.ibcontains(b"<a
-      href=\"http://www.lancom-systems.de\">")
+    expression: response.body.ibcontains(b"firewall") && response.body.ibcontains(b"<a href=\"http://www.lancom-systems.de\">")
 expression: r0()

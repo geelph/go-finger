@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"window.location.href=\"/vone/pub/pda.html\";")
-      && response.body.ibcontains(b"window.location=\"/portal_default/index.html\";</script>")
+    expression: response.body.ibcontains(b"window.location.href=\"/vone/pub/pda.html\";") && response.body.ibcontains(b"window.location=\"/portal_default/index.html\";</script>")
 expression: r0() || r1()

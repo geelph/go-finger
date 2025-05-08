@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"sucuri website firewall - cloudproxy -
-      access denied")
+    expression: response.body.ibcontains(b"sucuri website firewall - cloudproxy - access denied")
   r1:
     request:
       method: GET

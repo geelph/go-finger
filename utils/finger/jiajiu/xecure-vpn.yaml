@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"xnstyle.css") && response.body.ibcontains(b"xecure
-      vpn manager")
+    expression: response.body.ibcontains(b"xnstyle.css") && response.body.ibcontains(b"xecure vpn manager")
 expression: r0()

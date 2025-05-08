@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"logintable") && response.body.ibcontains(b"selectcss")
-      && response.body.ibcontains(b"toptitleimg")
+    expression: response.body.ibcontains(b"logintable") && response.body.ibcontains(b"selectcss") && response.body.ibcontains(b"toptitleimg")
 expression: r0()

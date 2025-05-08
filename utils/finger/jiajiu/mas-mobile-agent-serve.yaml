@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"if(!isnotnull(document.forms[0].filepath.value,
-      \"证书文件\"))")
+    expression: response.body.ibcontains(b"if(!isnotnull(document.forms[0].filepath.value, \"证书文件\"))")
 expression: r0() || r1()

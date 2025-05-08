@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"<title>SaltStack</title>") && response.raw_header.ibcontains(b"Server:
-      TornadoServer")'
+    expression: 'response.body.ibcontains(b"<title>SaltStack</title>") && response.raw_header.ibcontains(b"Server: TornadoServer")'
 expression: r0()

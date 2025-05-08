@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<a href='http://www.tongda2000.com/'
-      target='_black'>通达官网</a>")
+    expression: response.status == 200 && response.body.ibcontains(b"<a href='http://www.tongda2000.com/' target='_black'>通达官网</a>")
   r2:
     request:
       method: GET
@@ -46,8 +45,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<link rel=\"shortcut icon\" href=\"/images/tongda.ico\"
-      />")
+    expression: response.body.ibcontains(b"<link rel=\"shortcut icon\" href=\"/images/tongda.ico\" />")
   r8:
     request:
       method: GET
@@ -58,5 +56,4 @@ rules:
       method: GET
       path: /
     expression: response.body.ibcontains(b"紧急通知：今日10点停电")
-expression: r0() || r1() || r2() || r3() || r4() || r5() || r6() || r7() || r8() ||
-  r9()
+expression: r0() || r1() || r2() || r3() || r4() || r5() || r6() || r7() || r8() || r9()

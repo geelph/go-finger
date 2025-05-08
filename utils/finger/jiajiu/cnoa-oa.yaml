@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"admin@cnoa.cn") && response.body.ibcontains(b"powered
-      by 协众oa")
+    expression: response.body.ibcontains(b"admin@cnoa.cn") && response.body.ibcontains(b"powered by 协众oa")
   r1:
     request:
       method: GET

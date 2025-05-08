@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"login_form") && response.body.ibcontains(b"styles/images/logo.png")
-      && response.body.ibcontains(b"防病毒")
+    expression: response.body.ibcontains(b"login_form") && response.body.ibcontains(b"styles/images/logo.png") && response.body.ibcontains(b"防病毒")
 expression: r0()

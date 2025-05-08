@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div id=\"processtime\" time=\"0.000033\"
-      >#processtime</div>")
+    expression: response.body.ibcontains(b"<div id=\"processtime\" time=\"0.000033\" >#processtime</div>")
 expression: r0() || r1()

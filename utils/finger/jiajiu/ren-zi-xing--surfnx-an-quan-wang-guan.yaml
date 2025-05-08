@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"lib/templates/surfilter/images/logo_big.png")
-      && response.body.ibcontains(b"安全网关")
+    expression: response.body.ibcontains(b"lib/templates/surfilter/images/logo_big.png") && response.body.ibcontains(b"安全网关")
 expression: r0()

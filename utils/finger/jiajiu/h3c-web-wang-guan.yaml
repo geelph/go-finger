@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"Web网管用户登录") && response.body.ibcontains(b"china_logo.jpg")
-      && response.body.ibcontains(b"webui")
+    expression: response.body.ibcontains(b"Web网管用户登录") && response.body.ibcontains(b"china_logo.jpg") && response.body.ibcontains(b"webui")
 expression: r0() || r1() || r2()

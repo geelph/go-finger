@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/js/app") && response.body.ibcontains(b"/static/img/title.ico")
-      && response.body.ibcontains(b"锐捷")
+    expression: response.body.ibcontains(b"/js/app") && response.body.ibcontains(b"/static/img/title.ico") && response.body.ibcontains(b"锐捷")
 expression: r0()

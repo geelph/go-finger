@@ -15,12 +15,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta name=\"description\" content=\"the
-      uniform server 8.1.0-coral.\" />")
+    expression: response.body.ibcontains(b"<meta name=\"description\" content=\"the uniform server 8.1.0-coral.\" />")
   r2:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div id=\"divider\">developed by <a href=\"http://www.uniformserver.com/\">the
-      uniform server development team</a></div>")
+    expression: response.body.ibcontains(b"<div id=\"divider\">developed by <a href=\"http://www.uniformserver.com/\">the uniform server development team</a></div>")
 expression: r0() || r1() || r2()

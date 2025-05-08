@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"e-mobile") && response.body.ibcontains(b"weaver")
-      && response.body.ibcontains(b"/clientset/msgMonitor")
+    expression: response.body.ibcontains(b"e-mobile") && response.body.ibcontains(b"weaver") && response.body.ibcontains(b"/clientset/msgMonitor")
 expression: r0()

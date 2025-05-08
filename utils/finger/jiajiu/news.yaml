@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img id=\"createcheckcode\" src=\"login/picturecheckcode\"
-      name=\"check_code\" ng-click=\"reloadcheckcode()")
+    expression: response.body.ibcontains(b"<img id=\"createcheckcode\" src=\"login/picturecheckcode\" name=\"check_code\" ng-click=\"reloadcheckcode()")
   r1:
     request:
       method: GET

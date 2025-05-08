@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<link rel=\"shortcut icon\" type=\"image/png\"
-      href=\"/timelink/images/favicon.ico\"/>")
+    expression: response.body.ibcontains(b"<link rel=\"shortcut icon\" type=\"image/png\" href=\"/timelink/images/favicon.ico\"/>")
 expression: r0() || r1()

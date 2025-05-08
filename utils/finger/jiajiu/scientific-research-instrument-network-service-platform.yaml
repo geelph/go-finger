@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"content: \"/lfsms/user/login2?go=\" +
-      go")'
+    expression: 'response.body.ibcontains(b"content: \"/lfsms/user/login2?go=\" + go")'
 expression: r0()

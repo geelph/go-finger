@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"templates_internal/assets/pivotx.png\"
-      alt=\"pivotx")
+    expression: response.body.ibcontains(b"templates_internal/assets/pivotx.png\" alt=\"pivotx")
   r2:
     request:
       method: GET

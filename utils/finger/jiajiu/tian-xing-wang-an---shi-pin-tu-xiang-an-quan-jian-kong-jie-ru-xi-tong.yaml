@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"天行视频图像安全监控接入系统") && response.body.ibcontains(b"<meta
-      http-equiv=\"refresh\" content=\"0;url=/usercertloginaction.action\" />")
+    expression: response.body.ibcontains(b"天行视频图像安全监控接入系统") && response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0;url=/usercertloginaction.action\" />")
 expression: r0()

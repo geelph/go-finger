@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"use this if you want to run the seceon
-      module of kibana.")
+    expression: response.body.ibcontains(b"use this if you want to run the seceon module of kibana.")
 expression: r0()

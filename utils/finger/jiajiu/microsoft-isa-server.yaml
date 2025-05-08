@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"the isa server denied the specified uniform
-      resource locator")
+    expression: response.body.ibcontains(b"the isa server denied the specified uniform resource locator")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"the server denied the specified uniform
-      resource locator (url). contact the server administrator")
+    expression: response.body.ibcontains(b"the server denied the specified uniform resource locator (url). contact the server administrator")
 expression: r0() || r1()

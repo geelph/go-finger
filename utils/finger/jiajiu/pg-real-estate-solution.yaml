@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b">pg real estate solution - real estate
-      web site design")
+    expression: response.body.ibcontains(b">pg real estate solution - real estate web site design")
 expression: r0()

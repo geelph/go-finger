@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/scripts/jquery.landray.common.js") &&
-      response.body.ibcontains(b"蓝凌软件")
+    expression: response.body.ibcontains(b"/scripts/jquery.landray.common.js") && response.body.ibcontains(b"蓝凌软件")
 expression: r0()

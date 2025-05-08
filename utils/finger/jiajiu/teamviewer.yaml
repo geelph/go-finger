@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"teamviewer") && response.body.ibcontains(b"this
-      site is running")
+    expression: response.body.ibcontains(b"teamviewer") && response.body.ibcontains(b"this site is running")
   r1:
     request:
       method: GET

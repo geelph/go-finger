@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"<!-- begin: menu footer don''t change
-      anything")'
+    expression: 'response.body.ibcontains(b"<!-- begin: menu footer don''t change anything")'
   r1:
     request:
       method: GET

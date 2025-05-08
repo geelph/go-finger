@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0;url=/designs/imm/noscript/noscript_en.php\"
-      />")
+    expression: response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0;url=/designs/imm/noscript/noscript_en.php\" />")
   r1:
     request:
       method: GET

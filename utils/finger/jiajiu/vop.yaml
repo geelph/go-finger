@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"id=\"lgform\" action=\"/sso/login") &&
-      response.body.ibcontains(b"vop")
+    expression: response.body.ibcontains(b"id=\"lgform\" action=\"/sso/login") && response.body.ibcontains(b"vop")
 expression: r0() || r1()

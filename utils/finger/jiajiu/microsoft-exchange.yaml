@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location:
-      /owa/") && response.raw_header.ibcontains(b"Server: Microsoft")'
+    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location: /owa/") && response.raw_header.ibcontains(b"Server: Microsoft")'
   r1:
     request:
       method: GET
@@ -51,14 +50,12 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div class=\"signinheader\">outlook</div>")
-      && response.body.ibcontains(b"owalogocontainer")
+    expression: response.body.ibcontains(b"<div class=\"signinheader\">outlook</div>") && response.body.ibcontains(b"owalogocontainer")
   r9:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/owa/") && response.body.ibcontains(b"owapage
-      = asp.auth_logon_aspx")
+    expression: response.body.ibcontains(b"/owa/") && response.body.ibcontains(b"owapage = asp.auth_logon_aspx")
   r10:
     request:
       method: GET
@@ -69,5 +66,4 @@ rules:
       method: GET
       path: /
     expression: response.body.ibcontains(b"<div class=\"signInHeader\">Outlook</div>")
-expression: r0() || r1() || r2() || r3() || r4() || r5() || r6() || r7() || r8() ||
-  r9() || r10() || r11()
+expression: r0() || r1() || r2() || r3() || r4() || r5() || r6() || r7() || r8() || r9() || r10() || r11()

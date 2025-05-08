@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<tr><td class=\"menuitem\" colspan=\"2\">&nbsp;-&nbsp;<a
-      class=\"menulink\" href=\"?target=")
+    expression: response.body.ibcontains(b"<tr><td class=\"menuitem\" colspan=\"2\">&nbsp;-&nbsp;<a class=\"menulink\" href=\"?target=")
 expression: r0() || r1()

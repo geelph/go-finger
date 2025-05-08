@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"request validation has detected a potentially
-      dangerous client input value")
+    expression: response.body.ibcontains(b"request validation has detected a potentially dangerous client input value")
 expression: r0() || r1()

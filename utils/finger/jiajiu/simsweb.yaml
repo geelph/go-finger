@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<form onsubmit=\"sendinfo(); return false;\"
-      name=\"logon")
+    expression: response.body.ibcontains(b"<form onsubmit=\"sendinfo(); return false;\" name=\"logon")
   r1:
     request:
       method: GET
@@ -21,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"index.html\"><font color=\"black\" face=\"arial\">loading
-      simsweb, please wait.....</font></a></h2>")
+    expression: response.body.ibcontains(b"index.html\"><font color=\"black\" face=\"arial\">loading simsweb, please wait.....</font></a></h2>")
 expression: r0() || r1() || r2()

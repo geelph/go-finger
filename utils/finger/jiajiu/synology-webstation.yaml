@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"id=\"paragraph\">web station has been enabled.
-      to finish setting up your website, please see the \"web service")
+    expression: response.body.ibcontains(b"id=\"paragraph\">web station has been enabled. to finish setting up your website, please see the \"web service")
 expression: r0()

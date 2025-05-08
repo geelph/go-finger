@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"http://www.sourcebans.net\" target=\"_blank\"><img
-      src=\"images/sb.png")
+    expression: response.body.ibcontains(b"http://www.sourcebans.net\" target=\"_blank\"><img src=\"images/sb.png")
 expression: r0() || r1()

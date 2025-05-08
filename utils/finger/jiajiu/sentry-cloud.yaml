@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"src: url(/static/fonts/lcdd.eot) format(\"truetype\"),
-      url(/static/fonts/lcdd.ttf) format(\"truetype\");")'
+    expression: 'response.body.ibcontains(b"src: url(/static/fonts/lcdd.eot) format(\"truetype\"), url(/static/fonts/lcdd.ttf) format(\"truetype\");")'
 expression: r0()

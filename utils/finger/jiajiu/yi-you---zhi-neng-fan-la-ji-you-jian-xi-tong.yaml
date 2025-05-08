@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/ymail/default/js/menu.js") && response.body.ibcontains(b"ymail's
-      智能反垃圾邮件系统")
+    expression: response.body.ibcontains(b"/ymail/default/js/menu.js") && response.body.ibcontains(b"ymail's 智能反垃圾邮件系统")
 expression: r0()

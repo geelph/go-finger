@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"Venusense") &&
-      response.body.ibcontains(b"天清汉马USG防火墙")
+    expression: response.status == 200 && response.body.ibcontains(b"Venusense") && response.body.ibcontains(b"天清汉马USG防火墙")
   r1:
     request:
       method: GET

@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href='../client/ewebsclientsetup.exe'></a>
-      </td>")
+    expression: response.body.ibcontains(b"<a href='../client/ewebsclientsetup.exe'></a> </td>")
 expression: r0() || r1() || r2()

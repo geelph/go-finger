@@ -10,7 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b" = function(str, key)") && response.body.ibcontains(b"content=\"must-revalidate\"")
-      && response.body.ibcontains(b"content=\"no-cache\"") && response.body.ibcontains(b"content=\"text/html;
-      charset=utf-8\" />")
+    expression: response.body.ibcontains(b" = function(str, key)") && response.body.ibcontains(b"content=\"must-revalidate\"") && response.body.ibcontains(b"content=\"no-cache\"") && response.body.ibcontains(b"content=\"text/html; charset=utf-8\" />")
 expression: r0()

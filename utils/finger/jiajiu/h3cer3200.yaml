@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"ER3200") && response.body.ibcontains(b"h3c.com")
-      && response.body.ibcontains(b"home.asp")
+    expression: response.body.ibcontains(b"ER3200") && response.body.ibcontains(b"h3c.com") && response.body.ibcontains(b"home.asp")
 expression: r0()

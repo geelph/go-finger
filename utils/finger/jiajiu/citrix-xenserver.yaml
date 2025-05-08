@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"xencentersetup.exe\">xencenter
-      installer</a>")
+    expression: response.body.ibcontains(b"<a href=\"xencentersetup.exe\">xencenter installer</a>")
 expression: r0() || r1()

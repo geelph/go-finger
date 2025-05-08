@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"微擎,微信") && response.body.ibcontains(b"onsubmit=\"return
-      formcheck();\" class=\"we7-form\">")
+    expression: response.body.ibcontains(b"content=\"微擎,微信") && response.body.ibcontains(b"onsubmit=\"return formcheck();\" class=\"we7-form\">")
   r2:
     request:
       method: GET

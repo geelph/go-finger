@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div class=\"boxlabel\">citadel server
-      - powered by")
+    expression: response.body.ibcontains(b"<div class=\"boxlabel\">citadel server - powered by")
 expression: r0() || r1()

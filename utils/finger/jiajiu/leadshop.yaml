@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.icon_hash == "-582976053" || response.icon_hash
-      == "5b0665d0447da9c06646da8f282bf372"
+    expression: response.icon_hash == "-582976053" || response.icon_hash == "5b0665d0447da9c06646da8f282bf372"
 expression: r0()

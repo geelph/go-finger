@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"localstorage.setitem('doctitle','北信源网络接入控制系统')")
-      && response.body.ibcontains(b"欢迎登录北信源网络接入控制系统")
+    expression: response.body.ibcontains(b"localstorage.setitem('doctitle','北信源网络接入控制系统')") && response.body.ibcontains(b"欢迎登录北信源网络接入控制系统")
 expression: r0() || r1()

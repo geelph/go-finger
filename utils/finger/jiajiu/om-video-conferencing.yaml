@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<p><a href=\"http://www.omeeting.com\"
-      target='_blank'>powered by")
+    expression: response.body.ibcontains(b"<p><a href=\"http://www.omeeting.com\" target='_blank'>powered by")
   r1:
     request:
       method: GET

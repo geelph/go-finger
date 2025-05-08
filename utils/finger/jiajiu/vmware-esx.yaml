@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"document.write(\"<title>\" + id_eesx_welcome
-      + \"</title>\");")
+    expression: response.body.ibcontains(b"document.write(\"<title>\" + id_eesx_welcome + \"</title>\");")
   r2:
     request:
       method: GET

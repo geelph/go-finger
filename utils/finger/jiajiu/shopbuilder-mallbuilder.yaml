@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"mallbuilder") && response.body.ibcontains(b"powered
-      by mallbuilder")
+    expression: response.body.ibcontains(b"content=\"mallbuilder") && response.body.ibcontains(b"powered by mallbuilder")
 expression: r0()

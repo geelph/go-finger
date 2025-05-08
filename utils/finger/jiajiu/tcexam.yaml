@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"nicola asuni - tecnick.com s.r.l.\"
-      />")
+    expression: response.body.ibcontains(b"content=\"nicola asuni - tecnick.com s.r.l.\" />")
 expression: r0() || r1()

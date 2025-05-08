@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div id=\"footer_copyright\" class=\"shade
-      footer_copyright\">powered by <a href=\"http://www.wolfshead-solutions.com/ws-products/product-1")
+    expression: response.body.ibcontains(b"<div id=\"footer_copyright\" class=\"shade footer_copyright\">powered by <a href=\"http://www.wolfshead-solutions.com/ws-products/product-1")
 expression: r0()

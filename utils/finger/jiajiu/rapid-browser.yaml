@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"images/login_button.gif\" alt=\"login to
-      rapid browser")
+    expression: response.body.ibcontains(b"images/login_button.gif\" alt=\"login to rapid browser")
 expression: r0() || r1()

@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<select id = \"selclangswitch\" class=\"langswitch\"
-      onchange = \"switchpagelanguage()\">")
+    expression: response.body.ibcontains(b"<select id = \"selclangswitch\" class=\"langswitch\" onchange = \"switchpagelanguage()\">")
   r2:
     request:
       method: GET

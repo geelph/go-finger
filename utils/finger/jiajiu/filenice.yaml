@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"the fantabulous mechanical eviltwin
-      code machine")
+    expression: response.body.ibcontains(b"content=\"the fantabulous mechanical eviltwin code machine")
   r1:
     request:
       method: GET

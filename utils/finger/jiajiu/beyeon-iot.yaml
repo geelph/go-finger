@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var app_smp_type_name = '门店';var app_grp_type_name
-      = '集团'")
+    expression: response.body.ibcontains(b"var app_smp_type_name = '门店';var app_grp_type_name = '集团'")
 expression: r0() || r1()

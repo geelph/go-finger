@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<span class='logosophosfooterfont'>protected
-      by</span>") && response.body.ibcontains(b"blocked site")
+    expression: response.body.ibcontains(b"<span class='logosophosfooterfont'>protected by</span>") && response.body.ibcontains(b"blocked site")
 expression: r0()

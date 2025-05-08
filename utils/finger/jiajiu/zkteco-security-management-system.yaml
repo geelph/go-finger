@@ -10,18 +10,15 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src='/login/images/zksecurity.png'") &&
-      response.body.ibcontains(b"百傲瑞达")
+    expression: response.body.ibcontains(b"src='/login/images/zksecurity.png'") && response.body.ibcontains(b"百傲瑞达")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"class=\"login-finger-btn disabled\"") &&
-      response.body.ibcontains(b"id=\"password_hidden\"")
+    expression: response.body.ibcontains(b"class=\"login-finger-btn disabled\"") && response.body.ibcontains(b"id=\"password_hidden\"")
   r2:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"$(\".copyright\").text(\"copyright ? \"
-      + server_current_year + \" zkteco co., ltd. all rights reserved\");")
+    expression: response.body.ibcontains(b"$(\".copyright\").text(\"copyright ? \" + server_current_year + \" zkteco co., ltd. all rights reserved\");")
 expression: r0() || r1() || r2()

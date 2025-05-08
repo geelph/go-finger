@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div class=\"main_supporterbar\">") &&
-      response.body.ibcontains(b"class=\"main_loginbar")
+    expression: response.body.ibcontains(b"<div class=\"main_supporterbar\">") && response.body.ibcontains(b"class=\"main_loginbar")
 expression: r0()

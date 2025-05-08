@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var myspecs = \"'menubar=0,status=1,resizable=1,location=0,titlebar=1,toolbar=1,scrollbars=1,width=\"
-      + mywidth + \",height=\" + myheight +")
+    expression: response.body.ibcontains(b"var myspecs = \"'menubar=0,status=1,resizable=1,location=0,titlebar=1,toolbar=1,scrollbars=1,width=\" + mywidth + \",height=\" + myheight +")
 expression: r0()

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"http://www.888072.com") && response.body.ibcontains(b"content=\"qq
-      7000719")
+    expression: response.body.ibcontains(b"content=\"http://www.888072.com") && response.body.ibcontains(b"content=\"qq 7000719")
   r1:
     request:
       method: GET

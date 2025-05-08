@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"AR Web登录") && response.body.ibcontains(b"Log
-      In to AR Web")
+    expression: response.body.ibcontains(b"AR Web登录") && response.body.ibcontains(b"Log In to AR Web")
 expression: r0() || r1()

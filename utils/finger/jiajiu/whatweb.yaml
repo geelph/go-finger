@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<body><center><table border=0><tr align=center><td><font
-      color=red size=5>troy serial server</font></td></tr>")
+    expression: response.body.ibcontains(b"<body><center><table border=0><tr align=center><td><font color=red size=5>troy serial server</font></td></tr>")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"network card access password&#058; </b><input
-      type=password size=16 maxlength=16 name=access_psw>")
+    expression: response.body.ibcontains(b"network card access password&#058; </b><input type=password size=16 maxlength=16 name=access_psw>")
 expression: r0() || r1()

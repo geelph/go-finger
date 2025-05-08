@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div id=\"welcome_box\">please <a href=\"clientarea.php\"
-      title=\"login\"><strong>login</strong></a> or <a href=\"register.php\" title=\"register\"><strong>register</strong></a></div>")
+    expression: response.body.ibcontains(b"<div id=\"welcome_box\">please <a href=\"clientarea.php\" title=\"login\"><strong>login</strong></a> or <a href=\"register.php\" title=\"register\"><strong>register</strong></a></div>")
 expression: r0() || r1()

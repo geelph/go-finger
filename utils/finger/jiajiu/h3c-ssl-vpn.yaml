@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"welcome to ssl vpn</h1>") && response.body.ibcontains(b"keep
-      me signed in</span>")
+    expression: response.body.ibcontains(b"welcome to ssl vpn</h1>") && response.body.ibcontains(b"keep me signed in</span>")
 expression: r0()

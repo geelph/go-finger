@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 302 && response.body.ibcontains(b"dynamiCode")
-      && response.body.ibcontains(b"iSignaturePortal")
+    expression: response.status == 302 && response.body.ibcontains(b"dynamiCode") && response.body.ibcontains(b"iSignaturePortal")
   r1:
     request:
       method: GET

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"limesurvey") && response.body.ibcontains(b"href=\"http://www.limesurvey.org\"
-      target=\"_blank")
+    expression: response.body.ibcontains(b"content=\"limesurvey") && response.body.ibcontains(b"href=\"http://www.limesurvey.org\" target=\"_blank")
 expression: r0()

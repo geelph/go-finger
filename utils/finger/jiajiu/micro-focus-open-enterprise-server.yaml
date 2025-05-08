@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<h3>micro focus open enterprise server
-      提供市场中的最佳网络、文件和打印服务。</h3>")
+    expression: response.body.ibcontains(b"<h3>micro focus open enterprise server 提供市场中的最佳网络、文件和打印服务。</h3>")
 expression: r0()

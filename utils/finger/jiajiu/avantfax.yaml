@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"images/avantfax-big.png\" border=\"0\"
-      alt=\"avantfax")
+    expression: response.body.ibcontains(b"src=\"images/avantfax-big.png\" border=\"0\" alt=\"avantfax")
 expression: r0()

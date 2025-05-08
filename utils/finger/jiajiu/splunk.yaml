@@ -10,14 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 200 && response.body.ibcontains(b"content=\"Splunk
-      Inc.\"") && response.raw_header.ibcontains(b"Server: Splunkd") && response.raw_header.ibcontains(b"Set-Cookie:
-      splunkweb_uid")'
+    expression: 'response.status == 200 && response.body.ibcontains(b"content=\"Splunk Inc.\"") && response.raw_header.ibcontains(b"Server: Splunkd") && response.raw_header.ibcontains(b"Set-Cookie: splunkweb_uid")'
   r1:
     request:
       method: GET
       path: /
-    expression: 'response.status == 303 && response.body.ibcontains(b"<title>303 See
-      Other</title>") && response.raw_header.ibcontains(b"Server: Splunkd") && response.raw_header.ibcontains(b"Set-Cookie:
-      ROUTEID")'
+    expression: 'response.status == 303 && response.body.ibcontains(b"<title>303 See Other</title>") && response.raw_header.ibcontains(b"Server: Splunkd") && response.raw_header.ibcontains(b"Set-Cookie: ROUTEID")'
 expression: r0() || r1()

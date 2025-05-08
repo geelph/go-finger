@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<font size=2>username ( contatto email
-      )</font>")
+    expression: response.body.ibcontains(b"<font size=2>username ( contatto email )</font>")
   r1:
     request:
       method: GET

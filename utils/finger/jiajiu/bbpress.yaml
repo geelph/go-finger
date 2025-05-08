@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- if you like showing off the fact that
-      your server rocks -->")
+    expression: response.body.ibcontains(b"<!-- if you like showing off the fact that your server rocks -->")
   r1:
     request:
       method: GET

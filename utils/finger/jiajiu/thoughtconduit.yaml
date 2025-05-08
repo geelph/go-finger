@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<html><head><title>error</title></head><body>your
-      request produced an error.</body></html>")
+    expression: response.body.ibcontains(b"<html><head><title>error</title></head><body>your request produced an error.</body></html>")
 expression: r0()

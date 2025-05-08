@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta name=\"searchtitle\" content=\"泛微云桥e-Bridge\">
-      ")
+    expression: response.body.ibcontains(b"<meta name=\"searchtitle\" content=\"泛微云桥e-Bridge\"> ")
   r1:
     request:
       method: GET

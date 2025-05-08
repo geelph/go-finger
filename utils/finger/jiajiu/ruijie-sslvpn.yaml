@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"SSLVPN") && response.body.ibcontains(b"login")
-      && response.body.ibcontains(b"rjsslvpn_encookie")
+    expression: response.body.ibcontains(b"SSLVPN") && response.body.ibcontains(b"login") && response.body.ibcontains(b"rjsslvpn_encookie")
 expression: r0() || r1()

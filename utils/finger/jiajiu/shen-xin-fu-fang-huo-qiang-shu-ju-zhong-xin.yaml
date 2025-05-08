@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"commonFunction.js") && response.body.ibcontains(b"rsa.js")
-      && response.body.ibcontains(b"LogInOut.php")
+    expression: response.body.ibcontains(b"commonFunction.js") && response.body.ibcontains(b"rsa.js") && response.body.ibcontains(b"LogInOut.php")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/LogInOut.php") && response.body.ibcontains(b"Redirect
-      to...")
+    expression: response.body.ibcontains(b"/LogInOut.php") && response.body.ibcontains(b"Redirect to...")
 expression: r0() || r1()

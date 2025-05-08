@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"ehang") && response.body.ibcontains(b"login")
-      && response.body.ibcontains(b"nps")
+    expression: response.body.ibcontains(b"ehang") && response.body.ibcontains(b"login") && response.body.ibcontains(b"nps")
 expression: r0()

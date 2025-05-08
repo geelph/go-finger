@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"/page/help/mailconfig/config/index.html")
-      && response.body.ibcontains(b"href=\"http://webmail.zmail300.cn")
+    expression: response.body.ibcontains(b"href=\"/page/help/mailconfig/config/index.html") && response.body.ibcontains(b"href=\"http://webmail.zmail300.cn")
 expression: r0()

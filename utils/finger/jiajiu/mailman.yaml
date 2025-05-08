@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/images/mailman") && response.body.ibcontains(b"delivered
-      by mailman")
+    expression: response.body.ibcontains(b"/images/mailman") && response.body.ibcontains(b"delivered by mailman")
 expression: r0()

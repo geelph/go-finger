@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<title>中新金盾防火墙</title>")
-      && response.body.ibcontains(b"ZXFW")
+    expression: response.status == 200 && response.body.ibcontains(b"<title>中新金盾防火墙</title>") && response.body.ibcontains(b"ZXFW")
 expression: r0()

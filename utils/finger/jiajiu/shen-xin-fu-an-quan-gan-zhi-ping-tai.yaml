@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"apps") && response.body.ibcontains(b"login.js")
-      && response.body.ibcontains(b"安全感知平台")
+    expression: response.body.ibcontains(b"apps") && response.body.ibcontains(b"login.js") && response.body.ibcontains(b"安全感知平台")
 expression: r0() || r1()

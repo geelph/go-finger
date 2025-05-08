@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"juniper networks vpn") && response.body.ibcontains(b"junos
-      pulse secure access service")
+    expression: response.body.ibcontains(b"juniper networks vpn") && response.body.ibcontains(b"junos pulse secure access service")
 expression: r0()

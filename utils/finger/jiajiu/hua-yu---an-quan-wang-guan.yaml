@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"var opzoon_ver") && response.body.ibcontains(b"copy_right
-      = {cn : \"\", en ")'
+    expression: 'response.body.ibcontains(b"var opzoon_ver") && response.body.ibcontains(b"copy_right = {cn : \"\", en ")'
 expression: r0()

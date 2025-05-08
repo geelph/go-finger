@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by squirrelmail.org. squirrelmail")
-      && response.body.ibcontains(b"promail &trade; - login")
+    expression: response.body.ibcontains(b"powered by squirrelmail.org. squirrelmail") && response.body.ibcontains(b"promail &trade; - login")
 expression: r0()

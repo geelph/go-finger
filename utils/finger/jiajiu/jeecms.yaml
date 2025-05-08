@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/r/cms/") && response.body.ibcontains(b"default/js/")
-      && response.body.ibcontains(b"default/css/")
+    expression: response.body.ibcontains(b"/r/cms/") && response.body.ibcontains(b"default/js/") && response.body.ibcontains(b"default/css/")
   r2:
     request:
       method: GET

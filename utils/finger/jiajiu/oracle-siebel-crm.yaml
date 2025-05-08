@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"scripting is used to manage data interactions
-      between the siebel server/web server")
+    expression: response.body.ibcontains(b"scripting is used to manage data interactions between the siebel server/web server")
   r2:
     request:
       method: GET

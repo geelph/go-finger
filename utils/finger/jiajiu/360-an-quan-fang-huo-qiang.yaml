@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/common/checknum_creat.php?module=config_authnum")
-      && response.body.ibcontains(b"360安全防火墙系统")
+    expression: response.body.ibcontains(b"/common/checknum_creat.php?module=config_authnum") && response.body.ibcontains(b"360安全防火墙系统")
 expression: r0()

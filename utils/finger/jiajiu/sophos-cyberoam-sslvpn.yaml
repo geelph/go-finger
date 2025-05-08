@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"sslvpnuserportalloginform") && response.body.ibcontains(b"cyberoam
-      ssl vpn portal")
+    expression: response.body.ibcontains(b"sslvpnuserportalloginform") && response.body.ibcontains(b"cyberoam ssl vpn portal")
 expression: r0()

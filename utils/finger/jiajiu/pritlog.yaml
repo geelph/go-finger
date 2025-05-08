@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<em id=\"jserror\">please enable javascript
-      for full functionality")
+    expression: response.body.ibcontains(b"<em id=\"jserror\">please enable javascript for full functionality")
 expression: r0() || r1()

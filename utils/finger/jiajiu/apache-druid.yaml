@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"content=\"Apache
-      Druid console\"")
+    expression: response.status == 200 && response.body.ibcontains(b"content=\"Apache Druid console\"")
 expression: r0()

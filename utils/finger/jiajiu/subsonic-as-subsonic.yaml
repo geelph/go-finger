@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"parent.frames.upper.keyboardshortcut(\"showindex\",
-      index.touppercase());")
+    expression: response.body.ibcontains(b"parent.frames.upper.keyboardshortcut(\"showindex\", index.touppercase());")
 expression: r0() || r1() || r2()

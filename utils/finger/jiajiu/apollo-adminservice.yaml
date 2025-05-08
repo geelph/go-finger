@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"apollo-adminservice") && response.raw_header.ibcontains(b"Content-Length:
-      19")'
+    expression: 'response.body.ibcontains(b"apollo-adminservice") && response.raw_header.ibcontains(b"Content-Length: 19")'
 expression: r0()

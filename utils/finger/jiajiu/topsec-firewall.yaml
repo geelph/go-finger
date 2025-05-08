@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"TOPSEC") && response.body.ibcontains(b"image/aaa.png")
-      && response.body.ibcontains(b"username")
+    expression: response.body.ibcontains(b"TOPSEC") && response.body.ibcontains(b"image/aaa.png") && response.body.ibcontains(b"username")
 expression: r0()

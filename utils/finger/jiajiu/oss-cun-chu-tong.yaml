@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"ListBucketResult") && response.body.ibcontains(b"MaxKeys")
-      && response.body.ibcontains(b"Contents")
+    expression: response.body.ibcontains(b"ListBucketResult") && response.body.ibcontains(b"MaxKeys") && response.body.ibcontains(b"Contents")
 expression: r0()

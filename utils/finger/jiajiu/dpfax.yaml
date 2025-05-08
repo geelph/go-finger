@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"images/dpfax-big.png\" border=\"0\"
-      alt=\"dpfax")
+    expression: response.body.ibcontains(b"<img src=\"images/dpfax-big.png\" border=\"0\" alt=\"dpfax")
 expression: r0() || r1()

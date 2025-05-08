@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<span> 客服邮箱support@suremail.cn</span>")
-      && response.body.ibcontains(b"content=\"北京国信安邮科技有限公司")
+    expression: response.body.ibcontains(b"<span> 客服邮箱support@suremail.cn</span>") && response.body.ibcontains(b"content=\"北京国信安邮科技有限公司")
 expression: r0()

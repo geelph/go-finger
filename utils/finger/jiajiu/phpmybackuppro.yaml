@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"please login (use your mysql username
-      and password): <a href=\"index.php?login=true")'
+    expression: 'response.body.ibcontains(b"please login (use your mysql username and password): <a href=\"index.php?login=true")'
 expression: r0()

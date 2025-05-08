@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0;
-      url=/hmi/\">")
+    expression: response.body.ibcontains(b"<meta http-equiv=\"refresh\" content=\"0; url=/hmi/\">")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<frame name=\"frleft\" scrolling=\"no\"
-      id=\"frleft\" src=\"qfrleft.aspx\">")
+    expression: response.body.ibcontains(b"<frame name=\"frleft\" scrolling=\"no\" id=\"frleft\" src=\"qfrleft.aspx\">")
 expression: r0() || r1()

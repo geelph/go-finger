@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div id=\"simple-footer\"><span>slideshowpro
-      director")
+    expression: response.body.ibcontains(b"<div id=\"simple-footer\"><span>slideshowpro director")
   r1:
     request:
       method: GET

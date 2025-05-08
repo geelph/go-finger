@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"神盾fs<sup>3</sup>文档安全共享系统v2.0</div>") &&
-      response.body.ibcontains(b"神盾fs3文档安全共享系统v2.0")
+    expression: response.body.ibcontains(b"神盾fs<sup>3</sup>文档安全共享系统v2.0</div>") && response.body.ibcontains(b"神盾fs3文档安全共享系统v2.0")
 expression: r0()

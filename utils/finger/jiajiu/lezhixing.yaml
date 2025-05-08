@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"action=\"/datacenter/authentication/login.do\"
-      method=\"post")
+    expression: response.body.ibcontains(b"action=\"/datacenter/authentication/login.do\" method=\"post")
   r1:
     request:
       method: GET
@@ -21,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/static/thirdparty/jquery/") && response.body.ibcontains(b"var
-      contextpath = \"/datacenter")
+    expression: response.body.ibcontains(b"/static/thirdparty/jquery/") && response.body.ibcontains(b"var contextpath = \"/datacenter")
 expression: r0() || r1() || r2()

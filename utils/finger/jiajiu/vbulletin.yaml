@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- do not remove this copyright notice
-      -->powered by < a href=\"https://www.vbulletin.com\" id=\"vbulletinlink\">")
+    expression: response.body.ibcontains(b"<!-- do not remove this copyright notice -->powered by < a href=\"https://www.vbulletin.com\" id=\"vbulletinlink\">")
 expression: r0() || r1() || r2()

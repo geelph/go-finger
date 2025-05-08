@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<input class=\"an1\" name=\"btnrst\" id=\"btnrst\"
-      type=\"reset\" value=\" \" />")
+    expression: response.body.ibcontains(b"<input class=\"an1\" name=\"btnrst\" id=\"btnrst\" type=\"reset\" value=\" \" />")
   r1:
     request:
       method: GET

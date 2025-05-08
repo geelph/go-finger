@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"language/switchover\"+'/'+current_language")
-      && response.body.ibcontains(b"登录")
+    expression: response.body.ibcontains(b"language/switchover\"+'/'+current_language") && response.body.ibcontains(b"登录")
 expression: r0()

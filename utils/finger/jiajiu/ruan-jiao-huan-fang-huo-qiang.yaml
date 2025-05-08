@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"name=\"secretkey\" id=\"secretkey\"") &&
-      response.body.ibcontains(b"name=\"token_code\"placeholder=\"令牌口令\"")
+    expression: response.body.ibcontains(b"name=\"secretkey\" id=\"secretkey\"") && response.body.ibcontains(b"name=\"token_code\"placeholder=\"令牌口令\"")
 expression: r0()

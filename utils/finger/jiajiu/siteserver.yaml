@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"http://www.siteserver.cn") && response.body.ibcontains(b"powered
-      by")
+    expression: response.body.ibcontains(b"http://www.siteserver.cn") && response.body.ibcontains(b"powered by")
   r1:
     request:
       method: GET

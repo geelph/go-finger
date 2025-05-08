@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"http://phpldapadmin.sourceforge.net/documentation\"
-      onclick")
+    expression: response.body.ibcontains(b"href=\"http://phpldapadmin.sourceforge.net/documentation\" onclick")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"images/default/logo.png\" title=\"phpldapadmin
-      logo")
+    expression: response.body.ibcontains(b"src=\"images/default/logo.png\" title=\"phpldapadmin logo")
 expression: r0() || r1()

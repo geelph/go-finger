@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div class=\"sys-name\">视频综合安全网关</div>")
-      && response.body.ibcontains(b"华域数安")
+    expression: response.body.ibcontains(b"<div class=\"sys-name\">视频综合安全网关</div>") && response.body.ibcontains(b"华域数安")
 expression: r0()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"images/ranger_logo.png\" alt=\"Ranger
-      logo\">")
+    expression: response.body.ibcontains(b"<img src=\"images/ranger_logo.png\" alt=\"Ranger logo\">")
 expression: r0()

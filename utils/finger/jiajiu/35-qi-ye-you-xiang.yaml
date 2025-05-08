@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"35") && response.body.ibcontains(b"images/mail/35pushmail.app.png")
-      && response.body.ibcontains(b"switchingserverpopup")
+    expression: response.body.ibcontains(b"35") && response.body.ibcontains(b"images/mail/35pushmail.app.png") && response.body.ibcontains(b"switchingserverpopup")
   r1:
     request:
       method: GET

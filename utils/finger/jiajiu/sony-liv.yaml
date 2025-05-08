@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta name=\"author\" content=\"sony pictures
-      networks india pvt. ltd\">")
+    expression: response.body.ibcontains(b"<meta name=\"author\" content=\"sony pictures networks india pvt. ltd\">")
   r1:
     request:
       method: GET

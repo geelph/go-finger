@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"/oem//data/images/logo.gif\"") &&
-      response.body.ibcontains(b"url=/servlet/omsalogin?msgstatus='")
+    expression: response.body.ibcontains(b"src=\"/oem//data/images/logo.gif\"") && response.body.ibcontains(b"url=/servlet/omsalogin?msgstatus='")
 expression: r0() || r1()

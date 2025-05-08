@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"hue and the hue logo are trademarks of
-      cloudera, inc.") && response.body.ibcontains(b"id=\"jhuenotify")
+    expression: response.body.ibcontains(b"hue and the hue logo are trademarks of cloudera, inc.") && response.body.ibcontains(b"id=\"jhuenotify")
 expression: r0() || r1()

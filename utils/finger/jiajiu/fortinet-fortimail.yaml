@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"location=\"/m/webmail/\";") && response.body.ibcontains(b"<script
-      language=javascript>")
+    expression: response.body.ibcontains(b"location=\"/m/webmail/\";") && response.body.ibcontains(b"<script language=javascript>")
 expression: r0()

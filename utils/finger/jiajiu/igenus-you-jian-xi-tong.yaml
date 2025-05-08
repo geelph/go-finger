@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"form.action = \"login.php?Cmd=login\";")
-      && response.body.ibcontains(b"iGENUS")
+    expression: response.body.ibcontains(b"form.action = \"login.php?Cmd=login\";") && response.body.ibcontains(b"iGENUS")
 expression: r0()

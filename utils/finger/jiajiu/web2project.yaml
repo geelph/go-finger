@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"</head><body>fatal error. you haven't created
-      a config file yet.<br/><a href=")
+    expression: response.body.ibcontains(b"</head><body>fatal error. you haven't created a config file yet.<br/><a href=")
 expression: r0()

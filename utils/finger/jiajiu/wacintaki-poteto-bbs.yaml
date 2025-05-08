@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.ninechime.com/products/\"
-      title=\"get your own free bbs!\">wacintaki")
+    expression: response.body.ibcontains(b"<a href=\"http://www.ninechime.com/products/\" title=\"get your own free bbs!\">wacintaki")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"by <a href=\"http://suteki.nu\">ranmaguy</a>
-      and <a href=\"http://www.cellosoft.com\">marcello</a>")
+    expression: response.body.ibcontains(b"by <a href=\"http://suteki.nu\">ranmaguy</a> and <a href=\"http://www.cellosoft.com\">marcello</a>")
 expression: r0() || r1()

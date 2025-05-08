@@ -10,7 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"event_onusbkeychange=OnUsbKeyChange") &&
-      response.body.ibcontains(b"id=mTokenPlugin") && response.body.ibcontains(b"value=pluginLoaded")
-      && response.icon_hash == "-1769281208"
+    expression: response.body.ibcontains(b"event_onusbkeychange=OnUsbKeyChange") && response.body.ibcontains(b"id=mTokenPlugin") && response.body.ibcontains(b"value=pluginLoaded") && response.icon_hash == "-1769281208"
 expression: r0()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"action=\"/logincheck\"") && response.body.ibcontains(b"class=\"login-head
-      clearfix\"")
+    expression: response.body.ibcontains(b"action=\"/logincheck\"") && response.body.ibcontains(b"class=\"login-head clearfix\"")
 expression: r0()

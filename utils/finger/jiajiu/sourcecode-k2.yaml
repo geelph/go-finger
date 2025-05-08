@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"document.getelementbyid(\"redirectform\").action
-      = \"../mxworkspace/login.aspx")
+    expression: response.body.ibcontains(b"document.getelementbyid(\"redirectform\").action = \"../mxworkspace/login.aspx")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"document.getelementbyid(\"redirectform\").action
-      = \"../workspace/default.aspx")
+    expression: response.body.ibcontains(b"document.getelementbyid(\"redirectform\").action = \"../workspace/default.aspx")
 expression: r0() || r1()

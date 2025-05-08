@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"深圳市和为顺网络技术有限公司\"z?pkq") && response.body.ibcontains(b"technology,
-      inc.")
+    expression: response.body.ibcontains(b"深圳市和为顺网络技术有限公司\"z?pkq") && response.body.ibcontains(b"technology, inc.")
 expression: r0()

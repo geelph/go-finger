@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.raw_header.ibcontains(b"www-authenticate: Basic realm=\"VisualSVN
-      Server\"")'
+    expression: 'response.raw_header.ibcontains(b"www-authenticate: Basic realm=\"VisualSVN Server\"")'
 expression: r0()

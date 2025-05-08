@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"powered by webasyst shop-script <a href=\"http://www.shop-script.com/\"
-      style=\"font-weight: normal\">shopping cart software</a>")'
+    expression: 'response.body.ibcontains(b"powered by webasyst shop-script <a href=\"http://www.shop-script.com/\" style=\"font-weight: normal\">shopping cart software</a>")'
 expression: r0() || r1()

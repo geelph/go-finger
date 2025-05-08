@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"紫光防火墙") && response.body.ibcontains(b"name=\"adminlogin\"
-      action=\"/cgi-bin/manageaccount\">")
+    expression: response.body.ibcontains(b"紫光防火墙") && response.body.ibcontains(b"name=\"adminlogin\" action=\"/cgi-bin/manageaccount\">")
 expression: r0()

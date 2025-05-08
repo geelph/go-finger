@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<title>hfish") && response.body.ibcontains(b"src=\"/static/images/hfish.png\"")
-      && response.body.ibcontains(b"href=\"https://github.com/hacklcx/hfish\"")
+    expression: response.body.ibcontains(b"<title>hfish") && response.body.ibcontains(b"src=\"/static/images/hfish.png\"") && response.body.ibcontains(b"href=\"https://github.com/hacklcx/hfish\"")
 expression: r0()

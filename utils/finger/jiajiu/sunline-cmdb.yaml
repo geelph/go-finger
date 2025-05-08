@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var key = \"sunlines\";") && response.body.ibcontains(b"sunline
-      co")
+    expression: response.body.ibcontains(b"var key = \"sunlines\";") && response.body.ibcontains(b"sunline co")
 expression: r0()

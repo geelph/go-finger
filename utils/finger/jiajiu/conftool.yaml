@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href='http://www.conftool.net'>conference
-      management software")
+    expression: response.body.ibcontains(b"<a href='http://www.conftool.net'>conference management software")
 expression: r0() || r1()

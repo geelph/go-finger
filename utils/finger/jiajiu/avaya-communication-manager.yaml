@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var newlocation = \"https://\" + target
-      + \"/cgi-bin/common/issue\";")
+    expression: response.body.ibcontains(b"var newlocation = \"https://\" + target + \"/cgi-bin/common/issue\";")
 expression: r0()

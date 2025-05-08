@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<iframe name=\"content\"  src=\"index_middle.html\"
-      frameborder=\"auto")
+    expression: response.body.ibcontains(b"<iframe name=\"content\"  src=\"index_middle.html\" frameborder=\"auto")
   r1:
     request:
       method: GET

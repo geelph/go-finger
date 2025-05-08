@@ -20,8 +20,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"img/suitecrm.png\" alt=\"bitnami
-      suitecrm stack\"")
+    expression: response.body.ibcontains(b"src=\"img/suitecrm.png\" alt=\"bitnami suitecrm stack\"")
   r3:
     request:
       method: GET

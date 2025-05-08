@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.eticketsupport.com\"
-      target=\"_blank\">")
+    expression: response.body.ibcontains(b"<a href=\"http://www.eticketsupport.com\" target=\"_blank\">")
   r2:
     request:
       method: GET

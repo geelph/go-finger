@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b" <body bgcolor=#ddeeff onload=\"document.all.user.focus()\">")
-      && response.body.ibcontains(b"皓峰防火墙")
+    expression: response.body.ibcontains(b" <body bgcolor=#ddeeff onload=\"document.all.user.focus()\">") && response.body.ibcontains(b"皓峰防火墙")
 expression: r0()

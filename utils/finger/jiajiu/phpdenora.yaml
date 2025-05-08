@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"chat4all phpdenora") && response.body.ibcontains(b"powered
-      by phpdenora")
+    expression: response.body.ibcontains(b"content=\"chat4all phpdenora") && response.body.ibcontains(b"powered by phpdenora")
   r1:
     request:
       method: GET

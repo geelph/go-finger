@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 200 && response.body.ibcontains(b"<title>splunkd</title>")
-      && response.raw_header.ibcontains(b"Server: Splunkd")'
+    expression: 'response.status == 200 && response.body.ibcontains(b"<title>splunkd</title>") && response.raw_header.ibcontains(b"Server: Splunkd")'
 expression: r0()

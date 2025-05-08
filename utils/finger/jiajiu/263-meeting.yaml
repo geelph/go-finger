@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<frame src=\"/jsp/conference/meetinglist.jsp\"
-      name=\"mainframe\"/>")
+    expression: response.body.ibcontains(b"<frame src=\"/jsp/conference/meetinglist.jsp\" name=\"mainframe\"/>")
 expression: r0()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<strong>恭喜") && response.body.ibcontains(b"LANMP")
-      && response.body.ibcontains(b"wdlinux.cn") && response.body.ibcontains(b"本页可删除")
+    expression: response.body.ibcontains(b"<strong>恭喜") && response.body.ibcontains(b"LANMP") && response.body.ibcontains(b"wdlinux.cn") && response.body.ibcontains(b"本页可删除")
 expression: r0()

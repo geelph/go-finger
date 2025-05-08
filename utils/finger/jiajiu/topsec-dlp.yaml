@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"static/images/login/loading.gif\"
-      /><span id=\"message\">loading......</span>")
+    expression: response.body.ibcontains(b"<img src=\"static/images/login/loading.gif\" /><span id=\"message\">loading......</span>")
 expression: r0()

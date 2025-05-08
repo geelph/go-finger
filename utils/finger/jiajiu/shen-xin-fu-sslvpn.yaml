@@ -20,8 +20,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/cgi-bin/login.cgi") && response.body.ibcontains(b"SSL
-      VPN")
+    expression: response.body.ibcontains(b"/cgi-bin/login.cgi") && response.body.ibcontains(b"SSL VPN")
   r3:
     request:
       method: GET
@@ -36,12 +35,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"SSL VPN") && response.body.ibcontains(b"/por/login_psw.csp")
-      && response.body.ibcontains(b"IE=EmulateIE7")
+    expression: response.body.ibcontains(b"SSL VPN") && response.body.ibcontains(b"/por/login_psw.csp") && response.body.ibcontains(b"IE=EmulateIE7")
   r6:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"SSL VPN") && response.body.ibcontains(b"IE=EmulateIE7")
-      && response.body.ibcontains(b"security_check.csp")
+    expression: response.body.ibcontains(b"SSL VPN") && response.body.ibcontains(b"IE=EmulateIE7") && response.body.ibcontains(b"security_check.csp")
 expression: r0() || r1() || r2() || r3() || r4() || r5() || r6()

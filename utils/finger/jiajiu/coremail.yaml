@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<a href=\"http://www.coremail.cn\"
-      target=\"_blank\">")
+    expression: response.status == 200 && response.body.ibcontains(b"<a href=\"http://www.coremail.cn\" target=\"_blank\">")
   r2:
     request:
       method: GET

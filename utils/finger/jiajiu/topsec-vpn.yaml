@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"/portal_default/index.html") && response.raw_header.ibcontains(b"server:
-      TopWebServer") && response.raw_header.ibcontains(b"set-cookie: topsecsvuilanguage")'
+    expression: 'response.body.ibcontains(b"/portal_default/index.html") && response.raw_header.ibcontains(b"server: TopWebServer") && response.raw_header.ibcontains(b"set-cookie: topsecsvuilanguage")'
 expression: r0()

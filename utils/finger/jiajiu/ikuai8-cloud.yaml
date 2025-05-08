@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<strong>we're sorry but ikuai cloud platform
-      doesn't ")
+    expression: response.body.ibcontains(b"<strong>we're sorry but ikuai cloud platform doesn't ")
   r1:
     request:
       method: GET

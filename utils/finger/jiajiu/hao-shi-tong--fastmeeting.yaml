@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"login/createQRCode.do")
-      && response.body.ibcontains(b"resources/commonImage/favicon.ico") && response.body.ibcontains(b"用户登录")
+    expression: response.status == 200 && response.body.ibcontains(b"login/createQRCode.do") && response.body.ibcontains(b"resources/commonImage/favicon.ico") && response.body.ibcontains(b"用户登录")
 expression: r0()

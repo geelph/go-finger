@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.acmailer.jp\"><img
-      src=\"img/logo.jpg")
+    expression: response.body.ibcontains(b"<a href=\"http://www.acmailer.jp\"><img src=\"img/logo.jpg")
 expression: r0()

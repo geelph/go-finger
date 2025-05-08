@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"shopbuilder") && response.body.ibcontains(b"powered
-      by shopbuilder")
+    expression: response.body.ibcontains(b"content=\"shopbuilder") && response.body.ibcontains(b"powered by shopbuilder")
   r1:
     request:
       method: GET

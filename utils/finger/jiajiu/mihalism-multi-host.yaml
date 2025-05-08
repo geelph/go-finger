@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"http://www.mihalism.com/product/mmh/\">mihalism
-      multi host")
+    expression: response.body.ibcontains(b"http://www.mihalism.com/product/mmh/\">mihalism multi host")
   r1:
     request:
       method: GET

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"click the link below to get started using
-      nagios xi.")
+    expression: response.body.ibcontains(b"click the link below to get started using nagios xi.")
   r1:
     request:
       method: GET

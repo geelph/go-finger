@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"http://www.igenus.org/\" target=\"_blank\">")
-      && response.body.ibcontains(b"igenus webmail system")
+    expression: response.body.ibcontains(b"href=\"http://www.igenus.org/\" target=\"_blank\">") && response.body.ibcontains(b"igenus webmail system")
 expression: r0()

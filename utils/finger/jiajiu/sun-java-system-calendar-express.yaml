@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"imx/login-logo.gif\" width=\"186\"
-      height=\"79\" alt=\"sun microsystems, inc.\">")
+    expression: response.body.ibcontains(b"<img src=\"imx/login-logo.gif\" width=\"186\" height=\"79\" alt=\"sun microsystems, inc.\">")
 expression: r0()

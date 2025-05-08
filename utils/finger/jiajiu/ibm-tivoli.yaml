@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"tivoli netview uses an open source web
-      server")
+    expression: response.body.ibcontains(b"tivoli netview uses an open source web server")
 expression: r0() || r1()

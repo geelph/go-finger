@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"redirecting to aster ncluster management
-      console (amc)")
+    expression: response.body.ibcontains(b"redirecting to aster ncluster management console (amc)")
 expression: r0()

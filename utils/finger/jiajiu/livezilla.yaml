@@ -25,6 +25,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"livezilla is a registered trademark of
-      livezilla gmbh</div>")
+    expression: response.body.ibcontains(b"livezilla is a registered trademark of livezilla gmbh</div>")
 expression: r0() || r1() || r2() || r3()

@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"css/fw/full.css") && response.body.ibcontains(b"src=\"js/p/login.js")
-      && response.body.ibcontains(b"login")
+    expression: response.body.ibcontains(b"href=\"css/fw/full.css") && response.body.ibcontains(b"src=\"js/p/login.js") && response.body.ibcontains(b"login")
   r1:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"checkLocalServiceStatus")
-      && response.body.ibcontains(b"天玥运维安全网关")
+    expression: response.status == 200 && response.body.ibcontains(b"checkLocalServiceStatus") && response.body.ibcontains(b"天玥运维安全网关")
 expression: r0() || r1()

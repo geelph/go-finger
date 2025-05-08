@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"setHtmlFontSize") && response.body.ibcontains(b"static/css/app")
-      && response.body.ibcontains(b"1366")
+    expression: response.body.ibcontains(b"setHtmlFontSize") && response.body.ibcontains(b"static/css/app") && response.body.ibcontains(b"1366")
 expression: r0()

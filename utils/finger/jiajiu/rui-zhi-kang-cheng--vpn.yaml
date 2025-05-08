@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"class=\"no-js\">请先启用javascript") && response.body.ibcontains(b"class=\"col-md-12
-      col-xs-12 col-lg-12 external_signin_links\"")
+    expression: response.body.ibcontains(b"class=\"no-js\">请先启用javascript") && response.body.ibcontains(b"class=\"col-md-12 col-xs-12 col-lg-12 external_signin_links\"")
 expression: r0()

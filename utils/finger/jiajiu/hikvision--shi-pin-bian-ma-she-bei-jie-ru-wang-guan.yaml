@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"/bncgi-bin/test.pl") && response.body.ibcontains(b"<input
-      id=\"p_pass\" class=\"int\" onfocus=\"this.value='';\" tabindex=\"2\" name=\"p_pass")
+    expression: response.body.ibcontains(b"href=\"/bncgi-bin/test.pl") && response.body.ibcontains(b"<input id=\"p_pass\" class=\"int\" onfocus=\"this.value='';\" tabindex=\"2\" name=\"p_pass")
 expression: r0()

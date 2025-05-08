@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.raw_header.ibcontains(b"Server: sap netweaver application
-      server")'
+    expression: 'response.raw_header.ibcontains(b"Server: sap netweaver application server")'
   r2:
     request:
       method: GET

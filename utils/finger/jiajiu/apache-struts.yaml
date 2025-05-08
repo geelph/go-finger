@@ -35,8 +35,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"Struts2 Showcase for Apache Struts
-      Project\"")
+    expression: response.body.ibcontains(b"content=\"Struts2 Showcase for Apache Struts Project\"")
   r6:
     request:
       method: GET

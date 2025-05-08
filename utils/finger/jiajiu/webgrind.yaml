@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<span id=\"invocation_sum\"></span> different
-      functions called in <span id=\"runtime_sum")
+    expression: response.body.ibcontains(b"<span id=\"invocation_sum\"></span> different functions called in <span id=\"runtime_sum")
 expression: r0()

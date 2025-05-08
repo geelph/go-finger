@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"camera life") && response.body.ibcontains(b"this
-      site is powered by camera life")
+    expression: response.body.ibcontains(b"content=\"camera life") && response.body.ibcontains(b"this site is powered by camera life")
 expression: r0()

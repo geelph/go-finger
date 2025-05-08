@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"://www.adminer.org/' target=\"_blank\"
-      rel=\"noreferrer")
+    expression: response.body.ibcontains(b"://www.adminer.org/' target=\"_blank\" rel=\"noreferrer")
 expression: r0()

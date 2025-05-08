@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"method=\"post\" action=\"s\" onsubmit=\"return
-      checksearchform();\">")
+    expression: response.body.ibcontains(b"method=\"post\" action=\"s\" onsubmit=\"return checksearchform();\">")
 expression: r0() || r1()

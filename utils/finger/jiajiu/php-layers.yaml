@@ -20,6 +20,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- beginning of menu header - php layers
-      menu")
+    expression: response.body.ibcontains(b"<!-- beginning of menu header - php layers menu")
 expression: r0() || r1() || r2()

@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"./img/panel-logo.png\" alt=\"parallels
-      plesk panel\"></a>")
+    expression: response.body.ibcontains(b"<img src=\"./img/panel-logo.png\" alt=\"parallels plesk panel\"></a>")
 expression: r0() || r1()

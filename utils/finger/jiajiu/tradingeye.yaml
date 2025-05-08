@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"id=\"credits\"><a href=\"http://www.tradingeye.com/\">powered
-      by tradingeye</a>")
+    expression: response.body.ibcontains(b"id=\"credits\"><a href=\"http://www.tradingeye.com/\">powered by tradingeye</a>")
 expression: r0() || r1()

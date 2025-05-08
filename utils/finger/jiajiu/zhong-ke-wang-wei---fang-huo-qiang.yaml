@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"北京中科网威") && response.body.ibcontains(b"<input
-      type=\"checkbox\" id=\"authened_type\" name=\"authened_type\"><i class=\"checkbox\"></i>")
+    expression: response.body.ibcontains(b"北京中科网威") && response.body.ibcontains(b"<input type=\"checkbox\" id=\"authened_type\" name=\"authened_type\"><i class=\"checkbox\"></i>")
 expression: r0()

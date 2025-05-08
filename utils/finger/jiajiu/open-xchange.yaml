@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"you need to enable javascript to access
-      the open-xchange server")
+    expression: response.body.ibcontains(b"you need to enable javascript to access the open-xchange server")
   r1:
     request:
       method: GET

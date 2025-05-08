@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"net.ejinshan.avclient.apk")
-      && response.body.ibcontains(b"金山终端安全系统")
+    expression: response.status == 200 && response.body.ibcontains(b"net.ejinshan.avclient.apk") && response.body.ibcontains(b"金山终端安全系统")
 expression: r0()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- symantec client security web based
-      installation -->")
+    expression: response.body.ibcontains(b"<!-- symantec client security web based installation -->")
 expression: r0()

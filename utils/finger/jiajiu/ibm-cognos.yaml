@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/cgi-bin/cognos.cgi") && response.body.ibcontains(b"cognos
-      &#26159; international business machines corp")
+    expression: response.body.ibcontains(b"/cgi-bin/cognos.cgi") && response.body.ibcontains(b"cognos &#26159; international business machines corp")
 expression: r0()

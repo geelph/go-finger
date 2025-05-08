@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"ImgZimbraIcon") && response.raw_header.ibcontains(b"Set-Cookie:
-      ZM_LOGIN_CSRF")'
+    expression: 'response.body.ibcontains(b"ImgZimbraIcon") && response.raw_header.ibcontains(b"Set-Cookie: ZM_LOGIN_CSRF")'
   r1:
     request:
       method: GET

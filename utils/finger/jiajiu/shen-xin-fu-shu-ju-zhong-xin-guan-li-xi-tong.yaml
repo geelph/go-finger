@@ -25,6 +25,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b" = function(str, key)") && response.body.ibcontains(b"content=\"must-revalidate\"")
-      && response.body.ibcontains(b"content=\"no-cache\"") && response.body.ibcontains(b"content=\"IE=EmulateIE7\"")
+    expression: response.body.ibcontains(b" = function(str, key)") && response.body.ibcontains(b"content=\"must-revalidate\"") && response.body.ibcontains(b"content=\"no-cache\"") && response.body.ibcontains(b"content=\"IE=EmulateIE7\"")
 expression: r0() || r1() || r2() || r3()

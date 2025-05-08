@@ -20,8 +20,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"location.href") && response.body.ibcontains(b"var
-      webvirtualdiretory = 'viewgood';")
+    expression: response.body.ibcontains(b"location.href") && response.body.ibcontains(b"var webvirtualdiretory = 'viewgood';")
   r3:
     request:
       method: GET

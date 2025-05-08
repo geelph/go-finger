@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<p class=\"alignright\">powered by s:cms
-      - copyright ©") && response.body.ibcontains(b"class=\"scms_container w1200\"")
+    expression: response.body.ibcontains(b"<p class=\"alignright\">powered by s:cms - copyright ©") && response.body.ibcontains(b"class=\"scms_container w1200\"")
   r1:
     request:
       method: GET

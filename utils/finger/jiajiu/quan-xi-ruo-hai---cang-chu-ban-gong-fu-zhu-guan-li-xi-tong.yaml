@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"src=\"/scripts/easyui/jquery.easyui.min.js\"")
-      && response.body.ibcontains(b"广州全息若海信息科技有限公司")
+    expression: response.body.ibcontains(b"src=\"/scripts/easyui/jquery.easyui.min.js\"") && response.body.ibcontains(b"广州全息若海信息科技有限公司")
 expression: r0()

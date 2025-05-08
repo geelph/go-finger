@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/php/common/checknum_creat.php?module=config_authnum\")?")
-      && response.body.ibcontains(b"isg1000")
+    expression: response.body.ibcontains(b"/php/common/checknum_creat.php?module=config_authnum\")?") && response.body.ibcontains(b"isg1000")
 expression: r0()

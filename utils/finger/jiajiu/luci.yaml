@@ -35,6 +35,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<head> <meta http-equiv=\"refresh\" content=\"0;
-      url=/cgi-bin/luci\" /> </head>")
+    expression: response.body.ibcontains(b"<head> <meta http-equiv=\"refresh\" content=\"0; url=/cgi-bin/luci\" /> </head>")
 expression: r0() || r1() || r2() || r3() || r4() || r5()

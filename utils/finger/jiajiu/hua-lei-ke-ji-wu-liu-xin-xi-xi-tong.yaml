@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"华磊科技") && response.body.ibcontains(b"快递系统")
-      && response.body.ibcontains(b"erp对接")
+    expression: response.body.ibcontains(b"content=\"华磊科技") && response.body.ibcontains(b"快递系统") && response.body.ibcontains(b"erp对接")
 expression: r0()

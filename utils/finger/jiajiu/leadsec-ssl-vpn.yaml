@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"/ssl/down/usbkey.exe") && response.body.ibcontains(b"欢迎使用leadsec网御ssl
-      vpn")
+    expression: response.body.ibcontains(b"/ssl/down/usbkey.exe") && response.body.ibcontains(b"欢迎使用leadsec网御ssl vpn")
 expression: r0()

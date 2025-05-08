@@ -10,13 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!--- do not translate or modify any part
-      of the hidden parameter(s) --->")
+    expression: response.body.ibcontains(b"<!--- do not translate or modify any part of the hidden parameter(s) --->")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var warningstring = \"<b>warning:</b> to
-      maintain your login session, make sure that your browser is configured to accept
-      cookies.\";")
+    expression: response.body.ibcontains(b"var warningstring = \"<b>warning:</b> to maintain your login session, make sure that your browser is configured to accept cookies.\";")
 expression: r0() || r1()

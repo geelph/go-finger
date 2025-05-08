@@ -40,6 +40,5 @@ rules:
     request:
       method: POST
       path: /
-    expression: response.body.ibcontains(b"syntax error, expect {, actual error, pos
-      0")
+    expression: response.body.ibcontains(b"syntax error, expect {, actual error, pos 0")
 expression: r0() || r1() || r2() || r3() || r4() || r5() || r6()

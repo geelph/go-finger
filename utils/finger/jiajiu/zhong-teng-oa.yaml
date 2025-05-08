@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"login") && response.body.ibcontains(b"systemAction")
-      && response.body.ibcontains(b"zt_webframe")
+    expression: response.body.ibcontains(b"login") && response.body.ibcontains(b"systemAction") && response.body.ibcontains(b"zt_webframe")
 expression: r0()

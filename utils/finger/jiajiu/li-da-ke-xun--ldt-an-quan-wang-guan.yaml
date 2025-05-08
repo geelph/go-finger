@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<body onload=\"chkversion();setlanguage();loading()\"
-      onkeydown=\"keylogin(event);\">") && response.body.ibcontains(b"湖北力达科讯")
+    expression: response.body.ibcontains(b"<body onload=\"chkversion();setlanguage();loading()\" onkeydown=\"keylogin(event);\">") && response.body.ibcontains(b"湖北力达科讯")
 expression: r0()

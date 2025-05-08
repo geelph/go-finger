@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location:
-      /defaultroot/portal.jsp?access=oa")'
+    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Location: /defaultroot/portal.jsp?access=oa")'
 expression: r0()

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div id=\"codeversion\">qcubed development
-      framework")
+    expression: response.body.ibcontains(b"<div id=\"codeversion\">qcubed development framework")
   r1:
     request:
       method: GET

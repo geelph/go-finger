@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"<form action=\"/index.php/home/login/login.html\"
-      method=\"post\" id=\"login\" class=\"form\" data-bind=\"submit: submitform\">")'
+    expression: 'response.body.ibcontains(b"<form action=\"/index.php/home/login/login.html\" method=\"post\" id=\"login\" class=\"form\" data-bind=\"submit: submitform\">")'
 expression: r0() || r1()

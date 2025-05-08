@@ -15,14 +15,12 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- mybb is free software developed and
-      maintained")
+    expression: response.body.ibcontains(b"<!-- mybb is free software developed and maintained")
   r2:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"visibility of the mybb copyright at any
-      time")
+    expression: response.body.ibcontains(b"visibility of the mybb copyright at any time")
   r3:
     request:
       method: GET

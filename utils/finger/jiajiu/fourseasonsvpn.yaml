@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"imgs/fs-black-box.jpg") && response.body.ibcontains(b"fs
-      vpn")
+    expression: response.body.ibcontains(b"imgs/fs-black-box.jpg") && response.body.ibcontains(b"fs vpn")
 expression: r0()

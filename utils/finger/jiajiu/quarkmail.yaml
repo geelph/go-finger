@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<iframe src=\"/cgi-bin/web2cgi/index.cgi\"
-      scrolling=\"no\" frameborder=")
+    expression: response.body.ibcontains(b"<iframe src=\"/cgi-bin/web2cgi/index.cgi\" scrolling=\"no\" frameborder=")
 expression: r0() || r1()

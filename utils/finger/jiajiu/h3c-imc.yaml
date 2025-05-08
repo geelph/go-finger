@@ -45,8 +45,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"h3c &#26234;&#33021;&#31649;&#29702;&#20013;&#24515;</span>")
-      && response.body.ibcontains(b"src=\"/imc/faces/extensionresource/com.h3c.imc.component.util.extensionresourceloader/")
+    expression: response.body.ibcontains(b"h3c &#26234;&#33021;&#31649;&#29702;&#20013;&#24515;</span>") && response.body.ibcontains(b"src=\"/imc/faces/extensionresource/com.h3c.imc.component.util.extensionresourceloader/")
   r8:
     request:
       method: GET

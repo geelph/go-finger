@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.dspace.org\">dspace
-      software")
+    expression: response.body.ibcontains(b"<a href=\"http://www.dspace.org\">dspace software")
 expression: r0() || r1()

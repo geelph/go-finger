@@ -25,6 +25,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href=\"https://virtualairlinesmanager.net/\">virtual
-      airlines manager")
+    expression: response.body.ibcontains(b"href=\"https://virtualairlinesmanager.net/\">virtual airlines manager")
 expression: r0() || r1() || r2() || r3()

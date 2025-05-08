@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"国迈安全私有云部 all rights reserved") && response.body.ibcontains(b"</span>国迈安全私有云部.
-      <span>all rights reserved")
+    expression: response.body.ibcontains(b"国迈安全私有云部 all rights reserved") && response.body.ibcontains(b"</span>国迈安全私有云部. <span>all rights reserved")
 expression: r0()

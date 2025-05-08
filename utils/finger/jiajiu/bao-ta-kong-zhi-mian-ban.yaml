@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Set-Cookie:
-      BT_PANEL_6")'
+    expression: 'response.status == 302 && response.raw_header.ibcontains(b"Set-Cookie: BT_PANEL_6")'
   r1:
     request:
       method: GET

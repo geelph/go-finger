@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"type=\"text/javascript\" SourceControl=\"EpointCommon\"
-      ></script>")
+    expression: response.body.ibcontains(b"type=\"text/javascript\" SourceControl=\"EpointCommon\" ></script>")
 expression: r0()

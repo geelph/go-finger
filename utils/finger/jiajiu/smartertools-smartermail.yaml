@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"login - smartermail") && response.body.ibcontains(b"<a
-      href='http://www.smartertools.com/smartermail/mail-server-software.aspx' target='_blank'>smartermail")
+    expression: response.body.ibcontains(b"login - smartermail") && response.body.ibcontains(b"<a href='http://www.smartertools.com/smartermail/mail-server-software.aspx' target='_blank'>smartermail")
 expression: r0()

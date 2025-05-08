@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"&nbsp;tonethink.soft&nbsp;&nbsp;all rights
-      reserved")
+    expression: response.body.ibcontains(b"&nbsp;tonethink.soft&nbsp;&nbsp;all rights reserved")
 expression: r0()

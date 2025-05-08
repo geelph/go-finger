@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"http://go.microsoft.com/fwlink/?linkid=66138")
-      && response.body.ibcontains(b"IIS7")
+    expression: response.body.ibcontains(b"http://go.microsoft.com/fwlink/?linkid=66138") && response.body.ibcontains(b"IIS7")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"http://go.microsoft.com/fwlink/?linkid=66138")
-      && response.body.ibcontains(b"<title>IIS Windows Server")
+    expression: response.body.ibcontains(b"http://go.microsoft.com/fwlink/?linkid=66138") && response.body.ibcontains(b"<title>IIS Windows Server")
 expression: r0() || r1()

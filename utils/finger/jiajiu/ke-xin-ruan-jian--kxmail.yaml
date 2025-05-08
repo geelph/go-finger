@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"科信邮件系统") && response.body.ibcontains(b"powered
-      by <a href=\"http://www.kxmail.net")
+    expression: response.body.ibcontains(b"科信邮件系统") && response.body.ibcontains(b"powered by <a href=\"http://www.kxmail.net")
 expression: r0()

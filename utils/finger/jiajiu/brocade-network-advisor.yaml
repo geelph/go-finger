@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<span class=\"ui-menuitem-text\">about
-      network advisor</span></a>")
+    expression: response.body.ibcontains(b"<span class=\"ui-menuitem-text\">about network advisor</span></a>")
 expression: r0()

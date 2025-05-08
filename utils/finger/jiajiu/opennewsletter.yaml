@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"this software is based on the opennewsletter
-      project")
+    expression: response.body.ibcontains(b"this software is based on the opennewsletter project")
 expression: r0() || r1()

@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"?img=pear\" width=\"104\" height=\"50\"
-      vspace=\"2\" hspace=\"5\" alt=\"pear\">")
+    expression: response.body.ibcontains(b"<img src=\"?img=pear\" width=\"104\" height=\"50\" vspace=\"2\" hspace=\"5\" alt=\"pear\">")
 expression: r0() || r1()

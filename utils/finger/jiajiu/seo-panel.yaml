@@ -10,14 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<p class=\"note error\">javascript is turned
-      off in your web browser. turn it on to take full advantage of this site, then
-      refresh the page.</p>")
+    expression: response.body.ibcontains(b"<p class=\"note error\">javascript is turned off in your web browser. turn it on to take full advantage of this site, then refresh the page.</p>")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"var wantproceed = 'do you really want to
-      proceed?';") && response.body.ibcontains(b"var wantproceed = 'wollen sie wirklich
-      fortfahren?';")
+    expression: response.body.ibcontains(b"var wantproceed = 'do you really want to proceed?';") && response.body.ibcontains(b"var wantproceed = 'wollen sie wirklich fortfahren?';")
 expression: r0() || r1()

@@ -30,8 +30,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by <a href='http://www.zentao.net'
-      target='_blank'>zentaopms") && response.body.ibcontains(b"welcome to use zentao!")
+    expression: response.body.ibcontains(b"powered by <a href='http://www.zentao.net' target='_blank'>zentaopms") && response.body.ibcontains(b"welcome to use zentao!")
   r5:
     request:
       method: GET

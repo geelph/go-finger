@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"guacamole - clientless remote desktop")
-      && response.body.ibcontains(b"scripts/guac-ui.js")
+    expression: response.body.ibcontains(b"guacamole - clientless remote desktop") && response.body.ibcontains(b"scripts/guac-ui.js")
 expression: r0() || r1()

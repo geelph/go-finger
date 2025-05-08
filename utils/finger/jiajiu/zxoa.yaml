@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"name=\"button1\" value=\"\" onclick=\"javascript:return
-      checkfrom();\" id=\"button1\" class=\"loginbtn\" />")
+    expression: response.body.ibcontains(b"name=\"button1\" value=\"\" onclick=\"javascript:return checkfrom();\" id=\"button1\" class=\"loginbtn\" />")
 expression: r0() || r1()

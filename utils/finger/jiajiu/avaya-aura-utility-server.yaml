@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"vmstitle\">avaya aura&#8482;&nbsp;utility
-      server")
+    expression: response.body.ibcontains(b"vmstitle\">avaya aura&#8482;&nbsp;utility server")
   r1:
     request:
       method: GET

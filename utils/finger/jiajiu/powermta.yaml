@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<html><body>access denied.  please consult
-      the http-access directive in the user's guide for more information.</body>")
+    expression: response.body.ibcontains(b"<html><body>access denied.  please consult the http-access directive in the user's guide for more information.</body>")
 expression: r0()

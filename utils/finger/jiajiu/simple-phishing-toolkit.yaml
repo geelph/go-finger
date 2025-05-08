@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<span id=\"spt\"><a href=\"http://www.sptoolkit.com/download/\"
-      target=\"_blank\">")
+    expression: response.body.ibcontains(b"<span id=\"spt\"><a href=\"http://www.sptoolkit.com/download/\" target=\"_blank\">")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"welcome to spt - simple phishing
-      toolkit.  spt is a super simple but powerful phishing toolkit.\" />")
+    expression: response.body.ibcontains(b"content=\"welcome to spt - simple phishing toolkit.  spt is a super simple but powerful phishing toolkit.\" />")
 expression: r0() || r1()

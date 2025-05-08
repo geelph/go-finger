@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"zyxelhelp.js") && response.body.ibcontains(b".::welcome
-      to the web-based configurator::.")
+    expression: response.body.ibcontains(b"zyxelhelp.js") && response.body.ibcontains(b".::welcome to the web-based configurator::.")
 expression: r0()

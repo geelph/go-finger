@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"color: #222222;") && response.body.ibcontains(b"lang=zh-cmn-Hans")
-      && response.body.ibcontains(b"loader-")'
+    expression: 'response.body.ibcontains(b"color: #222222;") && response.body.ibcontains(b"lang=zh-cmn-Hans") && response.body.ibcontains(b"loader-")'
   r2:
     request:
       method: GET

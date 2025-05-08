@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<acx-root>")
-      && response.body.ibcontains(b"<title>Acunetix")
+    expression: response.status == 200 && response.body.ibcontains(b"<acx-root>") && response.body.ibcontains(b"<title>Acunetix")
 expression: r0()

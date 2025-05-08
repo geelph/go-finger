@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<iframe frameborder=\"0\" class=\"framelayout\"
-      src=\"./page/blank.html\" name=\"mainframe\" id=\"mainframe")
+    expression: response.body.ibcontains(b"<iframe frameborder=\"0\" class=\"framelayout\" src=\"./page/blank.html\" name=\"mainframe\" id=\"mainframe")
 expression: r0() || r1()

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"baseurl : ''app'',        //配置模块根路径到静态资源根目录")
-      && response.body.ibcontains(b"360代码卫士")'
+    expression: 'response.body.ibcontains(b"baseurl : ''app'',        //配置模块根路径到静态资源根目录") && response.body.ibcontains(b"360代码卫士")'
 expression: r0()

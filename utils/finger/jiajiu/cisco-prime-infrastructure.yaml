@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<div class=\"xwtproductname\" >cisco prime
-      infrastructure")
+    expression: response.body.ibcontains(b"<div class=\"xwtproductname\" >cisco prime infrastructure")
   r1:
     request:
       method: GET

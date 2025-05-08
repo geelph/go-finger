@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.status == 401 && response.body.ibcontains(b"Unauthorized")
-      && response.raw_header.ibcontains(b"Www-Authenticate: Basic realm=\"default\"")'
+    expression: 'response.status == 401 && response.body.ibcontains(b"Unauthorized") && response.raw_header.ibcontains(b"Www-Authenticate: Basic realm=\"default\"")'
 expression: r0()

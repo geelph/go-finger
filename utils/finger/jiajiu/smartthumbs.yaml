@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by<a href=\"http://www.smart-scripts.com\">smart
-      thumbs</a>")
+    expression: response.body.ibcontains(b"powered by<a href=\"http://www.smart-scripts.com\">smart thumbs</a>")
 expression: r0()

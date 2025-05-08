@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=木云科技") && response.body.ibcontains(b"webvpn")
-      && response.body.ibcontains(b"应用安全网关")
+    expression: response.body.ibcontains(b"content=木云科技") && response.body.ibcontains(b"webvpn") && response.body.ibcontains(b"应用安全网关")
 expression: r0()

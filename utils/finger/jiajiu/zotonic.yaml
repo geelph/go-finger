@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"/lib/js/apps/zotonic-1.0") && response.body.ibcontains(b"powered
-      by: zotonic")'
+    expression: 'response.body.ibcontains(b"/lib/js/apps/zotonic-1.0") && response.body.ibcontains(b"powered by: zotonic")'
 expression: r0()

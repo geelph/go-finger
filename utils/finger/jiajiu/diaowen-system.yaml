@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by <a href=\"http://www.dwsurvey.net\"
-      style=")
+    expression: response.body.ibcontains(b"powered by <a href=\"http://www.dwsurvey.net\" style=")
 expression: r0()

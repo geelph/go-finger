@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"evpng.fix('div, ul, img, li, input'); //evpng.fix('pngid1,
-      pngid2')") && response.body.ibcontains(b"web user login")
+    expression: response.body.ibcontains(b"evpng.fix('div, ul, img, li, input'); //evpng.fix('pngid1, pngid2')") && response.body.ibcontains(b"web user login")
 expression: r0()

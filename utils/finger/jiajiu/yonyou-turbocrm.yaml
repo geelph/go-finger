@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"CRM") && response.body.ibcontains(b"loginsys_osv")
-      && response.body.ibcontains(b"用友")
+    expression: response.status == 200 && response.body.ibcontains(b"CRM") && response.body.ibcontains(b"loginsys_osv") && response.body.ibcontains(b"用友")
   r1:
     request:
       method: GET

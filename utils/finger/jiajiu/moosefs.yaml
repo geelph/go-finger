@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"mfs.cgi") && response.body.ibcontains(b"under-goal
-      files")
+    expression: response.body.ibcontains(b"mfs.cgi") && response.body.ibcontains(b"under-goal files")
 expression: r0()

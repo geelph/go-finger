@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"this.src='/style/images/rand.php?update=1'")
-      && response.body.ibcontains(b"天融信web应用安全网关")
+    expression: response.body.ibcontains(b"this.src='/style/images/rand.php?update=1'") && response.body.ibcontains(b"天融信web应用安全网关")
 expression: r0()

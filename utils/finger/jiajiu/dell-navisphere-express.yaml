@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"parent.main.location = urlnonst + \"?nst=\"
-      + top.menu.securitytoken")
+    expression: response.body.ibcontains(b"parent.main.location = urlnonst + \"?nst=\" + top.menu.securitytoken")
 expression: r0()

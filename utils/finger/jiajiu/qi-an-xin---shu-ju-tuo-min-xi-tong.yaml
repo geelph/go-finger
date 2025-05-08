@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"#!/home\" class=\"sysname\">360网神数据脱敏系统
-      ")
+    expression: response.body.ibcontains(b"<a href=\"#!/home\" class=\"sysname\">360网神数据脱敏系统 ")
 expression: r0()

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"alert(\"ihr suchbegriff muss mind. aus
-      3 zeichen bestehen.\");")
+    expression: response.body.ibcontains(b"alert(\"ihr suchbegriff muss mind. aus 3 zeichen bestehen.\");")
   r1:
     request:
       method: GET

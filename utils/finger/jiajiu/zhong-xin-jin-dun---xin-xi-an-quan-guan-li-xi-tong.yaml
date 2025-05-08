@@ -10,7 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"onclick=\"javascript:useaccountlogin();")
-      && response.body.ibcontains(b"c.alertmsg(''磁盘空间剩余: '' + space_available + ''
-      m'',''alert_msg'');")'
+    expression: 'response.body.ibcontains(b"onclick=\"javascript:useaccountlogin();") && response.body.ibcontains(b"c.alertmsg(''磁盘空间剩余: '' + space_available + '' m'',''alert_msg'');")'
 expression: r0()

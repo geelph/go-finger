@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"background: transparent url(images/login_logo.gif)
-      no-repeat")'
+    expression: 'response.body.ibcontains(b"background: transparent url(images/login_logo.gif) no-repeat")'
   r1:
     request:
       method: GET

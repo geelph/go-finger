@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"the complete network monitoring software
-      from manageengine")
+    expression: response.body.ibcontains(b"the complete network monitoring software from manageengine")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"http://www.manageengine.com/products/opmanager/index.html\"
-      target=")
+    expression: response.body.ibcontains(b"<a href=\"http://www.manageengine.com/products/opmanager/index.html\" target=")
 expression: r0() || r1()

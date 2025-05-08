@@ -10,14 +10,12 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"onclick=\"showstate(gettext('forgotten
-      password')) ")
+    expression: response.body.ibcontains(b"onclick=\"showstate(gettext('forgotten password')) ")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"zknet") && response.body.ibcontains(b"zksoftware
-      inc.")
+    expression: response.body.ibcontains(b"zknet") && response.body.ibcontains(b"zksoftware inc.")
   r2:
     request:
       method: GET

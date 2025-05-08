@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"action=\"/index.php\" onsubmit=\"return
-      checkfrm(this);")
+    expression: response.body.ibcontains(b"action=\"/index.php\" onsubmit=\"return checkfrm(this);")
 expression: r0()

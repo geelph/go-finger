@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<li style=\"color:#999999;margin-left:6px;list-style:circle
-      inside;\">如忘记密码，请与防火墙管理员联系</li>")
+    expression: response.body.ibcontains(b"<li style=\"color:#999999;margin-left:6px;list-style:circle inside;\">如忘记密码，请与防火墙管理员联系</li>")
   r1:
     request:
       method: GET

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- this is all just a super-duper redirect
-      to the welcome page")
+    expression: response.body.ibcontains(b"<!-- this is all just a super-duper redirect to the welcome page")
   r1:
     request:
       method: GET

@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"title=\"php support tickets\">php support
-      tickets")
+    expression: response.body.ibcontains(b"title=\"php support tickets\">php support tickets")
   r1:
     request:
       method: GET

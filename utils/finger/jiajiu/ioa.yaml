@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<a href=\"https://www.ioa.cn/official/download.html\"
-      target=\"_blank\">爱办公app</a>")
+    expression: response.body.ibcontains(b"<a href=\"https://www.ioa.cn/official/download.html\" target=\"_blank\">爱办公app</a>")
   r1:
     request:
       method: GET

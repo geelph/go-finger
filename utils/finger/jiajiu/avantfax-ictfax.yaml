@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<img src=\"images/avantfax-big.png\" border=\"0\"
-      alt=\"ictfax")
+    expression: response.body.ibcontains(b"<img src=\"images/avantfax-big.png\" border=\"0\" alt=\"ictfax")
   r1:
     request:
       method: GET

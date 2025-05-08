@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: 'response.body.ibcontains(b"education area management support system
-      : amss++")'
+    expression: 'response.body.ibcontains(b"education area management support system : amss++")'
   r1:
     request:
       method: GET

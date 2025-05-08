@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"-moz-background-size") && response.body.ibcontains(b"class=\"u_logo
-      fa fa-user\"")
+    expression: response.body.ibcontains(b"-moz-background-size") && response.body.ibcontains(b"class=\"u_logo fa fa-user\"")
 expression: r0()

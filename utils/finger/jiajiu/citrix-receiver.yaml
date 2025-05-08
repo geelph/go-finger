@@ -15,6 +15,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"logonbelt-topshadow") && response.body.ibcontains(b"upgradeavailable-already-installed-separator
-      bar-separator")
+    expression: response.body.ibcontains(b"logonbelt-topshadow") && response.body.ibcontains(b"upgradeavailable-already-installed-separator bar-separator")
 expression: r0() || r1()

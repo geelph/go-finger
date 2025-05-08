@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"cicro") && response.body.ibcontains(b"content=\"cicro")
-      && response.body.ibcontains(b"cws")
+    expression: response.body.ibcontains(b"cicro") && response.body.ibcontains(b"content=\"cicro") && response.body.ibcontains(b"cws")
   r1:
     request:
       method: GET

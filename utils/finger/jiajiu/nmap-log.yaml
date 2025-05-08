@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"interesting ports on") && response.body.ibcontains(b"starting
-      nmap")
+    expression: response.body.ibcontains(b"interesting ports on") && response.body.ibcontains(b"starting nmap")
 expression: r0()

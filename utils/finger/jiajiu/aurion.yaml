@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<!-- aurion teal will be used as the login-time
-      default")
+    expression: response.body.ibcontains(b"<!-- aurion teal will be used as the login-time default")
   r1:
     request:
       method: GET

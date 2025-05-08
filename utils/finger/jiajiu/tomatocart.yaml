@@ -10,12 +10,10 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"content=\"tomatocart open source shopping
-      cart solutions\" />")
+    expression: response.body.ibcontains(b"content=\"tomatocart open source shopping cart solutions\" />")
   r1:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"powered by <a href=\"http://www.tomatocart.com\"
-      target=\"_blank\">tomatocart</a>")
+    expression: response.body.ibcontains(b"powered by <a href=\"http://www.tomatocart.com\" target=\"_blank\">tomatocart</a>")
 expression: r0() || r1()

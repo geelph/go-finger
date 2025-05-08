@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"<meta name=\"author\" content=\"spiceworks,
-      inc.\" />")
+    expression: response.body.ibcontains(b"<meta name=\"author\" content=\"spiceworks, inc.\" />")
   r1:
     request:
       method: GET

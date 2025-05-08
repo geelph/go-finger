@@ -15,8 +15,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"href='http://www.proxmox.com' target='_blank'
-      class=\"boxheadline")
+    expression: response.body.ibcontains(b"href='http://www.proxmox.com' target='_blank' class=\"boxheadline")
   r2:
     request:
       method: GET

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"移动办公系统") && response.body.ibcontains(b"window.location.href
-      = '/ui/html/login.html';")
+    expression: response.body.ibcontains(b"移动办公系统") && response.body.ibcontains(b"window.location.href = '/ui/html/login.html';")
 expression: r0()

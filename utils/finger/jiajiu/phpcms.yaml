@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.status == 200 && response.body.ibcontains(b"<a href=\"http://www.phpcms.cn\"
-      target=\"_blank\">PHPCMS</a>")
+    expression: response.status == 200 && response.body.ibcontains(b"<a href=\"http://www.phpcms.cn\" target=\"_blank\">PHPCMS</a>")
 expression: r0()

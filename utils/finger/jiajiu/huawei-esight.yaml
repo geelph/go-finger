@@ -10,8 +10,7 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"location.replace('login.action?_='+ new
-      date().gettime());")
+    expression: response.body.ibcontains(b"location.replace('login.action?_='+ new date().gettime());")
   r1:
     request:
       method: GET

@@ -10,6 +10,5 @@ rules:
     request:
       method: GET
       path: /
-    expression: response.body.ibcontains(b"leagsoft") && response.body.ibcontains(b"redirect")
-      && response.body.ibcontains(b"网络准入")
+    expression: response.body.ibcontains(b"leagsoft") && response.body.ibcontains(b"redirect") && response.body.ibcontains(b"网络准入")
 expression: r0()
