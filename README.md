@@ -5,14 +5,16 @@ GXX是一款强大的指纹识别工具，基于YAML配置的规则进行目标�
 
 ## 💡 主要特性
 
-- **基于YAML配置**：使用简洁明了的YAML格式定义指纹识别规则
-- **多协议支持**：支持HTTP/HTTPS、TCP、UDP协议
-- **代理功能**：支持配置HTTP/SOCKS5代理
-- **批量扫描**：支持从文件读取多个目标进行批量扫描
-- **多格式输出**：支持TXT/CSV/JSON等多种输出格式
-- **自定义规则**：可根据需要自定义指纹识别规则
-- **调试模式**：内置调试功能，便于排查问题
-- **技术栈识别**：内置Wappalyzer引擎，可快速识别网站使用的技术组件
+- **强大的指纹识别** - 基于YAML的规则配置，简洁而强大
+- **高性能并发** - 使用协程池实现高效并发扫描，支持大规模目标
+- **多协议支持** - 全面支持HTTP/HTTPS、TCP、UDP协议
+- **代理功能** - 支持HTTP/SOCKS5代理，可配置多个代理地址
+- **批量扫描** - 支持从文件读取多个目标进行批量扫描
+- **多格式输出** - 支持TXT/CSV/JSON等多种输出格式
+- **自定义规则** - 灵活的指纹规则自定义功能
+- **技术栈识别** - 内置Wappalyzer引擎，快速识别网站技术组件
+- **CEL表达式** - 使用强大的CEL表达式引擎进行规则匹配
+- **实时输出** - 支持Unix domain socket实时结果输出
 
 ## 🚀 快速开始
 
@@ -66,6 +68,7 @@ gxx -u https://example.com --no-file-log
 - `-pf, --poc-file`：测试指定目录下的所有YAML文件
 - `--debug`：开启调试模式
 - `--no-file-log`：禁用文件日志记录，仅输出日志到控制台
+- `--timeout`：设置请求超时时间（秒，默认：5）
 
 ## 🧰 API使用
 
@@ -279,39 +282,21 @@ func main() {
         fmt.Println("\n未匹配到任何指纹")
     }
     
-    // 6. 获取基础信息和技术栈
-    baseInfo, err := gxx.GetBaseInfo(target, proxy, timeout)
-    if err != nil {
-        log.Printf("获取基本信息错误: %v", err)
-        return
-    }
-    
-    if baseInfo.Wappalyzer != nil {
+    // 6. 获取技术栈信息
+    if result.Wappalyzer != nil {
         fmt.Println("\n技术栈信息:")
-        if len(baseInfo.Wappalyzer.WebServers) > 0 {
-            fmt.Printf("  Web服务器: %v\n", baseInfo.Wappalyzer.WebServers)
+        if len(result.Wappalyzer.WebServers) > 0 {
+            fmt.Printf("  Web服务器: %v\n", result.Wappalyzer.WebServers)
         }
-        if len(baseInfo.Wappalyzer.ProgrammingLanguages) > 0 {
-            fmt.Printf("  编程语言: %v\n", baseInfo.Wappalyzer.ProgrammingLanguages)
+        if len(result.Wappalyzer.ProgrammingLanguages) > 0 {
+            fmt.Printf("  编程语言: %v\n", result.Wappalyzer.ProgrammingLanguages)
         }
-        if len(baseInfo.Wappalyzer.WebFrameworks) > 0 {
-            fmt.Printf("  Web框架: %v\n", baseInfo.Wappalyzer.WebFrameworks)
+        if len(result.Wappalyzer.WebFrameworks) > 0 {
+            fmt.Printf("  Web框架: %v\n", result.Wappalyzer.WebFrameworks)
         }
-        if len(baseInfo.Wappalyzer.JavaScriptFrameworks) > 0 {
-            fmt.Printf("  JS框架: %v\n", baseInfo.Wappalyzer.JavaScriptFrameworks)
+        if len(result.Wappalyzer.JavaScriptFrameworks) > 0 {
+            fmt.Printf("  JS框架: %v\n", result.Wappalyzer.JavaScriptFrameworks)
         }
-    }
-    
-    // 7. 单独进行技术栈识别
-    wappResult, err := gxx.WappalyzerScan(target, proxy, timeout)
-    if err != nil {
-        log.Printf("技术栈分析错误: %v", err)
-        return
-    }
-    
-    fmt.Println("\n单独技术栈分析结果:")
-    if len(wappResult.WebServers) > 0 {
-        fmt.Printf("  Web服务器: %v\n", wappResult.WebServers)
     }
 }
 ```
@@ -320,7 +305,7 @@ func main() {
 
 查看 [example](example/) 目录获取完整使用示例：
 
-- [基本扫描](example/basic_scan/)：单目标扫描
+- [基本扫描](example/basic_scan/)：单目标扫描示例
 - [代理扫描](example/proxy_scan/)：使用代理进行扫描
 - [文件目标扫描](example/file_target_scan/)：批量扫描多个目标
 - [百度API扫描](example/api_scan_baidu/)：API集成示例
@@ -331,21 +316,21 @@ func main() {
 ```
 gxx/
 ├── cmd/                    # 命令行应用程序入口点
+├── pkg/                    # 核心功能实现包
+│   ├── finger/             # 指纹识别实现
+│   ├── runner/             # 扫描运行器
+│   ├── wappalyzer/         # Wappalyzer技术栈识别
+│   └── cel/                # CEL表达式处理
+├── types/                  # 类型定义
 ├── utils/                  # 工具和核心功能代码
 │   ├── config/             # 配置管理
 │   ├── logger/             # 日志管理
 │   ├── common/             # 通用工具函数
-│   ├── finger/             # 核心指纹识别功能
-│   ├── proto/              # 协议相关代码
-│   ├── cel/                # CEL表达式处理
 │   ├── request/            # 请求处理
 │   └── output/             # 结果输出处理
-├── pkg/                    # 核心功能实现
-│   ├── finger/             # 指纹识别
-│   └── wappalyzer/         # Wappalyzer技术栈识别
-├── types/                  # 类型定义
 ├── logs/                   # 日志输出目录
 ├── example/                # 示例代码
+├── docs/                   # 文档目录
 ├── go.mod                  # Go模块定义
 └── README.md               # 项目说明文档
 ```
@@ -390,7 +375,7 @@ goreleaser build --snapshot --clean --snapshot
 
 ## 📝 指纹规则格式
 
-详细的指纹规则格式说明请参考：
+GXX使用YAML格式定义指纹规则，规则设计简洁明了，易于理解与扩展。详细说明请参考：
 - [指纹规则格式说明](docs/指纹规则格式说明.md)
 - [指纹开发快速参考](docs/指纹开发快速参考.md)
 
@@ -417,9 +402,19 @@ rules:
 expression: r0()
 ```
 
-***推荐使用ibcontains来进行关键词的匹配识别**
+**提示**: 推荐使用`ibcontains`函数进行大小写不敏感的关键词匹配，这能提高识别的准确性。
+
+## 🚀 性能优化
+
+GXX专为高性能设计，主要优化点包括：
+- 使用高效的协程池管理并发
+- 实现智能的请求超时控制
+- 采用分级并发控制，提高扫描效率
+- 针对大规模扫描优化内存使用
 
 ## 🤝 贡献指南
+
+欢迎为GXX贡献代码或指纹规则：
 
 - **规则贡献**：通过添加新的YAML格式指纹规则文件扩展指纹库
 - **代码贡献**：遵循项目代码结构进行功能开发

@@ -1,6 +1,6 @@
 /*
  * Package main
- * 基本扫描示例：演示如何使用GXX进行单个目标的指纹识别
+ * 基本扫描示例：演示如何使用GXX进行单个或多个目标的指纹识别
  * @Author: zhizhuo
  * @IDE：GoLand
  * @File: main.go
@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"gxx"
+	"gxx/pkg/wappalyzer"
 	_ "gxx/types"
 	"os"
 	"time"
@@ -19,44 +20,47 @@ import (
 func main() {
 	startTime := time.Now()
 
-	// 创建新的扫描选项
+	// 1. 创建新的扫描选项，用于初始化指纹规则库
 	options, err := gxx.NewFingerOptions()
 	if err != nil {
 		fmt.Printf("创建选项失败: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 设置目标URL - 可以设置多个目标
-	targets := []string{"example.com"}
+	// 2. 设置目标URL列表，可以添加多个目标
+	targets := []string{"example.com", "github.com"}
 
-	// 可选：设置超时时间（秒）
-	timeout := 5
+	// 3. 配置基本扫描参数
+	timeout := 5      // 超时时间（秒）
+	workerCount := 10 // 并发线程数
 
-	// 可选：设置线程数
-	workerCount := 5
-
-	// 执行扫描并输出结果
+	// 4. 初始化打印
 	fmt.Println("开始扫描目标:", targets)
 	fmt.Println("--------------------------------------------")
 
-	// 初始化指纹规则库
+	// 5. 初始化指纹规则库（只需执行一次）
 	if err := gxx.InitFingerRules(options); err != nil {
 		fmt.Printf("初始化指纹规则库失败: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 对每个目标单独扫描
+	// 6. 逐个扫描目标
 	for _, target := range targets {
+		// 打印当前目标
 		fmt.Printf("扫描目标: %s\n", target)
 
-		// 使用API接口方式扫描单个目标
+		// 使用API接口扫描单个目标
+		// 第一个参数：目标URL
+		// 第二个参数：代理地址，为空表示不使用代理
+		// 第三个参数：超时时间（秒）
+		// 第四个参数：并发线程数
 		result, err := gxx.FingerScan(target, "", timeout, workerCount)
 		if err != nil {
 			fmt.Printf("扫描失败: %v\n", err)
 			continue
 		}
 
-		// 输出基本信息
+		// 7. 输出基础信息
 		fmt.Printf("URL: %s, 状态码: %d, 标题: %s\n",
 			result.URL, result.StatusCode, result.Title)
 
@@ -64,86 +68,66 @@ func main() {
 			fmt.Printf("服务器: %s\n", result.Server.ServerType)
 		}
 
-		// 输出匹配的指纹
+		// 8. 输出匹配的指纹
 		matches := gxx.GetFingerMatches(result)
 		if len(matches) > 0 {
-			fmt.Printf("匹配到 %d 个指纹:\n", len(matches))
+			fmt.Printf("\n匹配到 %d 个指纹:\n", len(matches))
 			for i, match := range matches {
 				fmt.Printf("  %d. %s\n", i+1, match.Finger.Info.Name)
+				// 如果需要更详细的信息，可以取消下面的注释
+				// fmt.Printf("     ID: %s, 匹配结果: %v\n", match.Finger.Id, match.Result)
 			}
 		} else {
-			fmt.Println("未匹配到任何指纹")
+			fmt.Println("\n未匹配到任何指纹")
 		}
 
-		// 输出技术栈信息
-		if result.Wappalyzer != nil {
+		// 9. 输出技术栈信息（如果有）
+		if result.Wappalyzer != nil && hasWappalyzerData(result.Wappalyzer) {
 			fmt.Println("\n技术栈信息:")
-			if len(result.Wappalyzer.WebServers) > 0 {
-				fmt.Printf("  Web服务器: %v\n", result.Wappalyzer.WebServers)
-			}
-			if len(result.Wappalyzer.ProgrammingLanguages) > 0 {
-				fmt.Printf("  编程语言: %v\n", result.Wappalyzer.ProgrammingLanguages)
-			}
-			if len(result.Wappalyzer.WebFrameworks) > 0 {
-				fmt.Printf("  Web框架: %v\n", result.Wappalyzer.WebFrameworks)
-			}
+			printWappalyzerInfo(result.Wappalyzer)
 		}
 
 		fmt.Println()
 	}
 
+	// 10. 输出总结信息
 	fmt.Println("--------------------------------------------")
 	fmt.Printf("总耗时: %s\n", time.Since(startTime))
 	fmt.Println("扫描完成")
 }
 
-// CLI 命令行接口包装
-type CLI struct {
-	options *gxx.CmdOptions
+// 检查Wappalyzer结果是否有数据
+func hasWappalyzerData(wappalyzer *wappalyzer.TypeWappalyzer) bool {
+	if wappalyzer == nil {
+		return false
+	}
+
+	return len(wappalyzer.WebServers) > 0 ||
+		len(wappalyzer.ProgrammingLanguages) > 0 ||
+		len(wappalyzer.WebFrameworks) > 0 ||
+		len(wappalyzer.JavaScriptFrameworks) > 0 ||
+		len(wappalyzer.JavaScriptLibraries) > 0 ||
+		len(wappalyzer.Security) > 0
 }
 
-// NewCLI 创建新的命令行接口
-func NewCLI(options *gxx.CmdOptions) *CLI {
-	return &CLI{options: options}
-}
-
-// Run 执行扫描
-func (c *CLI) Run() {
-	// 调用gxx库的FingerScan函数
-	// 该函数会自动加载指纹规则库并执行扫描
-	fmt.Println("正在扫描...")
-
-	// 对于每个目标，我们可以单独调用API
-	for _, target := range c.options.Target {
-		// 初始化指纹规则库（如果尚未初始化）
-		if err := gxx.InitFingerRules(c.options.PocOptions); err != nil {
-			fmt.Printf("初始化指纹规则库失败: %v\n", err)
-			continue
-		}
-
-		// 使用API接口方式扫描单个目标
-		fmt.Printf("扫描目标: %s\n", target)
-		result, err := gxx.FingerScan(target, c.options.Proxy, c.options.Timeout, c.options.Threads)
-		if err != nil {
-			fmt.Printf("扫描失败: %v\n", err)
-			continue
-		}
-
-		// 输出基本信息
-		fmt.Printf("URL: %s, 状态码: %d, 标题: %s\n",
-			result.URL, result.StatusCode, result.Title)
-
-		// 输出匹配的指纹
-		matches := gxx.GetFingerMatches(result)
-		if len(matches) > 0 {
-			fmt.Printf("匹配到 %d 个指纹:\n", len(matches))
-			for i, match := range matches {
-				fmt.Printf("  %d. %s\n", i+1, match.Finger.Info.Name)
-			}
-		} else {
-			fmt.Println("未匹配到任何指纹")
-		}
-
-		fmt.Println()
+// 打印Wappalyzer技术栈信息
+func printWappalyzerInfo(wappalyzer *wappalyzer.TypeWappalyzer) {
+	if len(wappalyzer.WebServers) > 0 {
+		fmt.Printf("  Web服务器: %v\n", wappalyzer.WebServers)
+	}
+	if len(wappalyzer.ProgrammingLanguages) > 0 {
+		fmt.Printf("  编程语言: %v\n", wappalyzer.ProgrammingLanguages)
+	}
+	if len(wappalyzer.WebFrameworks) > 0 {
+		fmt.Printf("  Web框架: %v\n", wappalyzer.WebFrameworks)
+	}
+	if len(wappalyzer.JavaScriptFrameworks) > 0 {
+		fmt.Printf("  JS框架: %v\n", wappalyzer.JavaScriptFrameworks)
+	}
+	if len(wappalyzer.JavaScriptLibraries) > 0 {
+		fmt.Printf("  JS库: %v\n", wappalyzer.JavaScriptLibraries)
+	}
+	if len(wappalyzer.Security) > 0 {
+		fmt.Printf("  安全组件: %v\n", wappalyzer.Security)
 	}
 }

@@ -1,14 +1,16 @@
 # 基本扫描示例
 
-这个示例展示了GXX最基本的使用方式，通过命令行选项对单个或多个目标进行指纹识别。
+本示例展示了GXX最基本的使用方式，通过API对单个或多个目标进行指纹识别。
 
-## 功能特点
+## 🎯 功能特点
 
-- 设置单个或多个目标URL进行扫描
-- 配置基本的扫描参数（调试模式、超时时间、线程数）
-- 使用默认输出方式展示结果
+- 单目标和多目标扫描
+- 配置基本扫描参数（超时时间、线程数）
+- 获取详细的指纹识别结果
+- 提取技术栈信息
+- 输出扫描统计和耗时
 
-## 运行示例
+## 🚀 运行示例
 
 ```bash
 # 进入示例目录
@@ -18,32 +20,36 @@ cd example/basic_scan
 go run main.go
 ```
 
-## 代码说明
+## 📖 代码说明
 
-1. **创建选项**：使用`NewFingerOptions()`创建配置选项
-2. **设置目标**：通过`options.Target`设置一个或多个目标URL
-3. **配置参数**：设置调试模式、超时时间和线程数
-4. **执行扫描**：使用`FingerScan(options)`执行扫描并输出结果
+本示例展示了GXX核心功能的使用方法：
 
-## 关键代码
+1. **初始化指纹规则库**：使用 `gxx.InitFingerRules()` 加载指纹规则
+2. **执行指纹识别**：使用 `gxx.FingerScan()` 对目标进行扫描
+3. **获取匹配结果**：使用 `gxx.GetFingerMatches()` 提取匹配的指纹信息
+4. **获取技术栈信息**：通过 `result.Wappalyzer` 获取技术栈详细数据
+
+## 💻 核心代码
 
 ```go
-// 创建选项
-options, err := gxx.NewFingerOptions()
+// 初始化指纹规则库
+if err := gxx.InitFingerRules(options); err != nil {
+    fmt.Printf("初始化指纹规则库失败: %v\n", err)
+    os.Exit(1)
+}
 
-// 设置目标
-options.Target = []string{"example.com"}
+// 使用API接口方式扫描单个目标
+result, err := gxx.FingerScan(target, "", timeout, workerCount)
+if err != nil {
+    fmt.Printf("扫描失败: %v\n", err)
+    return
+}
 
-// 配置参数
-options.Debug = true
-options.Timeout = 5
-options.Threads = 5
-
-// 执行扫描
-gxx.FingerScan(options)
+// 获取匹配的指纹
+matches := gxx.GetFingerMatches(result)
 ```
 
-## 输出示例
+## 📋 运行结果示例
 
 ```
 开始扫描目标: [example.com]
@@ -58,7 +64,22 @@ URL：example.com （200）  标题：Example Domain  Server：ECS  指纹：[Ak
 扫描完成
 ```
 
-## 扩展建议
+## 🔍 自定义扫描
+
+您可以通过修改以下参数来自定义扫描行为：
+
+```go
+// 设置目标URL
+targets := []string{"example.com", "github.com"}
+
+// 设置超时时间（秒）
+timeout := 10
+
+// 设置并发线程数
+workerCount := 20
+```
+
+## 📚 进阶使用
 
 - 尝试添加多个目标URL进行批量扫描
 - 调整线程数观察对扫描速度的影响

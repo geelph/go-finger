@@ -8,7 +8,7 @@
 package gxx
 
 import (
-	"gxx/pkg"
+	"gxx/pkg/runner"
 	"gxx/pkg/wappalyzer"
 	"gxx/types"
 	"net/http"
@@ -23,8 +23,8 @@ type BaseInfoType struct {
 	Wappalyzer *wappalyzer.TypeWappalyzer
 }
 type CmdOptions = types.CmdOptions
-type TargetResult = pkg.TargetResult
-type FingerMatch = pkg.FingerMatch
+type TargetResult = runner.TargetResult
+type FingerMatch = runner.FingerMatch
 
 // NewFingerOptions 创建新的指纹扫描选项
 func NewFingerOptions() (types.YamlFingerType, error) {
@@ -33,7 +33,7 @@ func NewFingerOptions() (types.YamlFingerType, error) {
 
 // InitFingerRules 初始化指纹规则，必须在调用ProcessURL前执行
 func InitFingerRules(options types.YamlFingerType) error {
-	return pkg.LoadFingerprints(options)
+	return runner.LoadFingerprints(options)
 }
 
 // FingerScan 处理单个URL的指纹识别，返回目标结果
@@ -46,13 +46,13 @@ func InitFingerRules(options types.YamlFingerType) error {
 // 返回:
 //   - *pkg.TargetResult: 识别结果
 //   - error: 错误信息
-func FingerScan(target string, proxy string, timeout int, workerCount int) (*pkg.TargetResult, error) {
-	return pkg.ProcessURL(target, proxy, timeout, workerCount)
+func FingerScan(target string, proxy string, timeout int, workerCount int) (*runner.TargetResult, error) {
+	return runner.ProcessURL(target, proxy, timeout, workerCount)
 }
 
 // GetFingerMatches 获取目标URL的所有匹配的指纹
 // 返回FingerMatch数组，包含指纹信息和匹配结果
-func GetFingerMatches(targetResult *pkg.TargetResult) []*pkg.FingerMatch {
+func GetFingerMatches(targetResult *runner.TargetResult) []*runner.FingerMatch {
 	if targetResult == nil {
 		return nil
 	}
@@ -70,16 +70,16 @@ func GetFingerMatches(targetResult *pkg.TargetResult) []*pkg.FingerMatch {
 //   - error: 错误信息
 func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoType, error) {
 	var BaseInfo BaseInfoType
-	title, serverInfo, statusCode, httpResp, wappData, err := pkg.GetBaseInfo(target, proxy, timeout)
+	Bas, err := runner.GetBaseInfo(target, proxy, timeout)
 	if err != nil {
 		return nil, err
 	}
-	BaseInfo.Target = target
-	BaseInfo.Title = title
-	BaseInfo.ServerInfo = serverInfo
-	BaseInfo.StatusCode = statusCode
-	BaseInfo.Response = httpResp
-	BaseInfo.Wappalyzer = wappData
+	BaseInfo.Target = Bas.Url
+	BaseInfo.Title = Bas.Title
+	BaseInfo.ServerInfo = Bas.Server
+	BaseInfo.StatusCode = Bas.StatusCode
+	BaseInfo.Response = Bas.Response
+	BaseInfo.Wappalyzer = Bas.Wappalyzer
 
 	return &BaseInfo, nil
 }
@@ -99,7 +99,7 @@ func WappalyzerScan(target, proxy string, timeout int) (*wappalyzer.TypeWappalyz
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return baseInfo.Wappalyzer, nil
 }
 
@@ -158,14 +158,14 @@ func main() {
 	} else {
 		fmt.Println("\n未匹配到任何指纹")
 	}
-	
+
 	// 6. 获取技术栈信息
 	baseInfo, err := gxx.GetBaseInfo(target, proxy, timeout)
 	if err != nil {
 		log.Printf("获取基本信息错误: %v", err)
 		return
 	}
-	
+
 	if baseInfo.Wappalyzer != nil {
 		fmt.Println("\n技术栈信息:")
 		if len(baseInfo.Wappalyzer.WebServers) > 0 {
@@ -178,14 +178,14 @@ func main() {
 			fmt.Printf("  Web框架: %v\n", baseInfo.Wappalyzer.WebFrameworks)
 		}
 	}
-	
+
 	// 7. 单独进行技术栈分析
 	wappResult, err := gxx.WappalyzerScan(target, proxy, timeout)
 	if err != nil {
 		log.Printf("技术栈分析错误: %v", err)
 		return
 	}
-	
+
 	fmt.Println("\n单独技术栈分析结果:")
 	if len(wappResult.WebServers) > 0 {
 		fmt.Printf("  Web服务器: %v\n", wappResult.WebServers)

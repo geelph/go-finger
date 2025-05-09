@@ -1,62 +1,79 @@
-# Wappalyzer 技术栈识别示例
+# 🔍 Wappalyzer 技术栈识别示例
 
-本示例展示如何使用GXX的`WappalyzerScan`功能进行网站技术栈识别，该功能基于Wappalyzer引擎，可以快速识别网站使用的技术组件，而无需执行完整的指纹扫描流程。
+本示例展示如何使用GXX的强大技术栈识别功能，基于Wappalyzer引擎快速分析目标网站使用的技术组件，无需执行完整的指纹扫描流程。
 
-## 功能特点
+## ✨ 功能特点
 
-1. **快速技术栈识别** - 快速分析并识别目标网站使用的各种技术组件
-2. **多维度技术分析** - 包括以下多种技术类别的识别：
-   - Web服务器（如Nginx、Apache等）
-   - 编程语言（如PHP、Python、Node.js等）
-   - Web框架（如Laravel、Django、React等）
-   - JavaScript框架和库（如jQuery、Vue.js等）
-   - CMS系统（如WordPress、Drupal等）
-   - 数据库技术（如MySQL、MongoDB等）
-   - 操作系统信息（如Windows Server、Linux等）
-   - 安全组件（如WAF、SSL等）
-   - 缓存系统（如Redis、Memcached等）
-   - 其他技术组件
+- **全面的技术识别** - 识别20+种类别的技术组件
+- **高效性能** - 快速分析目标网站使用的技术栈
+- **低资源占用** - 相比完整指纹扫描，占用更少的系统资源
+- **独立API** - 可单独调用，不依赖指纹识别流程
 
-3. **独立API** - 提供独立的API函数，可以单独调用而无需执行完整的指纹识别
+## 🛠️ 技术类别
 
-## 运行方法
+Wappalyzer技术栈识别可检测以下类别的技术组件：
+
+| 类别 | 说明 | 结构体字段 |
+|------|------|------------|
+| Web服务器 | Nginx、Apache、IIS等 | `wappalyzerResult.WebServers` |
+| 编程语言 | PHP、Python、Java等 | `wappalyzerResult.ProgrammingLanguages` |
+| Web框架 | Laravel、Django、Spring等 | `wappalyzerResult.WebFrameworks` |
+| JavaScript框架 | React、Vue、Angular等 | `wappalyzerResult.JavaScriptFrameworks` |
+| JavaScript库 | jQuery、Lodash等 | `wappalyzerResult.JavaScriptLibraries` |
+| 安全组件 | WAF、SSL等 | `wappalyzerResult.Security` |
+| 缓存系统 | Redis、Memcached等 | `wappalyzerResult.Caching` |
+| 反向代理 | Nginx Proxy、CloudFlare等 | `wappalyzerResult.ReverseProxies` |
+| 静态站点生成器 | Hugo、Jekyll等 | `wappalyzerResult.StaticSiteGenerator` |
+| 主机面板 | cPanel、Plesk等 | `wappalyzerResult.HostingPanels` |
+
+## 🚀 运行示例
 
 ```bash
 # 进入示例目录
 cd example/wappalyzer_scan
 
-# 编译并运行
-go build -o wappalyzer_scan
-./wappalyzer_scan
-```
-
-或直接运行：
-
-```bash
+# 运行示例
 go run main.go
 ```
 
-## 示例代码解析
+## 💻 核心代码
 
-该示例主要展示了两种使用方式：
+本示例展示了两种获取技术栈信息的方法：
 
-1. **直接获取基本信息** - 使用 `GetBaseInfo` 函数同时获取基本信息和技术栈
-2. **专用技术栈识别** - 使用 `WappalyzerScan` 函数单独进行技术栈分析
-
-### 核心代码说明
+### 1. 通过基本信息获取技术栈
 
 ```go
-// 方式1：通过基本信息获取技术栈
+// 获取目标基本信息，包含技术栈数据
 baseInfo, err := gxx.GetBaseInfo(target, "", timeout)
-// 使用baseInfo.Wappalyzer访问技术栈信息
+if err != nil {
+    fmt.Printf("获取目标基本信息失败: %v\n", err)
+    return
+}
 
-// 方式2：直接使用专用API进行技术栈分析
-wappalyzerResult, err := gxx.WappalyzerScan(target, "", timeout)
+// 访问技术栈信息
+if baseInfo.Wappalyzer != nil {
+    // 使用baseInfo.Wappalyzer访问各类技术信息
+    fmt.Printf("Web服务器: %v\n", baseInfo.Wappalyzer.WebServers)
+}
 ```
 
-## 输出示例
+### 2. 专用技术栈分析API
 
-下面是运行示例后的典型输出：
+```go
+// 直接进行技术栈分析，不执行指纹识别
+wappalyzerResult, err := gxx.WappalyzerScan(target, "", timeout)
+if err != nil {
+    fmt.Printf("技术栈分析失败: %v\n", err)
+    return
+}
+
+// 处理分析结果
+if len(wappalyzerResult.WebServers) > 0 {
+    fmt.Printf("Web服务器: %v\n", wappalyzerResult.WebServers)
+}
+```
+
+## 📋 输出示例
 
 ```
 开始分析目标: https://github.com
@@ -90,33 +107,15 @@ JavaScript框架:
 分析完成
 ```
 
-## 可识别的技术类别
+## 🔍 应用场景
 
-使用Wappalyzer技术栈识别功能，可以识别的技术类别包括但不限于：
+- **技术调研** - 快速了解目标网站使用的技术栈
+- **安全评估** - 安全测试前的目标侦察
+- **竞品分析** - 分析竞争对手使用的技术
+- **兼容性测试** - 确定目标网站的技术兼容性
 
-1. Web服务器 (`wappalyzerResult.WebServers`)
-2. 编程语言 (`wappalyzerResult.ProgrammingLanguages`)
-3. Web框架 (`wappalyzerResult.WebFrameworks`)
-4. JavaScript框架 (`wappalyzerResult.JavaScriptFrameworks`)
-5. JavaScript库 (`wappalyzerResult.JavaScriptLibraries`)
-6. CMS系统 (`wappalyzerResult.CmsSystems`)
-7. 数据库技术 (`wappalyzerResult.Databases`)
-8. 操作系统 (`wappalyzerResult.OperatingSystems`)
-9. 缓存系统 (`wappalyzerResult.Caching`)
-10. 安全组件 (`wappalyzerResult.Security`)
-11. 反向代理 (`wappalyzerResult.ReverseProxies`)
-12. 静态站点生成器 (`wappalyzerResult.StaticSiteGenerator`)
-13. 主机面板 (`wappalyzerResult.HostingPanels`)
-14. 其他组件 (`wappalyzerResult.Other`)
+## 📚 进阶使用
 
-## 使用场景
-
-- 网站技术调研和分析
-- 安全评估前的技术侦察
-- 竞品分析
-- 网站架构调研
-
-## 相关API
-
-- `gxx.GetBaseInfo(target, proxy, timeout)` - 获取目标基本信息，包含技术栈
-- `gxx.WappalyzerScan(target, proxy, timeout)` - 单独进行技术栈识别 
+- **设置代理** - 通过指定代理参数绕过访问限制：`gxx.WappalyzerScan(target, "http://127.0.0.1:8080", timeout)`
+- **自定义超时** - 针对不同网络环境设置合适的超时时间，如：`timeout := 15`
+- **结果过滤** - 根据需要只关注特定类别的技术组件，如只提取Web框架信息 
