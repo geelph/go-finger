@@ -128,7 +128,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	resultChan := make(chan struct {
 		target string
 		result *TargetResult
-	}, 50)
+	}, len(targets))
 
 	// 创建进度条
 	bar := output.CreateProgressBar(len(targets))
@@ -204,7 +204,14 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 			target := task.target
 
 			// 处理单个URL
-			targetResult, _ := ProcessURL(target, options.Proxy, options.Timeout, r.Config.FingerWorkerCount)
+			targetResult, err := ProcessURL(target, options.Proxy, options.Timeout, r.Config.FingerWorkerCount)
+			if err != nil {
+				logger.Error(fmt.Sprintf("处理目标 %s 失败: %v", target, err))
+				targetResult = &TargetResult{
+					URL:     target,
+					Matches: make([]*FingerMatch, 0),
+				}
+			}
 
 			// 将结果写入文件并显示结果
 			handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
@@ -220,16 +227,27 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 		},
 		ants.WithPreAlloc(true),
 		ants.WithExpiryDuration(3*time.Minute),
-		ants.WithNonblocking(true), // 使用非阻塞模式提高并发性能
+		ants.WithNonblocking(false), // 使用非阻塞模式提高并发性能
 	)
 	defer urlPool.Release()
 
 	// 提交所有目标到线程池
-	for _, target := range targets {
+	targetsCount := len(targets)
+	for i, target := range targets {
 		urlWg.Add(1)
-		_ = urlPool.Invoke(scanTask{
+		err := urlPool.Invoke(scanTask{
 			target: target,
 		})
+
+		// 如果提交失败，手动减少等待计数并记录错误
+		if err != nil {
+			urlWg.Done()
+			logger.Error(fmt.Sprintf("提交目标 %s 到线程池失败: %v", target, err))
+			// 可能是池满了，暂停一下
+			if i < targetsCount-1 {
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
 	}
 
 	// 等待所有URL处理完成

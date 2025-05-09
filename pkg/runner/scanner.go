@@ -52,6 +52,11 @@ func getTargets(options *types.CmdOptions) []string {
 
 // ProcessURL 处理单个URL的所有指纹识别，获取目标基础信息并执行指纹识别
 func ProcessURL(target string, proxy string, timeout int, workerCount int) (*TargetResult, error) {
+	// 确保目标不为空
+	if target == "" {
+		return nil, fmt.Errorf("目标URL不能为空")
+	}
+
 	// 获取目标基础信息
 	baseInfoResp, err := GetBaseInfo(target, proxy, timeout)
 
@@ -151,7 +156,7 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 		}
 	},
 		ants.WithPreAlloc(true),
-		ants.WithExpiryDuration(3*time.Minute),
+		ants.WithExpiryDuration(2*time.Minute),
 		ants.WithNonblocking(false), // 使用阻塞模式确保任务按需执行
 	)
 	defer fingerPool.Release()
