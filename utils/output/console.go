@@ -168,9 +168,13 @@ func HandleMatchResults(targetResult *TargetResult, output string, sockOutput st
 // CreateWriteOptions 创建通用的写入选项结构体
 func CreateWriteOptions(targetResult *TargetResult, outputPath string, format string, lastResponse *proto.Response) *WriteOptions {
 	// 收集指纹信息
+	var IsMatch bool
 	fingerList := make([]*finger.Finger, 0, len(targetResult.Matches))
 	for _, match := range targetResult.Matches {
 		fingerList = append(fingerList, match.Finger)
+	}
+	if len(targetResult.Matches) > 0 {
+		IsMatch = true
 	}
 
 	// 创建写入选项结构体
@@ -183,7 +187,7 @@ func CreateWriteOptions(targetResult *TargetResult, outputPath string, format st
 		Title:       targetResult.Title,
 		ServerInfo:  targetResult.ServerInfo,
 		Wappalyzer:  targetResult.Wappalyzer,
-		FinalResult: targetResult.IsMatch,
+		FinalResult: IsMatch,
 	}
 
 	// 检查并设置响应头信息
