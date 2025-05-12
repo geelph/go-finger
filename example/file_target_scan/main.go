@@ -215,6 +215,11 @@ func saveResultsToFile(filePath string, results map[string]*gxx.TargetResult) er
 	}
 	defer file.Close()
 
+	// 添加UTF-8 BOM标识，确保Excel等应用能正确识别中文
+	if _, err := file.Write([]byte{0xEF, 0xBB, 0xBF}); err != nil {
+		return fmt.Errorf("写入UTF-8 BOM标识失败: %v", err)
+	}
+
 	// 写入标题
 	file.WriteString("目标,状态码,标题,服务器,匹配指纹数量,指纹列表\n")
 

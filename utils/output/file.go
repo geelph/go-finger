@@ -93,10 +93,28 @@ func openOutputFile(output, format string) error {
 		fileExists = true
 	}
 
-	// 打开文件（追加模式）
-	file, err := os.OpenFile(output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("打开输出文件失败: %v", err)
+	// 创建模式：新文件或覆盖已有文件
+	var file *os.File
+	var err error
+	
+	if format == "csv" && !fileExists {
+		// 对于新的CSV文件，先创建文件并写入UTF-8 BOM
+		file, err = os.Create(output)
+		if err != nil {
+			return fmt.Errorf("创建输出文件失败: %v", err)
+		}
+		
+		// 写入UTF-8 BOM标识 (EF BB BF)
+		if _, err := file.Write([]byte{0xEF, 0xBB, 0xBF}); err != nil {
+			file.Close()
+			return fmt.Errorf("写入UTF-8 BOM失败: %v", err)
+		}
+	} else {
+		// 非CSV文件或已存在的CSV文件，使用追加模式打开
+		file, err = os.OpenFile(output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("打开输出文件失败: %v", err)
+		}
 	}
 
 	outputFile = file
