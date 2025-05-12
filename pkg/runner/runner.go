@@ -97,10 +97,8 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 	r.runScan(targets, options)
 
 	r.mutex.Lock()
-	resultsCopy := make(map[string]*TargetResult)
-	for k, v := range r.Results {
-		resultsCopy[k] = v
-	}
+	// 清楚所有缓存文件
+	ClearAllCache()
 	r.mutex.Unlock()
 	printSummary(targets, r.Results)
 
@@ -234,6 +232,8 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	// 提交所有目标到线程池
 	targetsCount := len(targets)
 	for i, target := range targets {
+		//fmt.Println(fmt.Sprintf("Runner goroutines：%d", urlPool.Running()))
+		//fmt.Println(fmt.Sprintf("Free goroutines：%d", urlPool.Free()))
 		urlWg.Add(1)
 		err := urlPool.Invoke(scanTask{
 			target: target,

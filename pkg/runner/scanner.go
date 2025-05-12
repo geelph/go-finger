@@ -114,6 +114,8 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	// 执行指纹识别
 	matches := runFingerDetection(baseInfoResp.Url, baseInfo, proxy, timeout, workerCount)
 	targetResult.Matches = matches
+	// 当前指纹规则全部运行完成之后删除缓存，减少内存压力
+	ClearTargetURLCache(target)
 
 	return targetResult, nil
 }
@@ -163,6 +165,8 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 
 	// 提交所有指纹任务到线程池
 	for _, fg := range AllFinger {
+		//fmt.Println(fmt.Sprintf("Runner goroutines：%d", fingerPool.Running()))
+		//fmt.Println(fmt.Sprintf("Free goroutines：%d", fingerPool.Free()))
 		wg.Add(1)
 		// 提交任务到线程池
 		_ = fingerPool.Invoke(fingerTask{fg: fg})
