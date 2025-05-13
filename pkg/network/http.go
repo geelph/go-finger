@@ -57,7 +57,7 @@ type OptionsRequest struct {
 // 初始化全局客户端实例
 func init() {
 	clientInitOnce.Do(initGlobalClient)
-	
+
 	// 启动定期清理transport缓存的协程
 	go cleanupTransportCache()
 }
@@ -188,7 +188,7 @@ func createTransport(proxyURL string) (*http.Transport, error) {
 	}
 
 	var transport *http.Transport
-	
+
 	if proxyURL == "" {
 		transport = &http.Transport{
 			TLSClientConfig:     tlsConfig,
@@ -220,7 +220,7 @@ func createTransport(proxyURL string) (*http.Transport, error) {
 
 	// 存入缓存
 	transportCache.Store(proxyURL, transport)
-	
+
 	return transport, nil
 }
 
@@ -437,9 +437,9 @@ func ParseRequest(oReq *http.Request) (*proto.Request, error) {
 
 // cleanupTransportCache 定期清理transport缓存
 func cleanupTransportCache() {
-	ticker := time.NewTicker(30 * time.Minute)
+	ticker := time.NewTicker(5 * time.Minute) // 更频繁清理
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		// 遍历所有缓存的transport并关闭空闲连接
 		transportCache.Range(func(key, value interface{}) bool {
@@ -448,18 +448,17 @@ func cleanupTransportCache() {
 			}
 			return true
 		})
-		
+
 		// 记录清理日志
 		logger.Debug("已清理transport缓存中的空闲连接")
-		
+
 		// 如果缓存过大，可以考虑完全重置
 		var count int
 		transportCache.Range(func(_, _ interface{}) bool {
 			count++
 			return true
 		})
-		
-		// 如果缓存项超过100个，重置缓存
+		// 如果缓存项超过50个，重置缓存
 		if count > 100 {
 			transportCache = sync.Map{}
 			logger.Debug("transport缓存过大，已重置")

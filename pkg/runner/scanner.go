@@ -122,47 +122,56 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 
 // runFingerDetection 执行指纹识别，使用高性能池模式处理多个指纹的识别
 func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int) []*FingerMatch {
-	// 线程安全地存储匹配结果
 	var matches []*FingerMatch
-	var matchesMutex sync.Mutex
-
-	// 创建同步等待组，用于等待所有任务完成
+	results := make(chan *FingerMatch, len(AllFinger)) // 使用通道接收结果
 	var wg sync.WaitGroup
-
-	// 定义任务处理函数
 	type fingerTask struct {
 		fg *finger2.Finger
 	}
 
-	// 创建ants线程池，使用NewPoolWithFunc预定义处理函数
 	fingerPool, _ := ants.NewPoolWithFunc(workerCount, func(i interface{}) {
 		defer wg.Done()
 		task := i.(fingerTask)
 		fingerFg := task.fg
-		// 执行指纹识别
 		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout)
-
 		if err == nil && result.Result {
-			// 创建匹配结果对象
 			resultMatch := &FingerMatch{
 				Finger:   fingerFg,
 				Result:   true,
 				Request:  result.Request,
 				Response: result.Response,
 			}
-
-			// 添加到匹配结果列表
-			matchesMutex.Lock()
-			matches = append(matches, resultMatch)
-			matchesMutex.Unlock()
+			results <- resultMatch
 		}
 	},
 		ants.WithPreAlloc(true),
-		ants.WithExpiryDuration(2*time.Minute),
-		ants.WithNonblocking(false), // 使用阻塞模式确保任务按需执行
+		ants.WithExpiryDuration(1*time.Minute),
+		ants.WithNonblocking(false),
 	)
+
 	defer fingerPool.Release()
 
+	//batchSize := workerCount // 调整批次大小以优化内存使用和性能
+	//batchCount := (len(AllFinger) + batchSize - 1) / batchSize
+	//
+	//for batchIndex := 0; batchIndex < batchCount; batchIndex++ {
+	//	start := batchIndex * batchSize
+	//	end := start + batchSize
+	//	if end > len(AllFinger) {
+	//		end = len(AllFinger)
+	//	}
+	//
+	//	for i := start; i < end; i++ {
+	//		fg := AllFinger[i]
+	//		wg.Add(1)
+	//		err := fingerPool.Invoke(fingerTask{fg: fg})
+	//		if err != nil {
+	//			wg.Done() // 如果任务提交失败，确保计数器正确减少
+	//			continue
+	//		}
+	//	}
+	//	wg.Wait() // 等待当前批次完成，不需要在每个任务后调用GC
+	//}
 	// 提交所有指纹任务到线程池
 	for _, fg := range AllFinger {
 		//fmt.Println(fmt.Sprintf("Runner goroutines：%d", fingerPool.Running()))
@@ -171,9 +180,13 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 		// 提交任务到线程池
 		_ = fingerPool.Invoke(fingerTask{fg: fg})
 	}
-
-	// 等待所有指纹识别完成
 	wg.Wait()
+	close(results) // 所有任务完成后关闭通道
+
+	for match := range results { // 从通道中接收结果并添加到列表中
+		matches = append(matches, match)
+	}
+
 	return matches
 }
 

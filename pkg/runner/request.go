@@ -41,9 +41,7 @@ func initializeCache(httpResp *http.Response, proxy string) (*proto.Response, *p
 	initialResponse := finger.BuildProtoResponse(httpResp, utf8RespBody, 0, proxy)
 
 	// 构建请求对象
-	reqMethod := "GET"
-	reqPath := "/"
-	initialRequest := finger.BuildProtoRequest(httpResp, reqMethod, "", reqPath)
+	initialRequest := finger.BuildProtoRequest(httpResp, "GET", "", "/")
 
 	return initialResponse, initialRequest
 }
