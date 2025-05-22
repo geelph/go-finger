@@ -13,10 +13,10 @@ import (
 	"time"
 )
 
-// 全局FingerPool，用于处理所有指纹任务
+// GlobalFingerPool 全局FingerPool，用于处理所有指纹任务
 var GlobalFingerPool *ants.PoolWithFunc
 
-// 指纹任务结果结构
+// FingerTaskResult 指纹任务结果结构
 type FingerTaskResult struct {
 	Target    string
 	FingerID  string
@@ -25,7 +25,7 @@ type FingerTaskResult struct {
 	Result    *FingerMatch
 }
 
-// 任务监控结构
+// FingerTaskMonitor 任务监控结构
 type FingerTaskMonitor struct {
 	sync.Mutex
 	results       map[string][]FingerTaskResult // 按URL地址存储结果
@@ -35,7 +35,7 @@ type FingerTaskMonitor struct {
 	maxStoredURLs int                           // 最大存储的已完成URL数量
 }
 
-// 新建指纹任务监控器
+// NewFingerTaskMonitor 新建指纹任务监控器
 func NewFingerTaskMonitor() *FingerTaskMonitor {
 	return &FingerTaskMonitor{
 		results:      make(map[string][]FingerTaskResult),
@@ -44,7 +44,7 @@ func NewFingerTaskMonitor() *FingerTaskMonitor {
 	}
 }
 
-// 初始化URL任务
+// InitUrlTask 初始化URL任务
 func (tm *FingerTaskMonitor) InitUrlTask(target string, taskCount int) {
 	tm.Lock()
 	defer tm.Unlock()
@@ -53,7 +53,7 @@ func (tm *FingerTaskMonitor) InitUrlTask(target string, taskCount int) {
 	tm.pendingTasks[target] = taskCount
 }
 
-// 添加结果
+// AddResult 添加结果
 func (tm *FingerTaskMonitor) AddResult(result FingerTaskResult) {
 	tm.Lock()
 	defer tm.Unlock()
@@ -73,7 +73,7 @@ func (tm *FingerTaskMonitor) AddResult(result FingerTaskResult) {
 	}
 }
 
-// 获取URL的所有结果
+// GetResults 获取URL的所有结果
 func (tm *FingerTaskMonitor) GetResults(target string) []FingerTaskResult {
 	tm.Lock()
 	defer tm.Unlock()
@@ -100,10 +100,10 @@ func (tm *FingerTaskMonitor) ClearURLResults(target string) {
 	}
 }
 
-// 创建全局任务监控器
+// GlobalFingerTaskMonitor 创建全局任务监控器
 var GlobalFingerTaskMonitor = NewFingerTaskMonitor()
 
-// 初始化全局FingerPool
+// InitGlobalFingerPool 初始化全局FingerPool
 func InitGlobalFingerPool(workerCount int) {
 	var err error
 	GlobalFingerPool, err = ants.NewPoolWithFunc(workerCount, func(i interface{}) {
@@ -166,9 +166,9 @@ func NewRunner(options *types.CmdOptions) *Runner {
 	// 计算指纹规则线程池大小，使用与TestGlobalRulePool类似的策略
 	fingerWorkerCount := 50 * urlWorkerCount
 
-	// 限制范围在 500 到 1000
-	if fingerWorkerCount < 500 {
-		fingerWorkerCount = 500
+	// 限制范围在 1000 到 5000
+	if fingerWorkerCount < 1000 {
+		fingerWorkerCount = 1000
 	} else if fingerWorkerCount > 5000 {
 		fingerWorkerCount = 5000
 	}
@@ -391,12 +391,6 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	)
 	defer urlPool.Release()
 
-	// 分批提交任务到线程池
-	batchSize := 100 // 增加每批次处理的目标数
-	if len(targets) < batchSize {
-		batchSize = len(targets)
-	}
-
 	// 提交所有目标到线程池
 	for _, target := range targets {
 		//fmt.Println(fmt.Sprintf("Runner goroutines：%d", urlPool.Running()))
@@ -440,14 +434,14 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 
 // monitorMemoryUsage 内存监控函数
 func monitorMemoryUsage() {
-	ticker := time.NewTicker(10 * time.Second) // 降低检查频率到10秒
+	ticker := time.NewTicker(10000 * time.Second) // 降低检查频率到10秒
 	defer ticker.Stop()
 
 	var memStats runtime.MemStats
-	var lastGC uint32 = 0                 // 记录上次GC时间
-	var highMemWarningIssued bool = false // 内存高使用警告标志
-	var lastMemAlloc uint64 = 0           // 上次检查的内存分配
-	var growthRate float64 = 0            // 内存增长率
+	var lastGC uint32 = 0            // 记录上次GC时间
+	var highMemWarningIssued = false // 内存高使用警告标志
+	var lastMemAlloc uint64 = 0      // 上次检查的内存分配
+	var growthRate float64 = 0       // 内存增长率
 
 	for range ticker.C {
 		runtime.ReadMemStats(&memStats)
@@ -470,12 +464,12 @@ func monitorMemoryUsage() {
 		//	growthRate))
 
 		// 智能GC触发条件:
-		// 1. 内存使用超过阈值 (1GB或85%)
+		// 1. 内存使用超过阈值 (4GB或80%)
 		// 2. 内存增长率超过10%
 		// 3. 距离上次GC时间超过30秒
 		shouldGC := false
 
-		if memStats.HeapAlloc > 1024*1024*1024 || memUsagePercent > 85 {
+		if memStats.HeapAlloc > 1024*1024*1024*4 || memUsagePercent > 80 {
 			// 条件1: 内存使用超过阈值
 			shouldGC = true
 		} else if growthRate > 10 {

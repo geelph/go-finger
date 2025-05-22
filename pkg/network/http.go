@@ -380,15 +380,84 @@ func CheckProtocol(host string, proxy string) (string, error) {
 		return checkAndReturnProtocol(HttpPrefix+host, proxy)
 	}
 }
+func CheckProtocolGet(target string, proxy string, timeout int) (string, error) {
+	client := RetryClient
+	if client == nil {
+		initGlobalClient()
+		client = RetryClient
+	}
+	if timeout == 0 {
+		timeout = 3
+	}
 
-func checkAndReturnProtocol(url string, proxy string) (string, error) {
-	body, _, err := simpleRetryHttpGet(url, proxy, 0)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+
+	// 使用HEAD方法代替GET，不需要读取响应体
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodHead, target, nil)
+	if err != nil {
+		return "", nil
+	}
+	req.Header.Set("User-Agent", common.RandomUA())
+
+	// 禁用重定向
+	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	// 配置传输层
+	transport, err := createTransport(proxy)
+	if err == nil {
+		client.HTTPClient.Transport = transport
+	}
+
+	// 添加连接关闭头，确保每次请求后不保持连接
+	req.Header.Set("Connection", "close")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+	//直接检查TLS状态，不读取响应体
+	if resp.TLS != nil {
+		return "https", nil
+	}
+	return "http", nil
+}
 
-	if strings.Contains(string(body), "400 The plain HTTP request was sent to HTTPS port") && strings.HasPrefix(url, HttpPrefix) {
-		return HttpsPrefix + url[len(HttpPrefix):], nil
+func checkAndReturnProtocol(url string, proxy string) (string, error) {
+	// 优化：添加协议前缀检查
+	if strings.HasPrefix(url, HttpsPrefix) {
+		return url, nil
+	}
+	
+	// 优化：添加参数有效性检查
+	if url == "" {
+		return "", errors.New("URL不能为空")
+	}
+
+	res, err := CheckProtocolGet(url, proxy, 0)
+	if err != nil {
+		// 优化：添加更具体的错误信息
+		return "", fmt.Errorf("检查协议失败: %w", err)
+	}
+
+	// 判断是否为HTTPS协议
+	if res == "https" {
+		// 只有当URL以HTTP前缀开始时才进行替换
+		if strings.HasPrefix(url, HttpPrefix) {
+			return HttpsPrefix + url[len(HttpPrefix):], nil
+		}
+		// 如果没有前缀，则添加HTTPS前缀
+		return HttpsPrefix + url, nil
+	}
+
+	// 如果是HTTP协议但没有前缀，则添加HTTP前缀
+	if !strings.HasPrefix(url, HttpPrefix) {
+		return HttpPrefix + url, nil
 	}
 
 	return url, nil
