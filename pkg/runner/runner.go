@@ -434,7 +434,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 
 // monitorMemoryUsage 内存监控函数
 func monitorMemoryUsage() {
-	ticker := time.NewTicker(10000 * time.Second) // 降低检查频率到10秒
+	ticker := time.NewTicker(30 * time.Second) // 降低检查频率到30秒
 	defer ticker.Stop()
 
 	var memStats runtime.MemStats
