@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-	finger2 "gxx/pkg/finger"
 	"gxx/types"
 	"gxx/utils/common"
 	"gxx/utils/logger"
@@ -11,8 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/panjf2000/ants/v2"
 )
 
 // getTargets 从命令行参数或文件中读取目标，并进行去重处理
@@ -122,71 +119,70 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 
 // runFingerDetection 执行指纹识别，使用高性能池模式处理多个指纹的识别
 func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout int, workerCount int) []*FingerMatch {
-	var matches []*FingerMatch
-	results := make(chan *FingerMatch, len(AllFinger)) // 使用通道接收结果
+	// 如果全局指纹池未初始化，则初始化
+	if GlobalFingerPool == nil {
+		InitGlobalFingerPool(workerCount)
+	}
+
+	// 初始化目标任务
+	GlobalFingerTaskMonitor.InitUrlTask(target, len(AllFinger))
+
+	// 创建等待组
 	var wg sync.WaitGroup
-	type fingerTask struct {
-		fg *finger2.Finger
-	}
 
-	fingerPool, _ := ants.NewPoolWithFunc(workerCount, func(i interface{}) {
-		defer wg.Done()
-		task := i.(fingerTask)
-		fingerFg := task.fg
-		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout)
-		if err == nil && result.Result {
-			resultMatch := &FingerMatch{
-				Finger:   fingerFg,
-				Result:   true,
-				Request:  result.Request,
-				Response: result.Response,
-			}
-			results <- resultMatch
-		}
-	},
-		ants.WithPreAlloc(true),
-		ants.WithExpiryDuration(1*time.Minute),
-		ants.WithNonblocking(false),
-	)
-
-	defer fingerPool.Release()
-
-	//batchSize := workerCount // 调整批次大小以优化内存使用和性能
-	//batchCount := (len(AllFinger) + batchSize - 1) / batchSize
-	//
-	//for batchIndex := 0; batchIndex < batchCount; batchIndex++ {
-	//	start := batchIndex * batchSize
-	//	end := start + batchSize
-	//	if end > len(AllFinger) {
-	//		end = len(AllFinger)
-	//	}
-	//
-	//	for i := start; i < end; i++ {
-	//		fg := AllFinger[i]
-	//		wg.Add(1)
-	//		err := fingerPool.Invoke(fingerTask{fg: fg})
-	//		if err != nil {
-	//			wg.Done() // 如果任务提交失败，确保计数器正确减少
-	//			continue
-	//		}
-	//	}
-	//	wg.Wait() // 等待当前批次完成，不需要在每个任务后调用GC
-	//}
-	// 提交所有指纹任务到线程池
+	// 提交所有指纹任务到全局线程池
 	for _, fg := range AllFinger {
-		//fmt.Println(fmt.Sprintf("Runner goroutines：%d", fingerPool.Running()))
-		//fmt.Println(fmt.Sprintf("Free goroutines：%d", fingerPool.Free()))
 		wg.Add(1)
-		// 提交任务到线程池
-		_ = fingerPool.Invoke(fingerTask{fg: fg})
+
+		// 构造任务参数
+		taskParams := map[string]interface{}{
+			"target":     target,
+			"fingerRule": fg,
+			"baseInfo":   baseInfo,
+			"proxy":      proxy,
+			"timeout":    timeout,
+			"timestamp":  time.Now().Unix(),
+			"wg":         &wg, // 传递WaitGroup指针
+		}
+
+		// 重试逻辑，确保任务被提交
+		maxRetries := 3
+		var err error
+		for retry := 0; retry < maxRetries; retry++ {
+			err = GlobalFingerPool.Invoke(taskParams)
+			if err == nil {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		if err != nil {
+			logger.Debug(fmt.Sprintf("Failed after %d retries: Error invoking finger task: %v", maxRetries, err))
+			wg.Done()
+			continue
+		}
+
+		// 每提交20个任务就休眠一小段时间，避免任务提交过快
+		if fg.Id != "" && len(fg.Id) > 0 && len(fg.Id)%20 == 0 {
+			time.Sleep(5 * time.Millisecond)
+		}
 	}
+
+	// 等待所有指纹任务完成
 	wg.Wait()
-	close(results) // 所有任务完成后关闭通道
 
-	for match := range results { // 从通道中接收结果并添加到列表中
-		matches = append(matches, match)
+	// 获取匹配结果
+	results := GlobalFingerTaskMonitor.GetResults(target)
+	matches := make([]*FingerMatch, 0, len(results))
+
+	// 转换结果格式
+	for _, result := range results {
+		if result.Result != nil {
+			matches = append(matches, result.Result)
+		}
 	}
-
+	// 清理此URL的任务结果，减少内存占用
+	GlobalFingerTaskMonitor.ClearURLResults(target)
 	return matches
 }
 
