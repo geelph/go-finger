@@ -8,10 +8,12 @@
 package gxx
 
 import (
+	"fmt"
 	"gxx/pkg/runner"
 	"gxx/pkg/wappalyzer"
 	"gxx/types"
 	"net/http"
+	"os"
 )
 
 type BaseInfoType struct {
@@ -27,12 +29,43 @@ type TargetResult = runner.TargetResult
 type FingerMatch = runner.FingerMatch
 
 // NewFingerOptions 创建新的指纹扫描选项
+// 返回:
+//   - types.YamlFingerType: 指纹配置选项
+//   - error: 创建过程中的错误信息
 func NewFingerOptions() (types.YamlFingerType, error) {
-	return types.YamlFingerType{}, nil
+	// 默认在当前目录下查找finger_demo.yml文件
+	defaultPath := "finger_demo.yml"
+	
+	// 检查文件是否存在
+	_, err := os.Stat(defaultPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// 文件不存在则返回空对象，由调用者决定如何处理
+			return types.YamlFingerType{}, nil
+		}
+		return types.YamlFingerType{}, fmt.Errorf("检查默认指纹文件失败: %w", err)
+	}
+	
+	// 文件存在则使用默认文件
+	return types.YamlFingerType{
+		PocFile: defaultPath,
+		PocYaml: "",
+	}, nil
 }
 
 // InitFingerRules 初始化指纹规则，必须在调用ProcessURL前执行
+// 参数:
+//   - options: 指纹配置选项，包含指纹文件路径
+//
+// 返回:
+//   - error: 初始化过程中的错误信息
+//
+// 注意: 该函数必须在调用FingerScan前执行一次
 func InitFingerRules(options types.YamlFingerType) error {
+	if options.PocFile == "" && options.PocYaml == "" {
+		return fmt.Errorf("指纹文件路径(PocFile)和指纹内容(PocYaml)不能同时为空")
+	}
+	
 	return runner.LoadFingerprints(options)
 }
 
@@ -47,15 +80,46 @@ func InitFingerRules(options types.YamlFingerType) error {
 //   - *pkg.TargetResult: 识别结果
 //   - error: 错误信息
 func FingerScan(target string, proxy string, timeout int, workerCount int) (*runner.TargetResult, error) {
-	return runner.ProcessURL(target, proxy, timeout, workerCount)
+	if target == "" {
+		return nil, fmt.Errorf("目标URL不能为空")
+	}
+	
+	if timeout <= 0 {
+		timeout = 5 // 设置默认超时时间
+	}
+	
+	if workerCount <= 0 {
+		workerCount = 1000 // 设置默认并发数
+	}
+	
+	result, err := runner.ProcessURL(target, proxy, timeout, workerCount)
+	if err != nil {
+		return nil, fmt.Errorf("处理URL %s 时发生错误: %w", target, err)
+	}
+	
+	if result == nil {
+		return nil, fmt.Errorf("扫描目标 %s 返回空结果", target)
+	}
+	
+	return result, nil
 }
 
 // GetFingerMatches 获取目标URL的所有匹配的指纹
-// 返回FingerMatch数组，包含指纹信息和匹配结果
+// 参数:
+//   - targetResult: 指纹扫描结果
+//
+// 返回:
+//   - []*runner.FingerMatch: 指纹匹配结果数组，包含指纹信息和匹配结果
+//   - 如果传入的targetResult为nil，则返回nil
 func GetFingerMatches(targetResult *runner.TargetResult) []*runner.FingerMatch {
 	if targetResult == nil {
 		return nil
 	}
+	
+	if targetResult.Matches == nil {
+		return make([]*runner.FingerMatch, 0) // 返回空数组而不是nil
+	}
+	
 	return targetResult.Matches
 }
 
@@ -74,6 +138,11 @@ func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoType, error) {
 	if err != nil {
 		return nil, err
 	}
+	
+	if Bas == nil {
+		return nil, fmt.Errorf("获取目标 %s 的基础信息失败", target)
+	}
+	
 	BaseInfo.Target = Bas.Url
 	BaseInfo.Title = Bas.Title
 	BaseInfo.ServerInfo = Bas.Server
@@ -98,6 +167,10 @@ func WappalyzerScan(target, proxy string, timeout int) (*wappalyzer.TypeWappalyz
 	baseInfo, err := GetBaseInfo(target, proxy, timeout)
 	if err != nil {
 		return nil, err
+	}
+
+	if baseInfo.Wappalyzer == nil {
+		return nil, fmt.Errorf("无法获取目标 %s 的技术栈信息", target)
 	}
 
 	return baseInfo.Wappalyzer, nil
