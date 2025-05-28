@@ -24,6 +24,7 @@ func NewCmdOptions() (*types.CmdOptions, error) {
 		flagSet.StringSliceVarP(&options.Target, "url", "u", nil, "要扫描的目标URL/主机", goflags.NormalizedStringSliceOptions),
 		flagSet.StringVarP(&options.TargetsFile, "file", "f", "", "要扫描的目标URL/主机列表（每行一个）"),
 		flagSet.IntVarP(&options.Threads, "threads", "t", 10, "并发线程数"),
+		flagSet.IntVarP(&options.RuleThreads, "rulethreads", "rt", 0, "指纹规则并发线程数，最大50000"),
 	)
 	flagSet.CreateGroup("output", "输出",
 		flagSet.StringVarP(&options.Output, "output", "o", "", "输出文件路径（支持txt/csv格式）"),
@@ -82,6 +83,15 @@ func verifyOptions(opt *types.CmdOptions) error {
 	if opt.Threads <= 0 {
 		fmt.Println("[-] 线程数无效，将使用默认值 10")
 		opt.Threads = 10
+	}
+
+	// 验证规则线程数
+	if opt.RuleThreads < 0 {
+		fmt.Println("[-] 规则线程数无效，将使用默认计算值")
+		opt.RuleThreads = 0
+	} else if opt.RuleThreads > 50000 {
+		fmt.Println("[-] 规则线程数过大，已限制为最大值 50000")
+		opt.RuleThreads = 50000
 	}
 
 	// 验证超时时间

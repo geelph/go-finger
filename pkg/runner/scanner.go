@@ -162,10 +162,6 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 			continue
 		}
 
-		// 每提交20个任务就休眠一小段时间，避免任务提交过快
-		if fg.Id != "" && len(fg.Id) > 0 && len(fg.Id)%20 == 0 {
-			time.Sleep(5 * time.Millisecond)
-		}
 	}
 
 	// 等待所有指纹任务完成

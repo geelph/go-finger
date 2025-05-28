@@ -41,7 +41,7 @@ func InitFingerRules(options types.YamlFingerType) error {
 //   - target: 目标URL
 //   - proxy: HTTP代理地址 (可为空)
 //   - timeout: 超时时间(秒)
-//   - workerCount: 工作协程数量
+//   - workerCount: 指纹规则并发线程数，用于控制指纹匹配速度
 //
 // 返回:
 //   - *pkg.TargetResult: 识别结果
@@ -132,7 +132,7 @@ func main() {
 	target := "https://example.com"
 	proxy := "" // 如果不需要代理，设为空字符串
 	timeout := 5 // 超时时间，单位：秒
-	workerCount := 10 // 并发工作线程数
+	workerCount := 10000 // 规则并发线程数，可设置较高的值提高识别速度
 
 	result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
 	if err != nil {

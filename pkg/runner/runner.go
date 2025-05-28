@@ -163,14 +163,22 @@ func NewRunner(options *types.CmdOptions) *Runner {
 		urlWorkerCount = 10
 	}
 
-	// 计算指纹规则线程池大小，使用与TestGlobalRulePool类似的策略
-	fingerWorkerCount := 50 * urlWorkerCount
+	// 计算指纹规则线程池大小
+	var fingerWorkerCount int
 
-	// 限制范围在 1000 到 5000
-	if fingerWorkerCount < 1000 {
-		fingerWorkerCount = 1000
-	} else if fingerWorkerCount > 5000 {
-		fingerWorkerCount = 5000
+	// 如果指定了RuleThreads，则直接使用
+	if options.RuleThreads > 0 {
+		fingerWorkerCount = options.RuleThreads
+	} else {
+		// 否则使用默认计算方式
+		fingerWorkerCount = 50 * urlWorkerCount
+
+		// 限制范围在 1000 到 5000
+		if fingerWorkerCount < 1000 {
+			fingerWorkerCount = 1000
+		} else if fingerWorkerCount > 5000 {
+			fingerWorkerCount = 5000
+		}
 	}
 
 	// 确定输出格式
@@ -205,13 +213,10 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 		return fmt.Errorf("未找到有效的目标URL")
 	}
 
-	// 在扫描开始前主动触发一次GC，清理之前可能的内存占用
-	runtime.GC()
-
 	logger.Info(fmt.Sprintf("准备扫描 %d 个目标", len(targets)))
 
 	// 启动内存监控协程
-	go monitorMemoryUsage()
+	//go monitorMemoryUsage()
 
 	// 初始化输出文件
 	if r.Config.OutputFile != "" {

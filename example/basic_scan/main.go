@@ -31,8 +31,8 @@ func main() {
 	targets := []string{"example.com", "github.com"}
 
 	// 3. 配置基本扫描参数
-	timeout := 5      // 超时时间（秒）
-	workerCount := 10 // 并发线程数
+	timeout := 5       // 超时时间（秒）
+	workerCount := 5000 // 规则并发线程数，更高的值可提高识别速度
 
 	// 4. 初始化打印
 	fmt.Println("开始扫描目标:", targets)
@@ -53,7 +53,7 @@ func main() {
 		// 第一个参数：目标URL
 		// 第二个参数：代理地址，为空表示不使用代理
 		// 第三个参数：超时时间（秒）
-		// 第四个参数：并发线程数
+		// 第四个参数：规则并发线程数，影响识别速度
 		result, err := gxx.FingerScan(target, "", timeout, workerCount)
 		if err != nil {
 			fmt.Printf("扫描失败: %v\n", err)

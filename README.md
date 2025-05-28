@@ -48,6 +48,9 @@ gxx -u https://example.com --debug
 
 # 禁用文件日志记录
 gxx -u https://example.com --no-file-log
+
+# 设置规则线程数提高性能
+gxx -u https://example.com -rt 10000
 ```
 
 ## 📖 命令行参数
@@ -56,6 +59,7 @@ gxx -u https://example.com --no-file-log
 - `-u, --url`：要扫描的目标URL/主机（可指定多个）
 - `-f, --file`：包含目标URL/主机列表的文件（每行一个）
 - `-t, --threads`：并发线程数（默认：10）
+- `-rt, --rulethreads`：指纹规则并发线程数（默认自动计算，最大：50000）
 
 ### 输出选项
 - `-o, --output`：输出文件路径
@@ -165,7 +169,7 @@ if err != nil {
 target := "https://example.com"
 proxy := "" // 如果需要代理，指定代理地址
 timeout := 5 // 超时时间，单位：秒
-workerCount := 10 // 并发工作线程数
+workerCount := 10000 // 规则并发线程数，可设置较高的值提高识别速度，最大50000
 
 // 执行指纹识别
 result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
@@ -254,7 +258,7 @@ func main() {
     target := "https://example.com"
     proxy := "" // 如果不需要代理，设为空字符串
     timeout := 5 // 超时时间，单位：秒
-    workerCount := 10 // 并发工作线程数
+    workerCount := 10000 // 规则并发线程数，可设置较高的值提高识别速度
 
     result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
     if err != nil {

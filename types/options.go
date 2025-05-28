@@ -31,4 +31,5 @@ type CmdOptions struct {
 	NoFileLog   bool                // 是否禁用文件日志，仅输出到控制台
 	JSONOutput  bool                // 是否使用JSON格式输出结果
 	SockOutput  string              // socket文件输出路径，启用后会以JSON格式输出到socket文件
+	RuleThreads int                 // 指纹规则线程数
 }
