@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -54,18 +55,18 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 		return nil, fmt.Errorf("目标URL不能为空")
 	}
 
-	// 获取目标基础信息
-	baseInfoResp, err := GetBaseInfo(target, proxy, timeout)
-
-	// 创建目标结果对象
+	// 创建目标结果对象，提前预分配
 	targetResult := &TargetResult{
 		URL:        target,
 		StatusCode: 0,
 		Title:      "",
 		Server:     types.EmptyServerInfo(),
-		Matches:    make([]*FingerMatch, 0),
+		Matches:    make([]*FingerMatch, 0, 10), // 预分配容量
 		Wappalyzer: nil,
 	}
+
+	// 获取目标基础信息
+	baseInfoResp, err := GetBaseInfo(target, proxy, timeout)
 
 	// 即使获取基础信息失败，也继续处理
 	if err != nil {
@@ -82,7 +83,7 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	logger.Debug(fmt.Sprintf("初始URL：%s", targetResult.URL))
 
 	// 初始化缓存和变量映射
-	var variableMap = make(map[string]any)
+	var variableMap = make(map[string]any, 4) // 预分配map容量
 	lastResponse, lastRequest := initializeCache(baseInfoResp.Response, proxy)
 	if lastResponse == nil {
 		// 如果无法获取响应，直接返回
@@ -113,7 +114,7 @@ func ProcessURL(target string, proxy string, timeout int, workerCount int) (*Tar
 	matches := runFingerDetection(baseInfoResp.Url, baseInfo, proxy, timeout)
 	targetResult.Matches = matches
 
-	// 当前指纹规则全部运行完成之后删除缓存，减少内存压力
+	// 指纹规则运行完成之后立即删除缓存，减少内存压力
 	ClearTargetURLCache(target)
 
 	return targetResult, nil
@@ -132,14 +133,17 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 		return []*FingerMatch{}
 	}
 
-	// 创建缓冲通道收集匹配结果，避免阻塞
-	resultChan := make(chan *FingerMatch, len(AllFinger))
-	
+	// 创建更大的缓冲通道收集匹配结果，减少阻塞
+	resultChan := make(chan *FingerMatch, len(AllFinger)*2)
+
 	// 创建等待组
 	var wg sync.WaitGroup
 
 	// 记录开始时间用于性能监控
 	startTime := time.Now()
+
+	// 统计实际提交的任务数
+	submittedTasks := int64(0)
 
 	// 提交所有指纹任务到全局规则池
 	for _, fingerprint := range AllFinger {
@@ -156,42 +160,54 @@ func runFingerDetection(target string, baseInfo *BaseInfo, proxy string, timeout
 			WaitGroup:  &wg,
 		}
 
-		// 重试机制确保任务提交成功
-		maxRetries := 3
-		var submitErr error
-		for retry := 0; retry < maxRetries; retry++ {
+		// 简化重试机制，只在池满时重试一次
+		submitErr := GlobalRulePool.Invoke(task)
+		if submitErr != nil {
+			// 如果提交失败，简单重试一次
+			time.Sleep(1 * time.Millisecond)
 			submitErr = GlobalRulePool.Invoke(task)
-			if submitErr == nil {
-				break
-			}
-			// 指数退避重试
-			time.Sleep(time.Duration(retry+1) * 10 * time.Millisecond)
 		}
 
 		if submitErr != nil {
-			logger.Debug(fmt.Sprintf("提交指纹任务失败 (重试%d次): %s, 错误: %v", 
-				maxRetries, fingerprint.Id, submitErr))
+			logger.Debug(fmt.Sprintf("提交指纹任务失败: %s, 错误: %v", fingerprint.Id, submitErr))
 			wg.Done()
 			continue
 		}
+
+		// 统计成功提交的任务
+		submittedTasks++
 	}
+
+	// 更新全局任务统计
+	atomic.AddInt64(&poolStats.TotalTasks, submittedTasks)
+
+	// 启动结果收集协程，避免阻塞主流程
+	matches := make([]*FingerMatch, 0, len(AllFinger)/4) // 预分配容量
+	var matchesMutex sync.Mutex
+	resultDone := make(chan struct{})
+
+	go func() {
+		defer close(resultDone)
+		for result := range resultChan {
+			if result != nil && result.Result {
+				matchesMutex.Lock()
+				matches = append(matches, result)
+				matchesMutex.Unlock()
+			}
+		}
+	}()
 
 	// 等待所有指纹任务完成
 	wg.Wait()
 	close(resultChan)
 
-	// 收集匹配结果
-	matches := make([]*FingerMatch, 0)
-	for result := range resultChan {
-		if result != nil && result.Result {
-			matches = append(matches, result)
-		}
-	}
+	// 等待结果收集完成
+	<-resultDone
 
 	// 记录性能信息
 	duration := time.Since(startTime)
-	logger.Debug(fmt.Sprintf("目标 %s 指纹识别完成，耗时: %v, 匹配数量: %d/%d", 
-		target, duration, len(matches), len(AllFinger)))
+	logger.Debug(fmt.Sprintf("目标 %s 指纹识别完成，耗时: %v, 匹配数量: %d/%d, 实际任务数: %d",
+		target, duration, len(matches), len(AllFinger), submittedTasks))
 
 	return matches
 }

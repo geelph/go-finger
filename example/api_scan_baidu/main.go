@@ -42,7 +42,7 @@ func main() {
 	target := "https://www.baidu.com"
 	proxy := ""        // 如果需要代理，可以设置为 "http://127.0.0.1:8080" 或 "socks5://127.0.0.1:1080"
 	timeout := 5       // 超时时间，单位：秒
-	workerCount := 500 // 并发工作线程数，使用默认值
+	workerCount := 200 // 并发工作线程数，使用默认值
 
 	// 4. 获取基础信息
 	fmt.Printf("\n开始获取目标基础信息: %s\n", target)

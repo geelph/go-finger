@@ -6,7 +6,6 @@ import (
 	"gxx/types"
 	"gxx/utils/logger"
 	"gxx/utils/output"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,8 +15,8 @@ import (
 
 // 全局配置常量 - 导出供外部使用
 const (
-	DefaultURLWorkers  = 10   // URL处理池默认大小
-	DefaultRuleWorkers = 500  // 规则处理池默认大小
+	DefaultURLWorkers  = 5    // URL处理池默认大小
+	DefaultRuleWorkers = 200  // 规则处理池默认大小
 	MaxRuleWorkers     = 5000 // 最大规则工作线程
 	MinRuleWorkers     = 100  // 最小规则工作线程
 )
@@ -47,11 +46,7 @@ type RuleTask struct {
 
 // InitGlobalRulePool 初始化全局规则处理池
 func InitGlobalRulePool(workerCount int) error {
-	if workerCount <= 0 {
-		workerCount = DefaultRuleWorkers
-	}
-
-	// 限制工作池大小在合理范围内
+	// 确保worker数量在合理范围内
 	if workerCount < MinRuleWorkers {
 		workerCount = MinRuleWorkers
 	} else if workerCount > MaxRuleWorkers {
@@ -59,20 +54,27 @@ func InitGlobalRulePool(workerCount int) error {
 	}
 
 	var err error
-	GlobalRulePool, err = ants.NewPoolWithFunc(workerCount, func(i interface{}) {
-		task, ok := i.(*RuleTask)
-		if !ok {
-			logger.Error("无效的规则任务类型")
-			return
-		}
+	GlobalRulePool, err = ants.NewPoolWithFunc(workerCount,
+		func(i interface{}) {
+			task, ok := i.(*RuleTask)
+			if !ok {
+				atomic.AddInt64(&poolStats.FailedTasks, 1)
+				logger.Error("无效的规则任务类型")
+				return
+			}
 
-		// 执行规则识别任务
-		processRuleTask(task)
-	},
-		ants.WithPreAlloc(true),                // 预分配goroutine
-		ants.WithExpiryDuration(2*time.Minute), // 2分钟过期时间
-		ants.WithNonblocking(false),            // 阻塞模式确保任务执行
-		ants.WithPanicHandler(func(i interface{}) { // 异常处理
+			// 处理任务
+			processRuleTask(task)
+
+			// 更新完成统计
+			atomic.AddInt64(&poolStats.CompletedTasks, 1)
+		},
+		ants.WithPreAlloc(true),                   // 预分配goroutine
+		ants.WithExpiryDuration(2*time.Minute),    // 52分钟过期时间
+		ants.WithNonblocking(false),               // 阻塞提交
+		ants.WithMaxBlockingTasks(workerCount*10), // 最大阻塞任务数
+		ants.WithPanicHandler(func(i interface{}) {
+			atomic.AddInt64(&poolStats.FailedTasks, 1)
 			logger.Error(fmt.Sprintf("规则池goroutine异常: %v", i))
 		}),
 	)
@@ -91,10 +93,7 @@ func processRuleTask(task *RuleTask) {
 		if task.WaitGroup != nil {
 			task.WaitGroup.Done()
 		}
-		atomic.AddInt64(&poolStats.CompletedTasks, 1)
 	}()
-
-	atomic.AddInt64(&poolStats.TotalTasks, 1)
 
 	// 执行指纹识别
 	result, err := evaluateFingerprintWithCache(
@@ -225,9 +224,6 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 			GlobalRulePool = nil
 		}
 	}()
-
-	// 执行垃圾回收，减少内存占用
-	runtime.GC()
 
 	logger.Info(fmt.Sprintf("开始扫描 %d 个目标，使用 %d 个URL并发线程, %d 个规则并发线程...",
 		len(targets), r.Config.URLWorkerCount, r.Config.FingerWorkerCount))
@@ -374,6 +370,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) error {
 		ants.WithPreAlloc(true),
 		ants.WithExpiryDuration(3*time.Minute),
 		ants.WithNonblocking(false),
+		ants.WithMaxBlockingTasks(r.Config.URLWorkerCount*5), // 限制阻塞任务数
 		ants.WithPanicHandler(func(i interface{}) {
 			logger.Error(fmt.Sprintf("URL池goroutine异常: %v", i))
 		}),
@@ -392,9 +389,6 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) error {
 			logger.Error(fmt.Sprintf("提交目标 %s 到线程池失败: %v", target, err))
 		}
 	}
-
-	// 执行垃圾回收
-	runtime.GC()
 
 	// 等待当前批次完成
 	urlWg.Wait()

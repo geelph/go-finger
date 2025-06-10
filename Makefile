@@ -7,7 +7,7 @@ all: build
 build:
 	@echo "构建项目（不嵌入指纹库）..."
 	@BUILD_DATE=$$(date +"%Y-%m-%d") && \
-	GXX_VERSION="1.1.4" && \
+	GXX_VERSION="1.1.5" && \
 	GXX_AUTHOR="zhizhuo" && \
 	go build -ldflags "-X 'gxx/cmd/cli.defaultVersion=$$GXX_VERSION' -X 'gxx/cmd/cli.defaultAuthor=$$GXX_AUTHOR' -X 'gxx/cmd/cli.defaultBuildDate=$$BUILD_DATE'" -o gxx ./cmd/main.go
 	@echo "构建完成，请确保 'finger' 目录与二进制文件放在同一目录下"
@@ -18,7 +18,7 @@ build-embed:
 	@cp utils/finger/embed.go utils/finger/embed.go.bak
 	@sed -i.bak 's|// //go:embed all:finger|//go:embed all:finger|g' utils/finger/embed.go
 	@BUILD_DATE=$$(date +"%Y-%m-%d") && \
-	GXX_VERSION="1.1.4" && \
+	GXX_VERSION="1.1.5" && \
 	GXX_AUTHOR="zhizhuo" && \
 	go build -ldflags "-X 'gxx/cmd/cli.defaultVersion=$$GXX_VERSION' -X 'gxx/cmd/cli.defaultAuthor=$$GXX_AUTHOR' -X 'gxx/cmd/cli.defaultBuildDate=$$BUILD_DATE'" -o gxx ./cmd/main.go
 	@mv utils/finger/embed.go.bak utils/finger/embed.go
