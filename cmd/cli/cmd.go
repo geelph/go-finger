@@ -14,6 +14,8 @@ import (
 
 // Run 执行指纹识别
 func Run(options *types.CmdOptions) {
+	runner.StartMemoryMonitor()
+	defer runner.StopMemoryMonitor()
 	r := runner.NewRunner(options)
 	// 运行扫描
 	if err := r.Run(options); err != nil {
