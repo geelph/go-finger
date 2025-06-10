@@ -38,7 +38,7 @@ func main() {
 
 	// 设置超时和线程
 	timeout := 5
-	workerCount := 10
+	workerCount := 500 // 使用默认的规则并发线程数
 	proxy := ""
 
 	// 执行扫描
@@ -188,7 +188,7 @@ func scanTargetsWithConcurrency(targets []string, proxy string, timeout, workerC
 			for target := range targetCh {
 				// 扫描目标
 				fmt.Printf("正在扫描: %s\n", target)
-				result, err := gxx.FingerScan(target, proxy, timeout, 1)
+				result, err := gxx.FingerScan(target, proxy, timeout, 500)
 				if err != nil {
 					fmt.Printf("扫描失败 [%s]: %v\n", target, err)
 					continue

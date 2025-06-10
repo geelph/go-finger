@@ -35,7 +35,7 @@ type FingerMatch = runner.FingerMatch
 func NewFingerOptions() (types.YamlFingerType, error) {
 	// 默认在当前目录下查找finger_demo.yml文件
 	defaultPath := "finger_demo.yml"
-	
+
 	// 检查文件是否存在
 	_, err := os.Stat(defaultPath)
 	if err != nil {
@@ -45,7 +45,7 @@ func NewFingerOptions() (types.YamlFingerType, error) {
 		}
 		return types.YamlFingerType{}, fmt.Errorf("检查默认指纹文件失败: %w", err)
 	}
-	
+
 	// 文件存在则使用默认文件
 	return types.YamlFingerType{
 		PocFile: defaultPath,
@@ -65,7 +65,7 @@ func InitFingerRules(options types.YamlFingerType) error {
 	if options.PocFile == "" && options.PocYaml == "" {
 		return fmt.Errorf("指纹文件路径(PocFile)和指纹内容(PocYaml)不能同时为空")
 	}
-	
+
 	return runner.LoadFingerprints(options)
 }
 
@@ -74,7 +74,7 @@ func InitFingerRules(options types.YamlFingerType) error {
 //   - target: 目标URL
 //   - proxy: HTTP代理地址 (可为空)
 //   - timeout: 超时时间(秒)
-//   - workerCount: 指纹规则并发线程数，用于控制指纹匹配速度
+//   - workerCount: 指纹规则并发线程数，默认500（推荐范围100-5000）
 //
 // 返回:
 //   - *pkg.TargetResult: 识别结果
@@ -83,24 +83,31 @@ func FingerScan(target string, proxy string, timeout int, workerCount int) (*run
 	if target == "" {
 		return nil, fmt.Errorf("目标URL不能为空")
 	}
-	
+
 	if timeout <= 0 {
 		timeout = 5 // 设置默认超时时间
 	}
-	
+
 	if workerCount <= 0 {
-		workerCount = 1000 // 设置默认并发数
+		workerCount = runner.DefaultRuleWorkers // 使用默认规则工作池大小(500)
 	}
-	
+
+	// 限制工作池大小在合理范围内
+	if workerCount < runner.MinRuleWorkers {
+		workerCount = runner.MinRuleWorkers
+	} else if workerCount > runner.MaxRuleWorkers {
+		workerCount = runner.MaxRuleWorkers
+	}
+
 	result, err := runner.ProcessURL(target, proxy, timeout, workerCount)
 	if err != nil {
 		return nil, fmt.Errorf("处理URL %s 时发生错误: %w", target, err)
 	}
-	
+
 	if result == nil {
 		return nil, fmt.Errorf("扫描目标 %s 返回空结果", target)
 	}
-	
+
 	return result, nil
 }
 
@@ -115,11 +122,11 @@ func GetFingerMatches(targetResult *runner.TargetResult) []*runner.FingerMatch {
 	if targetResult == nil {
 		return nil
 	}
-	
+
 	if targetResult.Matches == nil {
 		return make([]*runner.FingerMatch, 0) // 返回空数组而不是nil
 	}
-	
+
 	return targetResult.Matches
 }
 
@@ -138,11 +145,11 @@ func GetBaseInfo(target, proxy string, timeout int) (*BaseInfoType, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if Bas == nil {
 		return nil, fmt.Errorf("获取目标 %s 的基础信息失败", target)
 	}
-	
+
 	BaseInfo.Target = Bas.Url
 	BaseInfo.Title = Bas.Title
 	BaseInfo.ServerInfo = Bas.Server
@@ -176,6 +183,55 @@ func WappalyzerScan(target, proxy string, timeout int) (*wappalyzer.TypeWappalyz
 	return baseInfo.Wappalyzer, nil
 }
 
+// GetPoolStats 获取全局规则池统计信息
+// 返回:
+//   - runner.GlobalPoolStats: 池统计信息，包含任务数量等
+func GetPoolStats() runner.GlobalPoolStats {
+	return runner.GetPoolStats()
+}
+
+// ResetPoolStats 重置全局规则池统计信息
+func ResetPoolStats() {
+	runner.ResetPoolStats()
+}
+
+// GetCacheStats 获取缓存统计信息
+// 返回:
+//   - map[string]interface{}: 缓存统计信息
+func GetCacheStats() map[string]interface{} {
+	return runner.GetCacheStats()
+}
+
+// StartMemoryMonitor 启动内存监控
+func StartMemoryMonitor() {
+	runner.StartMemoryMonitor()
+}
+
+// StopMemoryMonitor 停止内存监控
+func StopMemoryMonitor() {
+	runner.StopMemoryMonitor()
+}
+
+// GetMemoryStats 获取内存统计信息
+// 返回:
+//   - runner.MemoryStats: 内存统计信息
+func GetMemoryStats() runner.MemoryStats {
+	return runner.GetMemoryStats()
+}
+
+// ForceGC 强制执行垃圾回收
+func ForceGC() {
+	runner.ForceGC()
+}
+
+// SetMemoryThresholds 设置内存阈值
+// 参数:
+//   - highThreshold: 高内存使用阈值 (字节)
+//   - criticalThreshold: 临界内存使用阈值 (字节)
+func SetMemoryThresholds(highThreshold, criticalThreshold uint64) {
+	runner.SetMemoryThresholds(highThreshold, criticalThreshold)
+}
+
 // 以下是API使用示例
 
 /*
@@ -201,67 +257,35 @@ func main() {
 		log.Fatalf("初始化指纹规则错误: %v", err)
 	}
 
-	// 3. 处理单个URL
+	// 3. 执行指纹识别
 	target := "https://example.com"
-	proxy := "" // 如果不需要代理，设为空字符串
-	timeout := 5 // 超时时间，单位：秒
-	workerCount := 10000 // 规则并发线程数，可设置较高的值提高识别速度
+	proxy := "" // 可选的代理设置
+	timeout := 10 // 超时时间
+	workerCount := 500 // 规则并发数，默认500
 
 	result, err := gxx.FingerScan(target, proxy, timeout, workerCount)
 	if err != nil {
-		log.Printf("处理URL错误: %v", err)
-		return
+		log.Fatalf("指纹识别错误: %v", err)
 	}
 
-	// 4. 输出基本信息
-	fmt.Printf("URL: %s\n", result.URL)
+	// 4. 获取匹配结果
+	matches := gxx.GetFingerMatches(result)
+	fmt.Printf("目标: %s\n", result.URL)
 	fmt.Printf("状态码: %d\n", result.StatusCode)
 	fmt.Printf("标题: %s\n", result.Title)
-	if result.Server != nil {
-		fmt.Printf("服务器: %s\n", result.Server.ServerType)
+	fmt.Printf("匹配指纹数量: %d\n", len(matches))
+
+	for _, match := range matches {
+		fmt.Printf("- %s: %s\n", match.Finger.Name, match.Finger.Id)
 	}
 
-	// 5. 处理匹配结果
-	matches := gxx.GetFingerMatches(result)
-	if len(matches) > 0 {
-		fmt.Println("\n匹配的指纹:")
-		for i, match := range matches {
-			fmt.Printf("  %d. %s (匹配结果: %v)\n", i+1, match.Finger.Info.Name, match.Result)
-		}
-	} else {
-		fmt.Println("\n未匹配到任何指纹")
-	}
+	// 5. 获取池统计信息
+	stats := gxx.GetPoolStats()
+	fmt.Printf("总任务数: %d, 已完成: %d, 失败: %d\n",
+		stats.TotalTasks, stats.CompletedTasks, stats.FailedTasks)
 
-	// 6. 获取技术栈信息
-	baseInfo, err := gxx.GetBaseInfo(target, proxy, timeout)
-	if err != nil {
-		log.Printf("获取基本信息错误: %v", err)
-		return
-	}
-
-	if baseInfo.Wappalyzer != nil {
-		fmt.Println("\n技术栈信息:")
-		if len(baseInfo.Wappalyzer.WebServers) > 0 {
-			fmt.Printf("  Web服务器: %v\n", baseInfo.Wappalyzer.WebServers)
-		}
-		if len(baseInfo.Wappalyzer.ProgrammingLanguages) > 0 {
-			fmt.Printf("  编程语言: %v\n", baseInfo.Wappalyzer.ProgrammingLanguages)
-		}
-		if len(baseInfo.Wappalyzer.WebFrameworks) > 0 {
-			fmt.Printf("  Web框架: %v\n", baseInfo.Wappalyzer.WebFrameworks)
-		}
-	}
-
-	// 7. 单独进行技术栈分析
-	wappResult, err := gxx.WappalyzerScan(target, proxy, timeout)
-	if err != nil {
-		log.Printf("技术栈分析错误: %v", err)
-		return
-	}
-
-	fmt.Println("\n单独技术栈分析结果:")
-	if len(wappResult.WebServers) > 0 {
-		fmt.Printf("  Web服务器: %v\n", wappResult.WebServers)
-	}
+	// 6. 获取缓存统计信息
+	cacheStats := gxx.GetCacheStats()
+	fmt.Printf("缓存统计: %v\n", cacheStats)
 }
 */

@@ -27,7 +27,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("创建选项错误: %v", err)
 	}
-	options.PocYaml = "/Users/zhizhuo/Desktop/开发目录/Dev/gxx/finger_demo.yml"
+	// 注释掉硬编码路径，使用默认配置
+	// options.PocYaml = "/Users/zhizhuo/Desktop/开发目录/Dev/gxx/finger_demo.yml"
+
 	// 2. 初始化指纹规则库（仅需执行一次）
 	fmt.Println("初始化指纹规则库...")
 	startTime := time.Now()
@@ -38,9 +40,9 @@ func main() {
 
 	// 3. 设置扫描参数
 	target := "https://www.baidu.com"
-	proxy := ""       // 如果需要代理，可以设置为 "http://127.0.0.1:8080" 或 "socks5://127.0.0.1:1080"
-	timeout := 5      // 超时时间，单位：秒
-	workerCount := 10 // 并发工作线程数
+	proxy := ""        // 如果需要代理，可以设置为 "http://127.0.0.1:8080" 或 "socks5://127.0.0.1:1080"
+	timeout := 5       // 超时时间，单位：秒
+	workerCount := 500 // 并发工作线程数，使用默认值
 
 	// 4. 获取基础信息
 	fmt.Printf("\n开始获取目标基础信息: %s\n", target)
@@ -82,7 +84,7 @@ func main() {
 		fmt.Printf("JSON转换错误: %v\n", err)
 
 	}
-	fmt.Printf("指纹 \n%s\n\n", string(jsonData))
+	fmt.Printf("技术栈 \n%s\n\n", string(jsonData))
 
 	// 8. 处理匹配的指纹（友好格式）
 	matches := gxx.GetFingerMatches(res)

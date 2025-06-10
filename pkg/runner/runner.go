@@ -2,183 +2,150 @@ package runner
 
 import (
 	"fmt"
-	"github.com/panjf2000/ants/v2"
 	"gxx/pkg/finger"
 	"gxx/types"
 	"gxx/utils/logger"
 	"gxx/utils/output"
 	"runtime"
-	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/panjf2000/ants/v2"
 )
 
-// GlobalFingerPool 全局FingerPool，用于处理所有指纹任务
-var GlobalFingerPool *ants.PoolWithFunc
+// 全局配置常量 - 导出供外部使用
+const (
+	DefaultURLWorkers  = 10   // URL处理池默认大小
+	DefaultRuleWorkers = 500  // 规则处理池默认大小
+	MaxRuleWorkers     = 5000 // 最大规则工作线程
+	MinRuleWorkers     = 100  // 最小规则工作线程
+)
 
-// FingerTaskResult 指纹任务结果结构
-type FingerTaskResult struct {
-	Target    string
-	FingerID  string
-	Timestamp int64
-	Success   bool
-	Result    *FingerMatch
+// GlobalRulePool 全局规则处理池，专门用于执行CEL规则识别
+var GlobalRulePool *ants.PoolWithFunc
+
+// GlobalPoolStats 全局池统计信息，用于监控性能
+type GlobalPoolStats struct {
+	TotalTasks     int64 // 总任务数
+	CompletedTasks int64 // 已完成任务数
+	FailedTasks    int64 // 失败任务数
 }
 
-// FingerTaskMonitor 任务监控结构
-type FingerTaskMonitor struct {
-	sync.Mutex
-	results       map[string][]FingerTaskResult // 按URL地址存储结果
-	totalTasks    map[string]int                // 每个URL的总任务数
-	pendingTasks  map[string]int                // 每个URL的待处理任务数
-	completedURLs []string                      // 已完成处理的URL列表，用于清理
-	maxStoredURLs int                           // 最大存储的已完成URL数量
+var poolStats GlobalPoolStats
+
+// RuleTask 规则处理任务结构
+type RuleTask struct {
+	Target     string
+	Finger     *finger.Finger
+	BaseInfo   *BaseInfo
+	Proxy      string
+	Timeout    int
+	ResultChan chan<- *FingerMatch // 结果通道
+	WaitGroup  *sync.WaitGroup     // 等待组
 }
 
-// NewFingerTaskMonitor 新建指纹任务监控器
-func NewFingerTaskMonitor() *FingerTaskMonitor {
-	return &FingerTaskMonitor{
-		results:      make(map[string][]FingerTaskResult),
-		totalTasks:   make(map[string]int),
-		pendingTasks: make(map[string]int),
-	}
-}
-
-// InitUrlTask 初始化URL任务
-func (tm *FingerTaskMonitor) InitUrlTask(target string, taskCount int) {
-	tm.Lock()
-	defer tm.Unlock()
-	tm.results[target] = make([]FingerTaskResult, 0, taskCount)
-	tm.totalTasks[target] = taskCount
-	tm.pendingTasks[target] = taskCount
-}
-
-// AddResult 添加结果
-func (tm *FingerTaskMonitor) AddResult(result FingerTaskResult) {
-	tm.Lock()
-	defer tm.Unlock()
-	target := result.Target
-
-	// 初始化结果集（如果不存在）
-	if _, exists := tm.results[target]; !exists {
-		tm.results[target] = make([]FingerTaskResult, 0, 100)
+// InitGlobalRulePool 初始化全局规则处理池
+func InitGlobalRulePool(workerCount int) error {
+	if workerCount <= 0 {
+		workerCount = DefaultRuleWorkers
 	}
 
-	// 添加结果
-	tm.results[target] = append(tm.results[target], result)
-
-	// 更新待处理任务数
-	if tm.pendingTasks[target] > 0 {
-		tm.pendingTasks[target]--
+	// 限制工作池大小在合理范围内
+	if workerCount < MinRuleWorkers {
+		workerCount = MinRuleWorkers
+	} else if workerCount > MaxRuleWorkers {
+		workerCount = MaxRuleWorkers
 	}
-}
 
-// GetResults 获取URL的所有结果
-func (tm *FingerTaskMonitor) GetResults(target string) []FingerTaskResult {
-	tm.Lock()
-	defer tm.Unlock()
-	if results, exists := tm.results[target]; exists {
-		return results
-	}
-	return []FingerTaskResult{}
-}
-func (tm *FingerTaskMonitor) ClearURLResults(target string) {
-	tm.Lock()
-	defer tm.Unlock()
-
-	// 清除该URL的所有数据
-	delete(tm.results, target)
-	delete(tm.totalTasks, target)
-	delete(tm.pendingTasks, target)
-
-	// 从已完成列表中移除
-	for i, url := range tm.completedURLs {
-		if url == target {
-			tm.completedURLs = append(tm.completedURLs[:i], tm.completedURLs[i+1:]...)
-			break
-		}
-	}
-}
-
-// GlobalFingerTaskMonitor 创建全局任务监控器
-var GlobalFingerTaskMonitor = NewFingerTaskMonitor()
-
-// InitGlobalFingerPool 初始化全局FingerPool
-func InitGlobalFingerPool(workerCount int) {
 	var err error
-	GlobalFingerPool, err = ants.NewPoolWithFunc(workerCount, func(i interface{}) {
-		task := i.(map[string]interface{})
-
-		// 检查并获取WaitGroup
-		if wg, ok := task["wg"].(*sync.WaitGroup); ok {
-			defer wg.Done()
+	GlobalRulePool, err = ants.NewPoolWithFunc(workerCount, func(i interface{}) {
+		task, ok := i.(*RuleTask)
+		if !ok {
+			logger.Error("无效的规则任务类型")
+			return
 		}
 
-		// 执行指纹识别
-		fingerFg := task["fingerRule"].(*finger.Finger)
-		target := task["target"].(string)
-		baseInfo := task["baseInfo"].(*BaseInfo)
-		proxy := task["proxy"].(string)
-		timeout := task["timeout"].(int)
-
-		// 将结果转换为FingerTaskResult
-		result, err := evaluateFingerprintWithCache(fingerFg, target, baseInfo, proxy, timeout)
-		success := err == nil && result != nil && result.Result
-
-		// 生成任务结果
-		taskResult := FingerTaskResult{
-			Target:    target,
-			FingerID:  fingerFg.Id,
-			Timestamp: task["timestamp"].(int64),
-			Success:   success,
-			Result:    result,
-		}
-
-		// 如果成功匹配，添加到结果中
-		if success {
-			GlobalFingerTaskMonitor.AddResult(taskResult)
-		}
+		// 执行规则识别任务
+		processRuleTask(task)
 	},
-		ants.WithPreAlloc(true),
-		ants.WithExpiryDuration(1*time.Minute),
-		ants.WithNonblocking(false),
+		ants.WithPreAlloc(true),                // 预分配goroutine
+		ants.WithExpiryDuration(2*time.Minute), // 2分钟过期时间
+		ants.WithNonblocking(false),            // 阻塞模式确保任务执行
+		ants.WithPanicHandler(func(i interface{}) { // 异常处理
+			logger.Error(fmt.Sprintf("规则池goroutine异常: %v", i))
+		}),
 	)
+
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create GlobalFingerPool: %v", err))
+		return fmt.Errorf("创建全局规则池失败: %v", err)
+	}
+
+	logger.Info(fmt.Sprintf("全局规则池初始化完成，工作线程数: %d", workerCount))
+	return nil
+}
+
+// processRuleTask 处理单个规则识别任务
+func processRuleTask(task *RuleTask) {
+	defer func() {
+		if task.WaitGroup != nil {
+			task.WaitGroup.Done()
+		}
+		atomic.AddInt64(&poolStats.CompletedTasks, 1)
+	}()
+
+	atomic.AddInt64(&poolStats.TotalTasks, 1)
+
+	// 执行指纹识别
+	result, err := evaluateFingerprintWithCache(
+		task.Finger,
+		task.Target,
+		task.BaseInfo,
+		task.Proxy,
+		task.Timeout,
+	)
+
+	if err != nil {
+		atomic.AddInt64(&poolStats.FailedTasks, 1)
+		logger.Debug(fmt.Sprintf("规则 %s 执行失败: %v", task.Finger.Id, err))
+		return
+	}
+
+	// 只有匹配成功的结果才发送到结果通道
+	if result != nil && result.Result {
+		select {
+		case task.ResultChan <- result:
+			// 成功发送结果
+		default:
+			// 结果通道已满或关闭，丢弃结果
+			logger.Debug(fmt.Sprintf("结果通道已满，丢弃规则 %s 的结果", task.Finger.Id))
+		}
 	}
 }
 
 // Runner 指纹识别运行器
 type Runner struct {
-	Config  *ScanConfig              // 配置参数
-	Results map[string]*TargetResult // 扫描结果
-	mutex   sync.Mutex               // 保护Results的读写锁
+	Config    *ScanConfig              // 配置参数
+	Results   map[string]*TargetResult // 扫描结果
+	mutex     sync.RWMutex             // 读写锁保护Results
+	urlPool   *ants.PoolWithFunc       // URL处理池
+	isRunning atomic.Bool              // 运行状态标志
 }
 
 // NewRunner 创建一个新的扫描运行器
 func NewRunner(options *types.CmdOptions) *Runner {
-	// 设置并发参数
+	// 设置URL并发参数，默认为10
 	urlWorkerCount := options.Threads
 	if urlWorkerCount <= 0 {
-		urlWorkerCount = 10
+		urlWorkerCount = DefaultURLWorkers
 	}
 
-	// 计算指纹规则线程池大小
-	var fingerWorkerCount int
-
-	// 如果指定了RuleThreads，则直接使用
+	// 设置规则并发参数，默认为500
+	var ruleWorkerCount int
 	if options.RuleThreads > 0 {
-		fingerWorkerCount = options.RuleThreads
+		ruleWorkerCount = options.RuleThreads
 	} else {
-		// 否则使用默认计算方式
-		fingerWorkerCount = 50 * urlWorkerCount
-
-		// 限制范围在 1000 到 5000
-		if fingerWorkerCount < 1000 {
-			fingerWorkerCount = 1000
-		} else if fingerWorkerCount > 5000 {
-			fingerWorkerCount = 5000
-		}
+		ruleWorkerCount = DefaultRuleWorkers
 	}
 
 	// 确定输出格式
@@ -189,7 +156,7 @@ func NewRunner(options *types.CmdOptions) *Runner {
 		Proxy:             options.Proxy,
 		Timeout:           options.Timeout,
 		URLWorkerCount:    urlWorkerCount,
-		FingerWorkerCount: fingerWorkerCount,
+		FingerWorkerCount: ruleWorkerCount,
 		OutputFormat:      outputFormat,
 		OutputFile:        options.Output,
 		SockOutputFile:    options.SockOutput,
@@ -199,7 +166,7 @@ func NewRunner(options *types.CmdOptions) *Runner {
 	runner := &Runner{
 		Config:  config,
 		Results: make(map[string]*TargetResult),
-		mutex:   sync.Mutex{},
+		mutex:   sync.RWMutex{},
 	}
 
 	return runner
@@ -207,6 +174,11 @@ func NewRunner(options *types.CmdOptions) *Runner {
 
 // Run 执行扫描
 func (r *Runner) Run(options *types.CmdOptions) error {
+	if !r.isRunning.CompareAndSwap(false, true) {
+		return fmt.Errorf("扫描器已在运行中")
+	}
+	defer r.isRunning.Store(false)
+
 	// 处理目标URL列表
 	targets := getTargets(options)
 	if len(targets) == 0 {
@@ -214,9 +186,6 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 	}
 
 	logger.Info(fmt.Sprintf("准备扫描 %d 个目标", len(targets)))
-
-	// 启动内存监控协程
-	//go monitorMemoryUsage()
 
 	// 初始化输出文件
 	if r.Config.OutputFile != "" {
@@ -242,16 +211,18 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 	}
 	logger.Info(fmt.Sprintf("加载指纹数量：%v个", len(AllFinger)))
 
-	// 初始化全局指纹池
-	if GlobalFingerPool == nil {
-		InitGlobalFingerPool(r.Config.FingerWorkerCount)
-		logger.Info("初始化全局指纹任务池")
+	// 初始化全局规则池
+	if GlobalRulePool == nil {
+		if err := InitGlobalRulePool(r.Config.FingerWorkerCount); err != nil {
+			return err
+		}
 	}
 
 	// 在函数返回时释放全局池资源
 	defer func() {
-		if GlobalFingerPool != nil {
-			GlobalFingerPool.Release()
+		if GlobalRulePool != nil {
+			GlobalRulePool.Release()
+			GlobalRulePool = nil
 		}
 	}()
 
@@ -262,24 +233,29 @@ func (r *Runner) Run(options *types.CmdOptions) error {
 		len(targets), r.Config.URLWorkerCount, r.Config.FingerWorkerCount))
 
 	// 执行扫描
-	r.runScan(targets, options)
-	r.mutex.Lock()
-	// 清除所有缓存文件
+	if err := r.runScan(targets, options); err != nil {
+		return err
+	}
+
+	// 清除所有缓存
 	ClearAllCache()
+
+	// 打印统计信息
+	r.mutex.RLock()
 	printSummary(targets, r.Results)
-	r.mutex.Unlock()
+	r.mutex.RUnlock()
 
 	return nil
 }
 
 // ScanTarget 扫描单个目标URL
 func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
-	// 使用目标特定的worker数量
-	workerCount := r.Config.FingerWorkerCount
-	timeout := r.Config.Timeout
+	if !r.isRunning.Load() {
+		return nil, fmt.Errorf("扫描器未运行")
+	}
 
 	// 处理单个URL
-	result, err := ProcessURL(target, r.Config.Proxy, timeout, workerCount)
+	result, err := ProcessURL(target, r.Config.Proxy, r.Config.Timeout, r.Config.FingerWorkerCount)
 	if err != nil {
 		return nil, err
 	}
@@ -288,8 +264,8 @@ func (r *Runner) ScanTarget(target string) (*TargetResult, error) {
 }
 
 // runScan 执行扫描过程
-func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
-	// 使用通道替代互斥锁来收集结果
+func (r *Runner) runScan(targets []string, options *types.CmdOptions) error {
+	// 使用缓冲通道收集结果，避免阻塞
 	resultChan := make(chan struct {
 		target string
 		result *TargetResult
@@ -309,13 +285,10 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 		for {
 			select {
 			case <-refreshTicker.C:
-				// 定时刷新进度条显示
-				err := bar.RenderBlank()
-				if err != nil {
+				if err := bar.RenderBlank(); err != nil {
 					logger.Debug(fmt.Sprintf("刷新进度条出错: %v", err))
 				}
 			case <-stopRefreshChan:
-				// 收到停止信号时退出
 				return
 			}
 		}
@@ -325,8 +298,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	startTime := time.Now()
 	go func() {
 		for range doneChan {
-			err := bar.Add(1)
-			if err != nil {
+			if err := bar.Add(1); err != nil {
 				logger.Debug(fmt.Sprintf("更新进度条出错: %v", err))
 			}
 		}
@@ -341,31 +313,32 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 		}
 	}()
 
-	// 存储输出的结果 - 无需互斥锁
+	// 存储输出的结果 - 线程安全的结果输出
 	saveResult := func(msg string) {
-		// 暂时清除进度条并输出结果
 		fmt.Print("\033[2K\r")
 		fmt.Println(msg)
-
-		// 重新显示进度条
-		err := bar.RenderBlank()
-		if err != nil {
+		if err := bar.RenderBlank(); err != nil {
 			logger.Debug(fmt.Sprintf("重新显示进度条出错: %v", err))
 		}
 	}
 
-	// 定义任务结构体
-	type scanTask struct {
+	// 定义URL处理任务结构体
+	type urlTask struct {
 		target string
 	}
 
 	var urlWg sync.WaitGroup
 
-	// 创建URL处理工作池，使用PoolWithFunc预定义处理函数
-	urlPool, _ := ants.NewPoolWithFunc(r.Config.URLWorkerCount,
+	// 创建URL处理工作池
+	urlPool, err := ants.NewPoolWithFunc(r.Config.URLWorkerCount,
 		func(i interface{}) {
 			defer urlWg.Done()
-			task := i.(scanTask)
+			task, ok := i.(urlTask)
+			if !ok {
+				logger.Error("无效的URL任务类型")
+				return
+			}
+
 			target := task.target
 
 			// 处理单个URL
@@ -382,36 +355,47 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 			handleMatchResults(targetResult, options, saveResult, r.Config.OutputFormat)
 
 			// 通过通道发送结果
-			resultChan <- struct {
+			select {
+			case resultChan <- struct {
 				target string
 				result *TargetResult
-			}{target, targetResult}
+			}{target, targetResult}:
+			default:
+				logger.Debug("结果通道已满，丢弃结果")
+			}
 
 			// 通知完成一个任务
-			doneChan <- struct{}{}
+			select {
+			case doneChan <- struct{}{}:
+			default:
+				logger.Debug("完成通道已满")
+			}
 		},
 		ants.WithPreAlloc(true),
 		ants.WithExpiryDuration(3*time.Minute),
-		ants.WithNonblocking(false), // 使用非阻塞模式提高并发性能
+		ants.WithNonblocking(false),
+		ants.WithPanicHandler(func(i interface{}) {
+			logger.Error(fmt.Sprintf("URL池goroutine异常: %v", i))
+		}),
 	)
+
+	if err != nil {
+		return fmt.Errorf("创建URL处理池失败: %v", err)
+	}
 	defer urlPool.Release()
 
 	// 提交所有目标到线程池
 	for _, target := range targets {
-		//fmt.Println(fmt.Sprintf("Runner goroutines：%d", urlPool.Running()))
-		//fmt.Println(fmt.Sprintf("Free goroutines：%d", urlPool.Free()))
 		urlWg.Add(1)
-		err := urlPool.Invoke(scanTask{
-			target: target,
-		})
-
-		// 如果提交失败，手动减少等待计数并记录错误
-		if err != nil {
+		if err := urlPool.Invoke(urlTask{target: target}); err != nil {
 			urlWg.Done()
 			logger.Error(fmt.Sprintf("提交目标 %s 到线程池失败: %v", target, err))
 		}
 	}
+
+	// 执行垃圾回收
 	runtime.GC()
+
 	// 等待当前批次完成
 	urlWg.Wait()
 
@@ -423,8 +407,7 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	close(stopRefreshChan)
 
 	// 确保最终完成100%进度
-	err := bar.Finish()
-	if err != nil {
+	if err := bar.Finish(); err != nil {
 		logger.Debug(fmt.Sprintf("完成进度条出错: %v", err))
 	}
 
@@ -435,73 +418,28 @@ func (r *Runner) runScan(targets []string, options *types.CmdOptions) {
 	maxProgress := fmt.Sprintf("指纹识别 100%% [==================================================] (%d/%d, %.2f it/s)",
 		len(targets), len(targets), itemsPerSecond)
 	fmt.Println(maxProgress)
+
+	// 打印池统计信息
+	logger.Info(fmt.Sprintf("规则池统计 - 总任务: %d, 已完成: %d, 失败: %d",
+		atomic.LoadInt64(&poolStats.TotalTasks),
+		atomic.LoadInt64(&poolStats.CompletedTasks),
+		atomic.LoadInt64(&poolStats.FailedTasks)))
+
+	return nil
 }
 
-// monitorMemoryUsage 内存监控函数
-func monitorMemoryUsage() {
-	ticker := time.NewTicker(30 * time.Second) // 降低检查频率到30秒
-	defer ticker.Stop()
-
-	var memStats runtime.MemStats
-	var lastGC uint32 = 0            // 记录上次GC时间
-	var highMemWarningIssued = false // 内存高使用警告标志
-	var lastMemAlloc uint64 = 0      // 上次检查的内存分配
-	var growthRate float64 = 0       // 内存增长率
-
-	for range ticker.C {
-		runtime.ReadMemStats(&memStats)
-
-		// 计算内存使用百分比（相对于系统内存）
-		memUsagePercent := (float64(memStats.HeapAlloc) / float64(memStats.Sys)) * 100
-
-		// 计算内存增长率
-		if lastMemAlloc > 0 {
-			growthRate = float64(memStats.HeapAlloc-lastMemAlloc) / float64(lastMemAlloc) * 100
-		}
-		lastMemAlloc = memStats.HeapAlloc
-
-		// 记录内存使用情况，但在生产环境中不输出这些日志
-		// logger.Debug(fmt.Sprintf("内存使用情况: 堆分配 %.2f MB (%.1f%%), 系统内存 %.2f MB, GC次数 %d, 增长率 %.1f%%",
-		//	float64(memStats.HeapAlloc)/1024/1024,
-		//	memUsagePercent,
-		//	float64(memStats.Sys)/1024/1024,
-		//	memStats.NumGC,
-		//	growthRate))
-
-		// 智能GC触发条件:
-		// 1. 内存使用超过阈值 (4GB或80%)
-		// 2. 内存增长率超过10%
-		// 3. 距离上次GC时间超过30秒
-		shouldGC := false
-
-		if memStats.HeapAlloc > 1024*1024*1024*4 || memUsagePercent > 80 {
-			// 条件1: 内存使用超过阈值
-			shouldGC = true
-		} else if growthRate > 10 {
-			// 条件2: 内存增长率超过10%
-			shouldGC = true
-		} else if lastGC > 0 && memStats.NumGC > lastGC &&
-			time.Since(time.Unix(int64(memStats.LastGC/1e9), 0)) > 30*time.Second {
-			// 条件3: 距离上次GC时间超过30秒
-			shouldGC = true
-		}
-
-		if shouldGC {
-			if !highMemWarningIssued {
-				logger.Debug("内存使用已触发智能GC")
-				highMemWarningIssued = true
-			}
-
-			runtime.GC()
-			lastGC = memStats.NumGC
-
-			// 仅在极端情况下才强制归还内存
-			if memUsagePercent > 95 || growthRate > 50 {
-				logger.Debug("内存使用极限，强制释放系统内存")
-				debug.FreeOSMemory()
-			}
-		} else {
-			highMemWarningIssued = false
-		}
+// GetPoolStats 获取池统计信息
+func GetPoolStats() GlobalPoolStats {
+	return GlobalPoolStats{
+		TotalTasks:     atomic.LoadInt64(&poolStats.TotalTasks),
+		CompletedTasks: atomic.LoadInt64(&poolStats.CompletedTasks),
+		FailedTasks:    atomic.LoadInt64(&poolStats.FailedTasks),
 	}
+}
+
+// ResetPoolStats 重置池统计信息
+func ResetPoolStats() {
+	atomic.StoreInt64(&poolStats.TotalTasks, 0)
+	atomic.StoreInt64(&poolStats.CompletedTasks, 0)
+	atomic.StoreInt64(&poolStats.FailedTasks, 0)
 }

@@ -13,13 +13,23 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // AllFinger 全局指纹数据
 var AllFinger []*finger.Finger
 
+// 用于保护AllFinger的读写锁
+var allFingerMutex sync.RWMutex
+
 // LoadFingerprints 加载指纹规则文件，支持从默认嵌入指纹库、指定目录或单个YAML文件加载
 func LoadFingerprints(options types.YamlFingerType) error {
+	allFingerMutex.Lock()
+	defer allFingerMutex.Unlock()
+	
+	// 清空现有指纹规则
+	AllFinger = AllFinger[:0]
+	
 	// 使用嵌入式指纹库
 	if options.PocFile == "" && options.PocYaml == "" {
 		logger.Info("使用默认指纹库")
@@ -69,26 +79,36 @@ func LoadFingerprints(options types.YamlFingerType) error {
 	return nil
 }
 
+// GetFingerCount 获取指纹规则数量（线程安全）
+func GetFingerCount() int {
+	allFingerMutex.RLock()
+	defer allFingerMutex.RUnlock()
+	return len(AllFinger)
+}
+
 // evaluateFingerprintWithCache 使用缓存的基础信息评估指纹规则，执行单个指纹的识别逻辑，包括发送请求和规则评估
 func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *BaseInfo, proxy string, timeout int) (*FingerMatch, error) {
 	customLib := cel2.NewCustomLib()
+	defer customLib.Reset() // 确保资源释放
+	
 	// 初始化变量映射
 	resultData := &FingerMatch{
 		Finger: fg,
+		Result: false, // 默认为false
 	}
 	varMap := make(map[string]any)
 
-	logger.Debug(fmt.Sprintf("获取指纹ID：%s", fg.Id))
+	logger.Debug(fmt.Sprintf("执行指纹识别：%s", fg.Id))
 
 	// 准备基础请求
 	req, err := prepareRequest(target)
 	if err != nil {
-		return nil, err
+		return resultData, err
 	}
 
 	tempReqData, err := network.ParseRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("解析请求失败: %v", err)
+		return resultData, fmt.Errorf("解析请求失败: %v", err)
 	}
 
 	// 设置基础变量
@@ -122,38 +142,40 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 		rule.Value.Request.Path = finger.SetVariableMap(strings.TrimSpace(rule.Value.Request.Path), varMap)
 		urlStr := common.ParseTarget(target, rule.Value.Request.Path)
 
+		// 检查是否可以使用缓存
 		isCache, cache := ShouldUseCache(rule, urlStr)
-		logger.Debug(fmt.Sprintf("%s 是否使用缓存：%t", target, isCache))
-		if isCache {
-			if cache.Request != nil {
-				varMap["request"] = cache.Request
-			}
-			if cache.Response != nil {
-				varMap["response"] = cache.Response
-			}
-		}
-
-		if cache.Request == nil || cache.Response == nil {
+		logger.Debug(fmt.Sprintf("%s 规则 %s 是否使用缓存：%t", target, rule.Key, isCache))
+		
+		if isCache && cache.Request != nil && cache.Response != nil {
+			varMap["request"] = cache.Request
+			varMap["response"] = cache.Response
+		} else {
 			// 发送新请求
 			newVarMap, err := finger.SendRequest(target, rule.Value.Request, rule.Value, varMap, proxy, timeout)
 			if err != nil {
+				logger.Debug(fmt.Sprintf("规则 %s 请求失败: %v", rule.Key, err))
 				customLib.WriteRuleFunctionsROptions(rule.Key, false)
 				continue
 			}
+			
 			// 更新变量映射
 			if len(newVarMap) > 0 {
 				varMap = newVarMap
+				// 只有头部和body为空的请求才缓存
 				if rule.Value.Request.Headers == nil || len(rule.Value.Request.Headers) == 0 {
-					// 使用线程安全的UpdateTargetCache函数
 					UpdateTargetCache(varMap, urlStr, rule.Value.Request.FollowRedirects)
 				}
 			}
 		}
 
 		// 调试信息输出
-		logger.Debug(fmt.Sprintf("请求数据包：\n%s", varMap["request"].(*proto.Request).Raw))
-		logger.Debug(fmt.Sprintf("响应数据包：\n%s", varMap["response"].(*proto.Response).Raw))
-		logger.Debug("开始cel匹配处理")
+		if req := varMap["request"].(*proto.Request); req != nil {
+			logger.Debug(fmt.Sprintf("请求数据包：\n%s", req.Raw))
+		}
+		if resp := varMap["response"].(*proto.Response); resp != nil {
+			logger.Debug(fmt.Sprintf("响应数据包：\n%s", resp.Raw))
+		}
+		logger.Debug("开始CEL表达式匹配")
 
 		// 执行规则评估
 		result, err := customLib.Evaluate(rule.Value.Expression, varMap)
@@ -175,11 +197,20 @@ func evaluateFingerprintWithCache(fg *finger.Finger, target string, baseInfo *Ba
 	// 执行最终评估
 	result, err := customLib.Evaluate(fg.Expression, varMap)
 	if err != nil {
-		return nil, fmt.Errorf("最终表达式解析错误：%v", err)
+		return resultData, fmt.Errorf("最终表达式解析错误：%v", err)
 	}
 
-	customLib.Reset()
 	resultData.Result = result.Value().(bool)
+
+	// 如果匹配成功，存储请求和响应数据
+	if resultData.Result {
+		if req, ok := varMap["request"].(*proto.Request); ok {
+			resultData.Request = req
+		}
+		if resp, ok := varMap["response"].(*proto.Response); ok {
+			resultData.Response = resp
+		}
+	}
 
 	logger.Debug(fmt.Sprintf("最终规则 %s 评估结果: %v", fg.Expression, resultData.Result))
 

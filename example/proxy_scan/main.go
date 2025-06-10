@@ -36,7 +36,7 @@ func main() {
 	timeout := 10
 
 	// 设置线程数
-	workerCount := 3
+	workerCount := 500 // 规则并发线程数，使用默认值
 
 	fmt.Printf("开始通过代理 %s 扫描目标: %s\n", proxy, target)
 	fmt.Println("--------------------------------------------")
