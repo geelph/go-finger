@@ -1,5 +1,6 @@
 logs/
 venv/
+bin/
 __pycache__
 .idea
 .venv

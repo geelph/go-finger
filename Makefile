@@ -55,7 +55,7 @@ test:
 
 # 帮助信息
 help:
-	@echo "可用的命令:"
+	@echo "可用的命令："
 	@echo "  make build         - 构建项目（不嵌入指纹库）"
 	@echo "  make build-embed   - 构建项目（嵌入指纹库）"
 	@echo "  make release       - 构建发布包（不嵌入指纹库）"
